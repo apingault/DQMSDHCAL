@@ -1,0 +1,60 @@
+########################################
+# INSTALL file for DQMSDHCAL package
+# @author Eté Rémi, Buridon Victor
+# @version 1.0.0 17/02/2014
+# @copyright IPNL, CNRS
+########################################
+
+
+//DQMSDHCAL package 
+Data Quality Monitoring of Semi Digital Hadron Calorimeter
+Copyright (c) 2015
+
+This file is part of DQMSDHCAL libraries.
+
+DQMSDHCAL is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+DQMSDHCAL is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with DQMSDHCAL.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
+REQUIREMENTS:
+=============
+   Needs :
+     - 'ilcsoft' . Tested with the following version :
+       * v01-17-03
+       * v01-17-05
+     - LCDQM
+   
+INSTALL:
+=============
+
+	The variable LCDQM_DIR must be set to the LCDQM install directory (in which you can find LCDQMConfig.cmake)
+	
+  * In the root directory, do:
+
+    mkdir build (if there's not)
+    cd build
+    cmake -C $ILCSOFT/ILCSoft.cmake ..
+    make install
+     
+  Enjoy !  :)
+  
+  
+COMMENTS AND BUGS:
+===================
+
+Please, send comments or report bug via the github interface:
+
+<https://github.com/rete/DQMSDHCAL/issues>
+  
+  
