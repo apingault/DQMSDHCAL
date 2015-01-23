@@ -61,13 +61,13 @@ SDHCALDetectorModule::~SDHCALDetectorModule()
 StatusCode SDHCALDetectorModule::init()
 {
 	// book monitor elements
-//	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
-//			m_pNHitPlot, "NHit", "Number of hits", 500, 1, 500));
-//
-//	m_pNHitPlot->setResetPolicy(END_OF_RUN_RESET_POLICY);
-//	m_pNHitPlot->setQuality(NO_QUALITY);
-//	m_pNHitPlot->setDescription("The number of hits from all collections in the event");
-//	m_pNHitPlot->reset();
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pNHitPlot, "NHit", "Number of hits", 500, 1, 500));
+
+	m_pNHitPlot->setResetPolicy(END_OF_RUN_RESET_POLICY);
+	m_pNHitPlot->setQuality(NO_QUALITY);
+	m_pNHitPlot->setDescription("The number of hits from all collections in the event");
+	m_pNHitPlot->reset();
 
 	return STATUS_CODE_SUCCESS;
 }
@@ -93,21 +93,21 @@ StatusCode SDHCALDetectorModule::end()
 
 StatusCode SDHCALDetectorModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
-	UTIL::LCTOOLS::dumpEvent(pLCEvent);
+//	UTIL::LCTOOLS::dumpEvent(pLCEvent);
 
-//	const std::vector<std::string> *collectionNames = pLCEvent->getCollectionNames();
-//
-//	for(std::vector<std::string>::const_iterator iter = collectionNames->begin(), endIter = collectionNames->end() ;
-//		endIter != iter ; ++iter)
-//	{
-//		EVENT::LCCollection *pCollection = pLCEvent->getCollection(*iter);
-//
-//		if(pCollection->getTypeName() == EVENT::LCIO::CALORIMETERHIT)
-//		{
-//			TH1I *pNHitHisto = (TH1I *) m_pNHitPlot->getObject();
-//			pNHitHisto->Fill(pCollection->getNumberOfElements());
-//		}
-//	}
+	const std::vector<std::string> *collectionNames = pLCEvent->getCollectionNames();
+
+	for(std::vector<std::string>::const_iterator iter = collectionNames->begin(), endIter = collectionNames->end() ;
+		endIter != iter ; ++iter)
+	{
+		EVENT::LCCollection *pCollection = pLCEvent->getCollection(*iter);
+
+		if(pCollection->getTypeName() == EVENT::LCIO::CALORIMETERHIT)
+		{
+			TH1I *pNHitHisto = (TH1I *) m_pNHitPlot->getObject();
+			pNHitHisto->Fill(pCollection->getNumberOfElements());
+		}
+	}
 
 	return STATUS_CODE_SUCCESS;
 }

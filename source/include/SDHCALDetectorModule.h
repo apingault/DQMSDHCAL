@@ -57,6 +57,8 @@ protected:
  std::string                  m_detectorName;
  lcdqm::DQMVersion            m_version;
 
+ lcdqm::DQMMonitorElement      *m_pNHitPlot;
+
 }; 
 
 
