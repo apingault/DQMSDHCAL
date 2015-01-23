@@ -1,32 +1,24 @@
 <lcdqm>
 
-  <ModuleApplication pilot="on" archiver="off">
+  <ModuleApplication pilot="on" archiver="on">
   
     <Network>
-    
-      <DnsPort value="2505"/>
-      <DnsNode value="lyosdhcal7"/>
-       
-      <RunControl>
-        <StartOfRunService value="LCDQM/LCIOFileServer/RUN_CONTROL/START_OF_RUN" />
-        <EndOfRunService   value="LCDQM/LCIOFileServer/RUN_CONTROL/END_OF_RUN" />
-      </RunControl>
-       
-      <Data>
-        <DataService value="LCDQM/LCIOFileServer/DATA/EVENT" />
-      </Data>
-       
-      <Publication>
-        <PublicationService value="LCDQM/TestModule/" />
-      </Publication>
-    
+      <StartOfRunService  value="LCDQM/LCIOFileServer/RUN_CONTROL/START_OF_RUN" />
+      <EndOfRunService    value="LCDQM/LCIOFileServer/RUN_CONTROL/END_OF_RUN" />       
+      <DataService        value="LCDQM/LCIOFileServer/DATA/EVENT" />
+      <PublicationService value="LCDQM/TestModule/" />    
     </Network>
     
     <Cycle>
       <CycleType    value="TimerCycle" />
-      <CycleValue   value="20" />
-      <CycleTimeout value="5" />
+      <CycleValue   value="5" />
+      <CycleTimeout value="2" />
     </Cycle>
+    
+    <Archiver>
+      <ArchiveName value="SDHCALDetectorModuleArchive" />
+      <ArchiverDirectory   value="."/>
+    </Archiver>
     
     <Module name="SDHCALDetectorModule">
 <!--       <ProcessCollectionType> 1 </ProcessCollectionType>   -->
