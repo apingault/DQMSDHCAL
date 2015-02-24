@@ -38,6 +38,9 @@
 #include "UTIL/LCTOOLS.h"
 #include "UTIL/CellIDDecoder.h"
 
+// -- streamlog headers
+#include "streamlog/streamlog.h"
+
 using namespace lcdqm;
 
 SDHCALDetectorModule aSDHCALDetectorModule;
