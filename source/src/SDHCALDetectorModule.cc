@@ -109,8 +109,9 @@ StatusCode SDHCALDetectorModule::readSettings(const TiXmlHandle &xmlHandle)
 //	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, XmlHelper::readValue(xmlHandle, "ProcessCollectionType", m_processCollectionType));
 //	std::cout << "m_processCollectionType : " << m_processCollectionType << std::endl;
 
-		m_sleepTime = 0;
+	m_sleepTime = 0;
 	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, XmlHelper::readValue(xmlHandle, "SleepTime", m_sleepTime));
+	streamlog_out(MESSAGE) << "Sleep time = " << m_sleepTime << " s" << std::endl;
 
 	return STATUS_CODE_SUCCESS;
 }
