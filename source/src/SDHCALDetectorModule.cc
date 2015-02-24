@@ -33,8 +33,10 @@
 #include "EVENT/LCEvent.h"
 #include "EVENT/LCRunHeader.h"
 #include "EVENT/LCCollection.h"
+#include "EVENT/CalorimeterHit.h"
 #include "EVENT/LCIO.h"
 #include "UTIL/LCTOOLS.h"
+#include "UTIL/CellIDDecoder.h"
 
 using namespace lcdqm;
 
@@ -60,14 +62,42 @@ SDHCALDetectorModule::~SDHCALDetectorModule()
 
 StatusCode SDHCALDetectorModule::init()
 {
-	// book monitor elements
-	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
-			m_pNHitPlot, "NHit", "Number of hits", 500, 1, 500));
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::mkdir(this, "Nhit"));
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::mkdir(this, "Profile"));
 
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::cd(this, "/Nhit"));
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pNHitPlot, "NHit", "Total number of hits", 1400, 1, 1400));
 	m_pNHitPlot->setResetPolicy(END_OF_RUN_RESET_POLICY);
-	m_pNHitPlot->setQuality(NO_QUALITY);
-	m_pNHitPlot->setDescription("The number of hits from all collections in the event");
-	m_pNHitPlot->reset();
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pNHit1Plot, "NHit1", "Number of hits threshold 1", 1400, 1, 1400));
+	m_pNHit1Plot->setResetPolicy(END_OF_RUN_RESET_POLICY);
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pNHit2Plot, "NHit2", "Number of hits threshold 2", 1400, 1, 1400));
+	m_pNHit2Plot->setResetPolicy(END_OF_RUN_RESET_POLICY);
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pNHit3Plot, "NHit3", "Number of hits threshold 3", 1400, 1, 1400));
+	m_pNHit3Plot->setResetPolicy(END_OF_RUN_RESET_POLICY);
+
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::cd(this, "/Profile"));
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram2D(this,
+			m_pTransverseShowerProfile, "TransverseEventProfile", "Transverse event profile (IJK)", 96, 1, 96, 96, 1, 96));
+	m_pTransverseShowerProfile->setResetPolicy(END_OF_RUN_RESET_POLICY);
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pLongitudinalShowerProfile, "LongitudinalEventProfile", "Longitudinal event profile (layer)", 48, 0, 47));
+	m_pLongitudinalShowerProfile->setResetPolicy(END_OF_RUN_RESET_POLICY);
+
+	// go back to root dir and list the content
+	DQMModuleApi::cd(this);
+	DQMModuleApi::ls(this, true);
 
 	return STATUS_CODE_SUCCESS;
 }
@@ -78,6 +108,9 @@ StatusCode SDHCALDetectorModule::readSettings(const TiXmlHandle &xmlHandle)
 {
 //	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, XmlHelper::readValue(xmlHandle, "ProcessCollectionType", m_processCollectionType));
 //	std::cout << "m_processCollectionType : " << m_processCollectionType << std::endl;
+
+		m_sleepTime = 0;
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, XmlHelper::readValue(xmlHandle, "SleepTime", m_sleepTime));
 
 	return STATUS_CODE_SUCCESS;
 }
@@ -93,8 +126,6 @@ StatusCode SDHCALDetectorModule::end()
 
 StatusCode SDHCALDetectorModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
-//	UTIL::LCTOOLS::dumpEvent(pLCEvent);
-
 	const std::vector<std::string> *collectionNames = pLCEvent->getCollectionNames();
 
 	for(std::vector<std::string>::const_iterator iter = collectionNames->begin(), endIter = collectionNames->end() ;
@@ -104,10 +135,50 @@ StatusCode SDHCALDetectorModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		if(pCollection->getTypeName() == EVENT::LCIO::CALORIMETERHIT)
 		{
+			UTIL::CellIDDecoder<EVENT::CalorimeterHit> decoder(pCollection);
+
 			TH1I *pNHitHisto = (TH1I *) m_pNHitPlot->getObject();
 			pNHitHisto->Fill(pCollection->getNumberOfElements());
+
+			unsigned int nHit1 = 0;
+			unsigned int nHit2 = 0;
+			unsigned int nHit3 = 0;
+
+			for(unsigned int e=0 ; e<pCollection->getNumberOfElements() ; e++)
+			{
+				EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit*>(pCollection->getElementAt(e));
+
+				unsigned int I = decoder(pCaloHit)["I"];
+				unsigned int J = decoder(pCaloHit)["J"];
+				unsigned int K = decoder(pCaloHit)["K-1"];
+
+				if(pCaloHit->getEnergy() == 1.f)
+					nHit1++;
+				else if(pCaloHit->getEnergy() == 2.f)
+					nHit2++;
+				else if(pCaloHit->getEnergy() == 3.f)
+					nHit3++;
+
+				TH2I *pTransverseEventProfileHisto = (TH2I*) m_pTransverseShowerProfile->getObject();
+				pTransverseEventProfileHisto->Fill(I, J);
+
+				TH1I *pLongitudinalShowerProfileHisto = (TH1I*) m_pLongitudinalShowerProfile->getObject();
+				pLongitudinalShowerProfileHisto->Fill(K);
+			}
+
+			TH1I *pNHit1Histo = (TH1I*) m_pNHit1Plot->getObject();
+			pNHit1Histo->Fill(nHit1);
+
+			TH1I *pNHit2Histo = (TH1I*) m_pNHit2Plot->getObject();
+			pNHit2Histo->Fill(nHit2);
+
+			TH1I *pNHit3Histo = (TH1I*) m_pNHit3Plot->getObject();
+			pNHit3Histo->Fill(nHit3);
+
 		}
 	}
+
+	sleep(m_sleepTime);
 
 	return STATUS_CODE_SUCCESS;
 }

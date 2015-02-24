@@ -1,6 +1,6 @@
 <lcdqm>
 
-  <ModuleApplication pilot="on" archiver="on">
+  <ModuleApplication pilot="off" archiver="on">
   
     <Network>
       <StartOfRunService  value="LCDQM/LCIOFileServer/RUN_CONTROL/START_OF_RUN" />
@@ -21,7 +21,7 @@
     </Archiver>
     
     <Module name="SDHCALDetectorModule">
-<!--       <ProcessCollectionType> 1 </ProcessCollectionType>   -->
+      <SleepTime> 0 </SleepTime>
     </Module> 
   
   </ModuleApplication>

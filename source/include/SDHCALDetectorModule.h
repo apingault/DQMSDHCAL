@@ -58,7 +58,13 @@ protected:
  lcdqm::DQMVersion            m_version;
 
  lcdqm::DQMMonitorElement      *m_pNHitPlot;
+ lcdqm::DQMMonitorElement      *m_pNHit1Plot;
+ lcdqm::DQMMonitorElement      *m_pNHit2Plot;
+ lcdqm::DQMMonitorElement      *m_pNHit3Plot;
+ lcdqm::DQMMonitorElement      *m_pTransverseShowerProfile;
+ lcdqm::DQMMonitorElement      *m_pLongitudinalShowerProfile;
 
+ unsigned int                 m_sleepTime;
 }; 
 
 
