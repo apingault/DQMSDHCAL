@@ -42,7 +42,7 @@
 #include "dis.hxx"
 
 // -- sdhcal dmq headers
-#include "ShmReader.h"
+#include "dqmsdhcal/daq/ShmReader.h"
 
 using namespace std;
 using namespace dqm4hep;
