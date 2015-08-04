@@ -37,7 +37,7 @@ namespace dqm_sdhcal
 /** 
  * @brief Decoder class
  */ 
-class Decoder 
+class Decoder
 {
 public:
 	static uint32_t getBufferDIF(unsigned char* cb,uint32_t idx=0);

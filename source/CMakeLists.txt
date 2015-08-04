@@ -18,6 +18,8 @@ FILE (
 	GLOB_RECURSE
 	SRC_FILES
 	src/daq/*
+	src/streamout/*
+	src/trivent/*
 )
 
 ADD_SHARED_LIBRARY( ${PROJECT_NAME} ${SRC_FILES} )
