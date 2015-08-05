@@ -65,7 +65,7 @@ public:
 
 Streamout::Streamout() :
 		m_ruShift(23),
-		m_xdaqShift(92),
+		m_xdaqShift(24),
 		m_inputCollectionName("RU_XDAQ"),
 		m_outputCollectionName("DHCALRawHits"),
 		m_dropFirstRU(true),
@@ -122,7 +122,7 @@ dqm4hep::StatusCode Streamout::processEvent(EVENT::LCEvent *pLCEvent)
 		if(e == 0 && m_dropFirstRU)
 			continue;
 
-		LMGeneric *pLCGenericObject = dynamic_cast<LMGeneric *>(pLCCollection->getElementAt(e));
+		LMGeneric *pLCGenericObject = (LMGeneric *)(pLCCollection->getElementAt(e));
 
 		if(NULL == pLCGenericObject)
 			continue;
@@ -137,7 +137,7 @@ dqm4hep::StatusCode Streamout::processEvent(EVENT::LCEvent *pLCEvent)
 		unsigned char *pDifRawBuffer = &pRawBuffer[idStart];
 		DIFPtr *pDifPtr = new DIFPtr(pDifRawBuffer, ruSize-idStart+1);
 
-		for(unsigned int f=0 ; pDifPtr->getNumberOfFrames() ; f++)
+		for(unsigned int f=0 ; f<pDifPtr->getNumberOfFrames() ; f++)
 		{
 			// find whether the dif has full asics
 			if(m_skipFullAsics)
@@ -222,6 +222,7 @@ dqm4hep::StatusCode Streamout::processEvent(EVENT::LCEvent *pLCEvent)
 	// should never happened except if empty event
 	if(pRawCalorimeterHitCollection->getNumberOfElements() == 0)
 	{
+		std::cout << "No raw calorimeter hits produced !" << std::endl;
 		delete pRawCalorimeterHitCollection;
 		return dqm4hep::STATUS_CODE_SUCCESS;
 	}
@@ -233,6 +234,7 @@ dqm4hep::StatusCode Streamout::processEvent(EVENT::LCEvent *pLCEvent)
 	}
 	catch(IO::IOException &exception)
 	{
+		std::cout << "Couldn't add collection : " << m_outputCollectionName << std::endl;
 		delete pRawCalorimeterHitCollection;
 		return dqm4hep::STATUS_CODE_ALREADY_PRESENT;
 	}
