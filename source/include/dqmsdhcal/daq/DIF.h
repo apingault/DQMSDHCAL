@@ -134,15 +134,17 @@ public:
  */
  DIFPtr(unsigned char* p,uint32_t max_size) : theSize_(max_size),theDIF_(p)
   {
-    theFrames_.clear();theLines_.clear();
+    theFrames_.clear();
+    theLines_.clear();
+
     try
-      {
-	DIFUnpacker::getFramePtr(theFrames_,theLines_,theSize_,theDIF_);
-      }
+    {
+    	DIFUnpacker::getFramePtr(theFrames_,theLines_,theSize_,theDIF_);
+    }
     catch (std::string e)
-      {
-	std::cout<<"DIF "<<getID()<<" T ? "<<hasTemperature()<<" " <<e<<std::endl;
-      }
+    {
+    	std::cout<<"DIF "<<getID()<<" T ? "<<hasTemperature()<<" " <<e<<std::endl;
+    }
   }
 
   inline unsigned char* getPtr(){return theDIF_;}

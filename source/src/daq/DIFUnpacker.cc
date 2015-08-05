@@ -228,11 +228,15 @@ uint32_t DIFUnpacker::getFramePtr(std::vector<unsigned char*> &vFrame,std::vecto
 {
 #if DU_DATA_FORMAT_VERSION>=13
 
-  uint32_t fshift=idx+DU_LINES_SHIFT+1;
-  if (DIFUnpacker::hasTemperature(cb,idx)) fshift=idx+DU_TDIF_SHIFT+1; // jenlev 1
-  if (DIFUnpacker::hasAnalogReadout(cb,idx)) fshift=DIFUnpacker::getAnalogPtr(vLines,cb,fshift); // to be implemented
+	uint32_t fshift=idx+DU_LINES_SHIFT+1;
+
+	if (DIFUnpacker::hasTemperature(cb,idx))
+		fshift=idx+DU_TDIF_SHIFT+1; // jenlev 1
+
+	if (DIFUnpacker::hasAnalogReadout(cb,idx))
+		fshift=DIFUnpacker::getAnalogPtr(vLines,cb,fshift); // to be implemented
 #else
-  uint32_t fshift=idx+DU_BCID_SHIFT+3;
+	uint32_t fshift=idx+DU_BCID_SHIFT+3;
 #endif
 
   // if (max_size<40)
@@ -241,45 +245,64 @@ uint32_t DIFUnpacker::getFramePtr(std::vector<unsigned char*> &vFrame,std::vecto
 //    printf("%02x",cb[i]);
 //  printf("\n");
   //}
-  if (cb[fshift]!=DU_START_OF_FRAME)
-    {
-      printf("This is not a start of frame shift= %d value = %02x \n",fshift,cb[fshift]);
-      for (uint32_t i=0;i<40;i++)
-	printf("%02x",cb[i]);
-      printf("\n");
-      return fshift;
-      //throw "Not a start of Frame";
-    }
-
-
-
-  do
-    {
-      // printf("fshift %d and %d \n",fshift,max_size);
-      if (cb[fshift]==DU_END_OF_DIF) return fshift;
-      if (cb[fshift]==DU_START_OF_FRAME) fshift++;
-      if (cb[fshift]==DU_END_OF_FRAME) {fshift++;continue;}
-      uint32_t header =DIFUnpacker::getFrameAsicHeader(&cb[fshift]);
-      if (header == DU_END_OF_FRAME) return (fshift+2);
-      //std::cout<<header<<" "<<fshift<<std::endl;
-      if (header<1 || header>48)
+	if (cb[fshift]!=DU_START_OF_FRAME)
 	{
-	  std::stringstream s("");
-	  s<<header<<" Header problem "<<fshift<<std::endl;
-	  throw  s.str();
-	  return fshift;
+		printf("This is not a start of frame shift= %d value = %02x \n",fshift,cb[fshift]);
+		for (uint32_t i=0;i<40;i++)
+			printf("%02x",cb[i]);
+
+		printf("\n");
+
+		return fshift;
+		//throw "Not a start of Frame";
+	}
+
+
+
+	do
+	{
+		// printf("fshift %d and %d \n",fshift,max_size);
+		if (cb[fshift]==DU_END_OF_DIF)
+			return fshift;
+
+		if (cb[fshift]==DU_START_OF_FRAME)
+			fshift++;
+
+		if (cb[fshift]==DU_END_OF_FRAME)
+		{
+			fshift++;
+			continue;
+		}
+
+		uint32_t header =DIFUnpacker::getFrameAsicHeader(&cb[fshift]);
+
+		if (header == DU_END_OF_FRAME)
+			return (fshift+2);
+
+		//std::cout<<header<<" "<<fshift<<std::endl;
+		if (header<1 || header>48)
+		{
+			std::stringstream s("");
+			s<<header<<" Header problem "<<fshift<<std::endl;
+			throw  s.str();
+			return fshift;
+		}
+
+		vFrame.push_back(&cb[fshift]);
+		fshift+=DU_FRAME_SIZE;
+
+		if (fshift>max_size)
+		{
+			printf("fshift %d exceed %d \n",fshift,max_size);
+			return fshift;
+		}
+
+		//printf("%x \n",cb[fshift]);
+		if (cb[fshift]==DU_END_OF_FRAME)
+			fshift++;
 
 	}
-      vFrame.push_back(&cb[fshift]);fshift+=DU_FRAME_SIZE;
-      if (fshift>max_size)
-	{
-	  printf("fshift %d exceed %d \n",fshift,max_size);
-	  return fshift;
-	}
-      //printf("%x \n",cb[fshift]);
-      if (cb[fshift]==DU_END_OF_FRAME) fshift++;
-
-    } while (1);
+	while (1);
 }
 
 //-------------------------------------------------------------------------------------------------
