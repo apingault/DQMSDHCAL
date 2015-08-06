@@ -30,10 +30,11 @@
 #define TRIVENT_H
 #define  HISTOGRAM_PARSER true
 
-
+// -- dqm4hep headers
 #include "dqm4hep/core/DQM4HEP.h"
 
 namespace EVENT { class LCEvent; }
+namespace dqm4hep { class TiXmlElement; }
 
 namespace dqm_sdhcal
 {
@@ -44,38 +45,38 @@ class Trivent
 {
 public:
     /** Constructor
-       */
+     */
     Trivent();
 
     /** Destructor
-       */
+     */
     ~Trivent();
 
-    /** Process Trivent on the lcio event.
-       *  Create a CalorimeterHit collection from a RawCalorimeterHit Collection from StreamOut
-       */
+	/** Process Trivent on the lcio event.
+	 *  Create a CalorimeterHit collection from a RawCalorimeterHit Collection from StreamOut
+	 */
     dqm4hep::StatusCode processEvent(EVENT::LCEvent *pLCEvent);
 
     void init();
 
     void    processEvent( LCEvent * evtP );
-    void    ClearVector();
-    void    fillTree();
-    void    processRunHeader( LCRunHeader * runH);// added by me
-    void    XMLReader(std::string xmlfile);
-    void    readDifGeomFile(std::string geomfile);
-    void    printDifGeom();
 
-    uint    getCellDifId(int cellId);
-    uint    getCellAsicId(int cellId);
-    uint    getCellChanId(int cellId);
+    dqm4hep::StatusCode readGeometry(const std::string &fileName);
+    dqm4hep::StatusCode readDifGeometry(TiXmlElement *pElement);
+    dqm4hep::StatusCode readChamberGeometry(TiXmlElement *pElement);
 
-    void    getMaxTime();
+    int ijkToKey(int i, int j, int k);
+    int findAsicKey(int i, int j, int k);
+    unsigned int getCellDifId(int cellId);
+    unsigned int getCellAsicId(int cellId);
+    unsigned int getCellChanId(int cellId);
+
+    int getMaxTime();
     std::vector<int> getTimeSpectrum();
-    uint*   getPadIndex(uint difId, uint asicId, uint chanId);
-    void    eventBuilder(LCCollection* colEvent,int timePeak, int previousTimePeak);
-    bool    peakOrNot(std::vector<int> timeSpectrum, int iTime ,int threshold);
-    void    end();
+    std::vector<dqm4hep::dqm_uint> getPadIndex(uint difId, uint asicId, uint chanId);
+    void eventBuilder(LCCollection* colEvent,int timePeak, int previousTimePeak);
+    bool peakOrNot(std::vector<int> timeSpectrum, int iTime ,int threshold);
+    void end();
 
 
     void setInputCollectionName(const std::string &inputCollectionName);
@@ -155,7 +156,7 @@ private:
     int m_previousEvtNbr;
     int m_rejectedEvt;
     int m_selectedEvt;
-    uint m_index[3];
+    std::vector<dqm4hep::dqm_uint> m_index;
     uintVec _zCut;
     LCWriter* _lcWriter;
     int m_bcid1;
@@ -164,66 +165,17 @@ private:
     int m_cerenkovCount[3];
     int m_cerenkovCountTotal[3];
 
-
-
-    // ------------- ROOT
-    TH1F *noise_dist;
-    TH1F *gain_chan;
-    TH1F *mean_hit_dif;
-    TH1F *time_hit_dif;
-
-    TFile *_file;
-    TTree *_tree;
-    TClonesArray *_hitArray;
-    TClonesArray *_rootArray;// added by me
     unsigned int _triggerNbr;
     unsigned int _runNbr;
     unsigned int _eventType;
     Int_t _evtId;
 
-    std::vector<int> x;
-    std::vector<int> y;
-    std::vector<int> z;
-    std::vector<int> fThr;
-    std::vector<int> fDifId;
-    std::vector<int> fNevt;
-    std::vector<int> fEvtReconstructed;
-    std::vector<int> fPrevTime;
-    std::vector<int> fTime;
-    std::vector<int> fTimePeak;
-    std::vector<int> fPrevTimePeak;
-    std::vector<int> fDeltaTimePeak;
-    std::vector<int> fTriggerNr;
-    std::vector<int> fNhit;
-    std::vector<int> fCerenkovTag1;
-    std::vector<int> fCerenkovTag2;
-    std::vector<int> fCerenkovTag3;
-    std::vector<int> fCerenkovCount1;
-    std::vector<int> fCerenkovCount2;
-    std::vector<int> fCerenkovCount3;
-    std::vector<int> fCerenkovCountDecember;
-    std::vector<int> fPion;
-    std::vector<int> fElectron;
-    std::vector<int> fMuon;
-
-
     unsigned int _eventNbr;
     Int_t _nHit;
     Int_t _elecNoiseCut;
 
-    std::map<int, LayerID  > _mapping;
-    std::map<int, double  > _chamberPos;//camber , pos
-
-
-
-    std::string normal  ;
-    std::string red     ;
-    std::string green   ;
-    std::string yellow  ;
-    std::string blue    ;
-    std::string magenta ;
-    std::string white   ;
-
+    std::map<int, LayerID> m_difMapping;
+    std::map<int, double> m_chamberPositions; //chamber , position
 };
 
 }

@@ -37,29 +37,20 @@
 #include <EVENT/LCParameters.h>
 #include <UTIL/CellIDEncoder.h>
 
-
-
+// -- std headers
 #include <limits.h>
 #include <cmath>
 #include <stdexcept>
-#include <Rtypes.h>
 #include <sstream>
-
-
-#include "TObject.h"
-#include "TRefArray.h"
-#include "TRef.h"
 #include <fstream>
 #include <algorithm>
 
 namespace dqm_sdhcal
 {
 
-
 Trivent::Trivent():
     m_inputCollectionName("DHCALRawHits"),
     m_outputCollectionName("SDHCAL_HIT"),
-    m_noiseFileName("noise_run.slcio"),
     m_layerCut(10),
     m_noiseCut(10),
     m_timeWindow(2),
@@ -74,171 +65,190 @@ Trivent::Trivent():
     m_rejectedEvt(0),
     m_selectedEvt(0)
 {
-
+	/* nop */
 }
 
-Trivent::Trivent():
-    _output(0),
-    _runNbr(0),
-    _eventType(0),
-    _evtId(0)
+//-------------------------------------------------------------------------------------------------
+
+Trivent::~Trivent()
 {
+	/* nop */
 }
 
-void Trivent::XMLReader(std::string xmlfile){
-    TiXmlDocument doc(xmlfile.c_str());
-    bool load_key = doc.LoadFile();
-    if(load_key){
-        streamlog_out( MESSAGE ) << green << "File : " << xmlfile.c_str() << normal <<std::endl;
-        // tout ici
-        TiXmlHandle hDoc(&doc);
-        TiXmlElement* pElem;
-        TiXmlHandle hRoot(0);
-        // name block
-        {
-            pElem=hDoc.FirstChildElement().Element();
-            // should always have a valid root but handle gracefully if it does
-            if (!pElem) streamlog_out( WARNING ) << red << "error elem" << normal << std::endl;
-            streamlog_out( MESSAGE ) << green << pElem->Value() << normal << std::endl;
+//-------------------------------------------------------------------------------------------------
 
-            // save this for later
-            hRoot=TiXmlHandle(pElem);
-        }
-        // parameters block
-        {
-            m_parameters.clear();
-            pElem=hRoot.FirstChild("parameter").Element();
-            std::string key = pElem->Attribute("name");
-            streamlog_out( MESSAGE ) << green << key.c_str() << normal << std::endl;
-            streamlog_out( DEBUG1 ) << green
-                                    <<"parameter : "
-                                   << pElem->Attribute("name")
-                                   << normal
-                                   << std::endl;
+dqm4hep::StatusCode readGeometry(const std::string &fileName)
+{
+	dqm4hep::TiXmlDocument document(filename);
 
-            std::vector<std::string> lines;
-            {
-                std::string value = pElem->GetText() ;
-                std::vector<std::string> lines;
-                istringstream iss(value);
-                copy(istream_iterator<string>(iss),
-                     istream_iterator<string>(),
-                     back_inserter<vector<string> >(lines));
-                for(unsigned int iline = 0; iline < lines.size(); iline++){
-                    std::string line = lines.at(iline);
-                    streamlog_out( MESSAGE ) << red << line << normal << std::endl;
+	if(!document.LoadFile())
+		return dqm4hep::STATUS_CODE_FAILURE;
 
-                    stringstream ss( line.c_str() );
-                    vector<string> result;
+	dqm4hep::TiXmlHandle documentHandle(&document);
+	dqm4hep::TiXmlElement* pRootElement = documentHandle.FirstChildElement().Element();
 
-                    LayerID mapp;
-                    int difId;
-                    while( ss.good() )
-                    {
-                        string substr;
-                        getline( ss, substr, ',' );
-                        result.push_back( substr );
-                    }
-                    istringstream ( result.at(0) ) >> difId;
-                    istringstream ( result.at(1) ) >> mapp.K;
-                    istringstream ( result.at(2) ) >> mapp.DifX;
-                    istringstream ( result.at(3) ) >> mapp.DifY;
-                    istringstream ( result.at(4) ) >> mapp.IncX;
-                    istringstream ( result.at(5) ) >> mapp.IncY;
-                    _mapping[difId] = mapp;
-                }
-            }
-            pElem = pElem->NextSiblingElement();
-            // ChamberGeom  Node.
-            {
-                streamlog_out( DEBUG1 ) << green
-                                        <<"parameter : "
-                                       << pElem->Attribute("name")
-                                       << normal
-                                       << std::endl;
-                std::vector<std::string> lines;
-                {
-                    std::string value = pElem->GetText() ;
-                    std::vector<std::string> lines;
-                    istringstream iss(value);
-                    copy(istream_iterator<string>(iss),
-                         istream_iterator<string>(),
-                         back_inserter<vector<string> >(lines));
-                    for(unsigned int iline = 0; iline < lines.size(); iline++){
-                        std::string line = lines.at(iline);
-                        streamlog_out( MESSAGE ) << red << line << normal << std::endl;
+	if(NULL == pRootElement)
+		return dqm4hep::STATUS_CODE_FAILURE;
 
-                        stringstream ss( line.c_str() );
-                        vector<string> result;
+	// root element handler
+	dqm4hep::TiXmlHandle rootHandle(pRootElement);
 
-                        double position;
-                        int difId;
-                        while( ss.good() )
-                        {
-                            string substr;
-                            getline( ss, substr, ',' );
-                            result.push_back( substr );
-                        }
-                        istringstream ( result.at(0) ) >> difId;
-                        istringstream ( result.at(3) ) >> position;
+	m_parameters.clear();
 
-                        _chamberPos[difId] = position;
-                    }
-                }
-            }
-        }
-    }else{
-        streamlog_out( WARNING ) << red << "Failed to load file : " << xmlfile.c_str() << normal <<std::endl;
-    }
+	bool difGeomFound = false;
+	bool chamberGeomFound = false;
+
+	for(TiXmlElement *pParameterElement = rootHandle.FirstChild("parameter").Element(); NULL != pParameterElement;
+			pParameterElement = pParameterElement->NextSiblingElement("parameter"))
+	{
+		// parameter name
+		const char *pParameterNameStr = pParameterElement->Attribute("name");
+
+		if(NULL == pParameterNameStr)
+			return dqm4hep::STATUS_CODE_NOT_FOUND;
+
+		std::string parameterName = pParameterElementStr;
+
+		if(parameterName == "DifGeom")
+		{
+			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->readDifGeometry(pParameterElement));
+			difGeomFound = true;
+		}
+		else if(parameterName = "ChamberGeom")
+		{
+			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->readChamberGeometry(pParameterElement));
+			chamberGeomFound = true;
+		}
+		else
+		{
+			std::cout << "Unknown parameter element, name : " << parameterName << std::endl;
+			continue;
+		}
+	}
+
+	if(!difGeomFound || !chamberGeomFound)
+		return dqm4hep::STATUS_CODE_FAILURE;
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
-void Trivent::readDifGeomFile(std::string geomfile){
+//-------------------------------------------------------------------------------------------------
 
-    cout << "read the mapping file .."<< endl;
+dqm4hep::StatusCode Trivent::readDifGeometry(TiXmlElement *pElement)
+{
+	if(NULL == pElement)
+		return dqm4hep::STATUS_CODE_FAILURE;
 
-    LayerID contenu;
-    ifstream file(geomfile.c_str(), ios::in);
-    if(file){
-        while(!file.eof()){
-            int difId;
-            char co;
-            file >> difId >> co
-                    >> contenu.K >> co
-                    >> contenu.DifX >> co
-                    >> contenu.DifY >> co
-                    >> contenu.IncX >> co
-                    >> contenu.IncY ;
-            _mapping [difId] = contenu;
-        }
-        file.close();
-    }
-    else
-        cerr << "ERROR ... maping file not correct !" << endl;
+	// get the element contents
+	const char *pValueStr = pElement->GetText();
+
+	if(NULL == pValueStr)
+		return STATUS_CODE_NOT_FOUND;
+
+	// clear dif mapping
+	m_difMapping.clear();
+
+	std::string value = pValueStr;
+	std::vector<std::string> lines;
+
+	// split the contents for each lines
+	dqm4hep::DQM4HEP::tokenize(value, lines, "\n");
+
+	for(unsigned int i=0 ; i<lines.size() ; i++)
+	{
+		std::string line = lines.at(i);
+		std::vector<std::string> tokens;
+
+		LayerID layerId;
+		int difId;
+
+		// split the line with commas
+		dqm4hep::DQM4HEP::tokenize(line, tokens, ",");
+
+		// fill LayerID object
+		dqm4hep::stringToType(tokens.at(0), difId);
+		dqm4hep::stringToType(tokens.at(1), layerId.K);
+		dqm4hep::stringToType(tokens.at(2), layerId.DifX);
+		dqm4hep::stringToType(tokens.at(3), layerId.DifY);
+		dqm4hep::stringToType(tokens.at(4), layerId.IncX);
+		dqm4hep::stringToType(tokens.at(5), layerId.IncY);
+
+		// add the dif entry
+		m_difMapping[difId] = layerId;
+	}
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
-void Trivent::printDifGeom(){
+//-------------------------------------------------------------------------------------------------
 
-    for(std::map<int,LayerID>::iterator itt = _mapping.begin();itt!=_mapping.end();itt++)     {
-        streamlog_out( MESSAGE ) << itt->first << "\t" << itt->second.K
-                                 <<"\t"<<itt->second.DifX
-                                <<"\t"<<itt->second.DifY
-                               <<"\t"<<itt->second.IncX
-                              <<"\t"<<itt->second.IncY
-                             << std::endl;
-    }
+dqm4hep::StatusCode Trivent::readChamberGeometry(TiXmlElement *pElement)
+{
+	if(NULL == pElement)
+		return dqm4hep::STATUS_CODE_FAILURE;
+
+	// get the element contents
+	const char *pValueStr = pElement->GetText();
+
+	if(NULL == pValueStr)
+		return STATUS_CODE_NOT_FOUND;
+
+	// clear the chamber positions
+	m_chamberPositions.clear();
+
+	std::string value = pValueStr;
+	std::vector<std::string> lines;
+
+	// split the contents by lines
+	dqm4hep::DQM4HEP::tokenize(value, lines, "\n");
+
+	for(unsigned int i=0; i<lines.size(); i++)
+	{
+		std::string line = lines.at(i);
+		std::vector<std::string> tokens;
+
+		double position;
+		int difId;
+
+		// split the lines with commas
+		dqm4hep::DQM4HEP::tokenize(lines, tokens, ",");
+
+		dqm4hep::stringToType(tokens.at(0), difId);
+		dqm4hep::stringToType(tokens.at(0), position);
+
+		// add a chamber entry
+		m_chamberPositions[difId] = position;
+	}
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
 }
+
+//-------------------------------------------------------------------------------------------------
 
 // ============ decode the cell ids =============
 // Dif 1 => cellID0= 00983297 => DifID=1 / AsicID=1 / ChanID=15
-uint Trivent::getCellDifId(int cellId){
-    return cellId & 0xFF; // Applique le masque 1111 1111
+
+// Applique le masque 1111 1111
+unsigned int Trivent::getCellDifId(int cellId)
+{
+    return cellId & 0xFF;
 }
-uint Trivent::getCellAsicId(int cellId){
-    return (cellId & 0xFF00)>>8; //  Applique le masque 1111 1111 0000 0000 puis tronque les 8 derniers bits
+//-------------------------------------------------------------------------------------------------
+
+//  Applique le masque 1111 1111 0000 0000 puis tronque les 8 derniers bits
+unsigned int Trivent::getCellAsicId(int cellId)
+{
+    return (cellId & 0xFF00)>>8;
 }
-uint Trivent::getCellChanId(int cellId){
-    return (cellId & 0x3F0000)>>16; //  Applique le masque 1111 0000 0000 0000 0000 puis tronque les 16 derniers bits
+
+//-------------------------------------------------------------------------------------------------
+
+//  Applique le masque 1111 0000 0000 0000 0000 puis tronque les 16 derniers bits
+unsigned int Trivent::getCellChanId(int cellId)
+{
+    return (cellId & 0x3F0000)>>16;
 }
+
 // ============ ============ ============ ============ ============ ============ ============ ============
 // ============ ============ ============ ============ ============ ============ ============ ============
 // Exemple sur Dif 1:
@@ -249,83 +259,85 @@ uint Trivent::getCellChanId(int cellId){
 // ============ ============ ============ ============ ============ ============ ============ ============
 // ============ ============ ============ ============ ============ ============ ============ ============
 
-uint* Trivent::getPadIndex(uint difId, uint asicId, uint chanId){
-    m_index[0]=m_index[1]=m_index[2]=0;
-    double difY = -1., difZ = -1.;
-    difZ = _mapping.find(difId)->second.K;
-    difY = _mapping.find(difId)->second.difY;
-    m_index[0] = (1+MapILargeHR2[chanId]+AsicShiftI[asicId]);
-    m_index[1] = (32-(MapJLargeHR2[chanId]+AsicShiftJ[asicId]))+int(difY);
-    m_index[2] = abs(int(difZ));
-    streamlog_out( DEBUG0 ) << " difId == " << difId
-                            << " Asic_id ==" << asicId
-                            << " Chan_id ==" << chanId
-                            << " I == " << m_index[0]
-                            << " J == " << m_index[1]
-                            << " K == " << m_index[2]
-                            << std::endl;
-    return m_index;
+//-------------------------------------------------------------------------------------------------
+
+std::vector<dqm4hep::dqm_uint> Trivent::getPadIndex(uint difId, uint asicId, uint chanId)
+{
+	std::vector<dqm4hep::dqm_uint> index(3, 0);
+
+    int difY = static_cast<int>(m_mapping.find(difId)->second.difY);
+    int difZ = static_cast<int>(m_mapping.find(difId)->second.K);
+
+    index[0] = ( 1 + MapILargeHR2[chanId] + AsicShiftI[asicId] );
+    index[1] = ( 32 - (MapJLargeHR2[chanId]+AsicShiftJ[asicId]) ) + difY;
+    index[2] = abs(difZ);
+
+    return index;
 }
 
-//===============================================
-void Trivent::getMaxTime()
+//-------------------------------------------------------------------------------------------------
+
+int Trivent::getMaxTime()
 {
-    m_maxTime = 0;
-    try{
-        for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit=m_triggerRawHit.begin();rawHit!= m_triggerRawHit.end();rawHit++){
-            int time =  int((*rawHit)->getTimeStamp());
-            if(time >= 0) m_maxTime = max(m_maxTime, time);
-        }
-    }catch (std::exception ec){
-        streamlog_out( WARNING )<<"No hits "<<std::endl;
-    }
-    streamlog_out( DEBUG1 ) << " maxtime before == " << m_maxTime << std::endl;
-    //return maxtime;
+    int maxTime = 0;
+
+	for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit = m_triggerRawHit.begin() ;
+			rawHit != m_triggerRawHit.end() ; rawHit++)
+	{
+		int time = static_cast<int>((*rawHit)->getTimeStamp());
+
+		if(time >= 0)
+			m_maxTime = std::max(m_maxTime, time);
+	}
+
+	return maxTime;
 }
 
-//===============================================
-std::vector<int> Trivent::getTimeSpectrum() //__attribute__((optimize(0)))
+//-------------------------------------------------------------------------------------------------
+
+std::vector<int> Trivent::getTimeSpectrum()
 {
-    std::vector<int> timeSpectrum(m_maxTime+1);
-    try{
-        for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit=m_triggerRawHit.begin();rawHit!= m_triggerRawHit.end();rawHit++){
-            int time =  int((*rawHit)->getTimeStamp());
-            if(time >= 0) timeSpectrum[time]++;
-        }
-    }catch (std::exception ec){
-        streamlog_out( WARNING )<<"No hits "<<std::endl;
-    }
+	int maxTime = this->getMaxTime();
+    std::vector<int> timeSpectrum(maxTime + 1);
+
+	for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit = m_triggerRawHit.begin() ;
+			rawHit != m_triggerRawHit.end() ; rawHit++)
+	{
+		int time = int((*rawHit)->getTimeStamp());
+
+		if(time >= 0)
+			timeSpectrum.at(time)++;
+	}
+
     return timeSpectrum;
 }
 
-//===============================================
-bool Trivent::peakOrNot(std::vector<int> timeSpectrum ,int iTime ,int threshold){
+//-------------------------------------------------------------------------------------------------
 
-#if HISTOGRAM_PARSER
-    noise_dist->Fill(timeSpectrum[iTime]);
-#endif
-
-    if(timeSpectrum[iTime] >= threshold
-            && timeSpectrum[iTime] >  timeSpectrum[iTime+1]
-            && timeSpectrum[iTime] >= timeSpectrum[iTime+1]){
-        return true;
-    }else{
-        return false;
-    }
-}
-
-//===============================================
-int IJKToKey(const int i,const int j,const int k){return 100*100*k+100*j+i;}
-
-//===============================================
-int findAsicKey(int i,int j,int k)
+bool Trivent::peakOrNot(std::vector<int> timeSpectrum , int iTime, int threshold)
 {
-    if(i>96||i<0||j>96||j<0) return -1;
-    int jnum=(j-1)/8;
-    int inum=(i-1)/8;
-    int num=jnum*12+inum;
-    return k*1000+num;
+	return (timeSpectrum.at(iTime) >= threshold
+		  && timeSpectrum.at(iTime) > timeSpectrum.at(iTime+1));
 }
+
+//-------------------------------------------------------------------------------------------------
+
+int Trivent::ijkToKey(int i, int j, int k)
+{
+	return 100*100*k+100*j+i;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+int Trivent::findAsicKey(int i, int j, int k)
+{
+    if(i>96 || i<0 || j>96 || j<0)
+    	return -1;
+
+    return k*1000+(((j-1)/8)*12 + (i-1)/8);
+}
+
+//-------------------------------------------------------------------------------------------------
 
 void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTimePeak){
     _zCut.clear();
@@ -518,111 +530,10 @@ void Trivent::init() {
     printParameters();
     // new process
 
-    char cnormal[8] =  {0x1b,'[','0',';','3','9','m',0};
-    char cred[8]     = {0x1b,'[','1',';','3','1','m',0};
-    char cgreen[8]   = {0x1b,'[','1',';','3','2','m',0};
-    char cyellow[8]  = {0x1b,'[','1',';','3','3','m',0};
-    char cblue[8]    = {0x1b,'[','1',';','3','4','m',0};
-    char cmagenta[8] = {0x1b,'[','1',';','3','5','m',0};
-    char cwhite[8]   = {0x1b,'[','1',';','3','9','m',0};
-
-    normal   = cnormal;
-    red      = cred;
-    green    = cgreen;
-    yellow   = cyellow;
-    blue     = cblue;
-    magenta  = cmagenta;
-    white    = cwhite;
-
-    _lcWriter = LCFactory::getInstance()->createLCWriter() ;
-    _lcWriter->setCompressionLevel( 0 ) ;
-    _lcWriter->open(_outFileName.c_str(),LCIO::WRITE_NEW) ;
-
 
     XMLReader(m_geomXMLFile.c_str());
-    printDifGeom();
     m_evtNbr=0;// event number
     _previousEvtNbr =0;
-
-    // ROOT File Creation
-    _file = new TFile(_rootFileName.c_str(),"RECREATE");
-    _tree = (TTree*)_file->Get("_tree");
-    if(!_tree)
-    {
-        std::cout << "tree creation" << std::endl;
-        _tree = new TTree("_treeName","Shower variables");
-    }
-
-    // Root Branches
-    _tree->Branch("X","std::vector<int>",&x);
-    _tree->Branch("Y","std::vector<int>",&y);
-    _tree->Branch("Z","std::vector<int>",&z);
-    _tree->Branch("Thr","std::vector<int>",&fThr);
-    _tree->Branch("difId","std::vector<int>",&fDifId);
-    _tree->Branch("EvtNbr","std::vector<int>",&fNevt);
-    _tree->Branch("EvtReconstructed","std::vector<int>",&fEvtReconstructed);
-    _tree->Branch("PrevTime","std::vector<int>", &fPrevTime);
-    _tree->Branch("Time","std::vector<int>", &fTime);
-    _tree->Branch("TimePeak","std::vector<int>", &fTimePeak);
-    _tree->Branch("PrevTimePeak","std::vector<int>", &fPrevTimePeak);
-    _tree->Branch("DeltaTimePeak","std::vector<int>", &fDeltaTimePeak);
-    _tree->Branch("TriggerNbr","std::vector<int>",&fTriggerNr);
-    _tree->Branch("Nhit","std::vector<int>",&fNhit);
-    _tree->Branch("CerenkovTag1","std::vector<int>",&fCerenkovTag1);
-    _tree->Branch("CerenkovTag2","std::vector<int>",&fCerenkovTag2);
-    _tree->Branch("CerenkovTag3","std::vector<int>",&fCerenkovTag3);
-    _tree->Branch("CerenkovCount1","std::vector<int>",&fCerenkovCount1);
-    _tree->Branch("CerenkovCount2","std::vector<int>",&fCerenkovCount2);
-    _tree->Branch("CerenkovCount3","std::vector<int>",&fCerenkovCount3);
-    _tree->Branch("CerenkovCountDecember","std::vector<int>",&fCerenkovCountDecember);
-
-    // _tree->Branch("Pion","std::vector<int>",&fPion);
-    // _tree->Branch("Electron","std::vector<int>",&fElectron);
-    // _tree->Branch("Muon","std::vector<int>",&fMuon);
-}
-
-//==================================================================================
-void Trivent::ClearVector()
-{
-    x.clear();
-    y.clear();
-    z.clear();
-    fThr.clear();
-    fDifId.clear();
-    fNevt.clear();
-    fEvtReconstructed.clear();
-    fPrevTime.clear();
-    fTime.clear();
-    fTimePeak.clear();
-    fPrevTimePeak.clear();
-    fDeltaTimePeak.clear();
-    fNhit.clear();
-    fTriggerNr.clear();
-    fCerenkovTag1.clear();
-    fCerenkovTag2.clear();
-    fCerenkovTag3.clear();
-    fCerenkovCount1.clear();
-    fCerenkovCount2.clear();
-    fCerenkovCount3.clear();
-    fCerenkovCountDecember.clear();
-
-    //    fPion.clear();
-    //    fElectron.clear();
-    //    fMuon.clear();
-}
-
-void Trivent::fillTree()
-{
-    _file->cd();
-    _tree->Fill();
-}
-
-//==================================================================================
-//void Trivent::setTriggerRawHit() {
-
-//}
-//==================================================================================
-void Trivent::processRunHeader( LCRunHeader * runHd ) {
 
 }
 
@@ -812,16 +723,6 @@ void Trivent::end()
         delete _logroot;
     }
 }
-//bool Trivent::getCerenkov() const
-//{
-//    return _cerenkov1;
-//}
-
-//void Trivent::setCerenkov(bool cerenkov)
-//{
-//    _cerenkov1 = cerenkov;
-//}
-
 //==============================================================
 
 void Trivent::setInputCollectionName(const std::string &inputCollectionName)
