@@ -67,198 +67,198 @@ Trivent::Trivent():
     m_cerenkovWindow(20),
     m_cerenkovLength(1),
     m_cerenkovDifId(3),
-	m_cellSizeU(10.408f),
-	m_cellSizeV(10.408f),
-	m_layerThickness(26.131)
+    m_cellSizeU(10.408f),
+    m_cellSizeV(10.408f),
+    m_layerThickness(26.131)
 {
-	/* nop */
+    /* nop */
 }
 
 //-------------------------------------------------------------------------------------------------
 
 Trivent::~Trivent()
 {
-	clear();
+    clear();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 void Trivent::clear()
 {
-	for(std::vector<EVENT::LCEvent*>::iterator iter = m_reconstructedEvents.begin(), endIter = m_reconstructedEvents.end() ;
-			endIter != iter ; ++iter)
-	{
-		delete *iter;
-	}
+    for(std::vector<EVENT::LCEvent*>::iterator iter = m_reconstructedEvents.begin(), endIter = m_reconstructedEvents.end() ;
+            endIter != iter ; ++iter)
+    {
+        delete *iter;
+    }
 
-	for(std::vector<EVENT::LCEvent*>::iterator iter = m_noiseEvents.begin(), endIter = m_noiseEvents.end() ;
-			endIter != iter ; ++iter)
-	{
-		delete *iter;
-	}
+    for(std::vector<EVENT::LCEvent*>::iterator iter = m_noiseEvents.begin(), endIter = m_noiseEvents.end() ;
+            endIter != iter ; ++iter)
+    {
+        delete *iter;
+    }
 
-	m_reconstructedEvents.clear();
-	m_noiseEvents.clear();
+    m_reconstructedEvents.clear();
+    m_noiseEvents.clear();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 const std::vector<EVENT::LCEvent*> &Trivent::getReconstructedEvents() const
 {
-	return m_reconstructedEvents;
+    return m_reconstructedEvents;
 }
 
 //-------------------------------------------------------------------------------------------------
 
 const std::vector<EVENT::LCEvent*> &Trivent::getNoiseEvents() const
 {
-	return m_noiseEvents;
+    return m_noiseEvents;
 }
 
 //-------------------------------------------------------------------------------------------------
 
 dqm4hep::StatusCode Trivent::readGeometry(const std::string &fileName)
 {
-	dqm4hep::TiXmlDocument document(fileName);
+    dqm4hep::TiXmlDocument document(fileName);
 
-	if(!document.LoadFile())
-		return dqm4hep::STATUS_CODE_FAILURE;
+    if(!document.LoadFile())
+        return dqm4hep::STATUS_CODE_FAILURE;
 
-	dqm4hep::TiXmlHandle documentHandle(&document);
-	dqm4hep::TiXmlElement* pRootElement = documentHandle.FirstChildElement().Element();
+    dqm4hep::TiXmlHandle documentHandle(&document);
+    dqm4hep::TiXmlElement* pRootElement = documentHandle.FirstChildElement().Element();
 
-	if(NULL == pRootElement)
-		return dqm4hep::STATUS_CODE_FAILURE;
+    if(NULL == pRootElement)
+        return dqm4hep::STATUS_CODE_FAILURE;
 
-	// root element handler
-	dqm4hep::TiXmlHandle rootHandle(pRootElement);
+    // root element handler
+    dqm4hep::TiXmlHandle rootHandle(pRootElement);
 
-	bool difGeomFound = false;
-	bool chamberGeomFound = false;
+    bool difGeomFound = false;
+    bool chamberGeomFound = false;
 
-	for(dqm4hep::TiXmlElement *pParameterElement = rootHandle.FirstChild("parameter").Element(); NULL != pParameterElement;
-			pParameterElement = pParameterElement->NextSiblingElement("parameter"))
+    for(dqm4hep::TiXmlElement *pParameterElement = rootHandle.FirstChild("parameter").Element(); NULL != pParameterElement;
+            pParameterElement = pParameterElement->NextSiblingElement("parameter"))
         {
-		// parameter name
-		const char *pParameterNameStr = pParameterElement->Attribute("name");
+        // parameter name
+        const char *pParameterNameStr = pParameterElement->Attribute("name");
 
-		if(NULL == pParameterNameStr)
-			return dqm4hep::STATUS_CODE_NOT_FOUND;
+        if(NULL == pParameterNameStr)
+            return dqm4hep::STATUS_CODE_NOT_FOUND;
 
-		std::string parameterName = pParameterNameStr;
+        std::string parameterName = pParameterNameStr;
 
-		if(parameterName == "DifGeom")
-		{
-			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->readDifGeometry(pParameterElement));
-			difGeomFound = true;
-		}
-		else if(parameterName == "ChamberGeom")
-		{
-			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->readChamberGeometry(pParameterElement));
-			chamberGeomFound = true;
+        if(parameterName == "DifGeom")
+        {
+            RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->readDifGeometry(pParameterElement));
+            difGeomFound = true;
         }
-		else
+        else if(parameterName == "ChamberGeom")
         {
-			std::cout << "Unknown parameter element, name : " << parameterName << std::endl;
-			continue;
-		}
-	}
+            RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->readChamberGeometry(pParameterElement));
+            chamberGeomFound = true;
+        }
+        else
+        {
+            std::cout << "Unknown parameter element, name : " << parameterName << std::endl;
+            continue;
+        }
+    }
 
-	if(!difGeomFound || !chamberGeomFound)
-		return dqm4hep::STATUS_CODE_FAILURE;
+    if(!difGeomFound || !chamberGeomFound)
+        return dqm4hep::STATUS_CODE_FAILURE;
 
-	return dqm4hep::STATUS_CODE_SUCCESS;
+    return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
 
 dqm4hep::StatusCode Trivent::readDifGeometry(dqm4hep::TiXmlElement *pElement)
 {
-	if(NULL == pElement)
-		return dqm4hep::STATUS_CODE_FAILURE;
+    if(NULL == pElement)
+        return dqm4hep::STATUS_CODE_FAILURE;
 
-	// get the element contents
-	const char *pValueStr = pElement->GetText();
+    // get the element contents
+    const char *pValueStr = pElement->GetText();
 
-	if(NULL == pValueStr)
-		return dqm4hep::STATUS_CODE_NOT_FOUND;
+    if(NULL == pValueStr)
+        return dqm4hep::STATUS_CODE_NOT_FOUND;
 
-	// clear dif mapping
-	m_difMapping.clear();
+    // clear dif mapping
+    m_difMapping.clear();
 
-	std::string value = pValueStr;
+    std::string value = pValueStr;
     std::vector<std::string> lines;
 
-	// split the contents for each lines
-	dqm4hep::DQM4HEP::tokenize(value, lines, "\n");
+    // split the contents for each lines
+    dqm4hep::DQM4HEP::tokenize(value, lines, "\n");
 
-	for(unsigned int i=0 ; i<lines.size() ; i++)
-	{
-		std::string line = lines.at(i);
-		std::vector<std::string> tokens;
+    for(unsigned int i=0 ; i<lines.size() ; i++)
+    {
+        std::string line = lines.at(i);
+        std::vector<std::string> tokens;
 
-		LayerID layerId;
+        LayerID layerId;
                     int difId;
 
-		// split the line with commas
-		dqm4hep::DQM4HEP::tokenize(line, tokens, ",");
+        // split the line with commas
+        dqm4hep::DQM4HEP::tokenize(line, tokens, ",");
 
-		// fill LayerID object
-		dqm4hep::DQM4HEP::stringToType(tokens.at(0), difId);
-		dqm4hep::DQM4HEP::stringToType(tokens.at(1), layerId.K);
-		dqm4hep::DQM4HEP::stringToType(tokens.at(2), layerId.DifX);
-		dqm4hep::DQM4HEP::stringToType(tokens.at(3), layerId.DifY);
-		dqm4hep::DQM4HEP::stringToType(tokens.at(4), layerId.IncX);
-		dqm4hep::DQM4HEP::stringToType(tokens.at(5), layerId.IncY);
+        // fill LayerID object
+        dqm4hep::DQM4HEP::stringToType(tokens.at(0), difId);
+        dqm4hep::DQM4HEP::stringToType(tokens.at(1), layerId.K);
+        dqm4hep::DQM4HEP::stringToType(tokens.at(2), layerId.DifX);
+        dqm4hep::DQM4HEP::stringToType(tokens.at(3), layerId.DifY);
+        dqm4hep::DQM4HEP::stringToType(tokens.at(4), layerId.IncX);
+        dqm4hep::DQM4HEP::stringToType(tokens.at(5), layerId.IncY);
 
-		// add the dif entry
-		m_difMapping[difId] = layerId;
+        // add the dif entry
+        m_difMapping[difId] = layerId;
     }
 
-	return dqm4hep::STATUS_CODE_SUCCESS;
+    return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
 
 dqm4hep::StatusCode Trivent::readChamberGeometry(dqm4hep::TiXmlElement *pElement)
 {
-	if(NULL == pElement)
-		return dqm4hep::STATUS_CODE_FAILURE;
+    if(NULL == pElement)
+        return dqm4hep::STATUS_CODE_FAILURE;
 
-	// get the element contents
-	const char *pValueStr = pElement->GetText();
+    // get the element contents
+    const char *pValueStr = pElement->GetText();
 
-	if(NULL == pValueStr)
-		return dqm4hep::STATUS_CODE_NOT_FOUND;
+    if(NULL == pValueStr)
+        return dqm4hep::STATUS_CODE_NOT_FOUND;
 
-	// clear the chamber positions
-	m_chamberPositions.clear();
+    // clear the chamber positions
+    m_chamberPositions.clear();
 
-	std::string value = pValueStr;
-	std::vector<std::string> lines;
+    std::string value = pValueStr;
+    std::vector<std::string> lines;
 
-	// split the contents by lines
-	dqm4hep::DQM4HEP::tokenize(value, lines, "\n");
+    // split the contents by lines
+    dqm4hep::DQM4HEP::tokenize(value, lines, "\n");
 
-	for(unsigned int i=0; i<lines.size(); i++)
-	{
-		std::string line = lines.at(i);
-		std::vector<std::string> tokens;
+    for(unsigned int i=0; i<lines.size(); i++)
+    {
+        std::string line = lines.at(i);
+        std::vector<std::string> tokens;
 
-		double position;
-		int difId;
+        double position;
+        int difId;
 
-		// split the lines with commas
-		dqm4hep::DQM4HEP::tokenize(line, tokens, ",");
+        // split the lines with commas
+        dqm4hep::DQM4HEP::tokenize(line, tokens, ",");
 
-		dqm4hep::DQM4HEP::stringToType(tokens.at(0), difId);
-		dqm4hep::DQM4HEP::stringToType(tokens.at(0), position);
+        dqm4hep::DQM4HEP::stringToType(tokens.at(0), difId);
+        dqm4hep::DQM4HEP::stringToType(tokens.at(0), position);
 
-		// add a chamber entry
-		m_chamberPositions[difId] = position;
-	}
+        // add a chamber entry
+        m_chamberPositions[difId] = position;
+    }
 
-	return dqm4hep::STATUS_CODE_SUCCESS;
+    return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -301,7 +301,7 @@ unsigned int Trivent::getCellChanId(int cellId)
 
 std::vector<dqm4hep::dqm_uint> Trivent::getPadIndex(unsigned int difId, unsigned int asicId, unsigned int chanId)
 {
-	std::vector<dqm4hep::dqm_uint> index(3, 0);
+    std::vector<dqm4hep::dqm_uint> index(3, 0);
 
     int difY = static_cast<int>(m_difMapping.find(difId)->second.DifY);
     int difZ = static_cast<int>(m_difMapping.find(difId)->second.K);
@@ -319,32 +319,32 @@ int Trivent::getMaxTime()
 {
     int maxTime = 0;
 
-	for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit = m_triggerRawHit.begin() ;
-			rawHit != m_triggerRawHit.end() ; rawHit++)
-	{
-		int time = static_cast<int>((*rawHit)->getTimeStamp());
+    for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit = m_triggerRawHit.begin() ;
+            rawHit != m_triggerRawHit.end() ; rawHit++)
+    {
+        int time = static_cast<int>((*rawHit)->getTimeStamp());
 
-		if(time >= 0)
-			m_maxTime = std::max(m_maxTime, time);
+        if(time >= 0)
+            m_maxTime = std::max(m_maxTime, time);
      }
 
-	return maxTime;
+    return maxTime;
 }
 
 //-------------------------------------------------------------------------------------------------
 
 std::vector<int> Trivent::getTimeSpectrum()
 {
-	int maxTime = this->getMaxTime();
+    int maxTime = this->getMaxTime();
     std::vector<int> timeSpectrum(maxTime + 1);
 
-	for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit = m_triggerRawHit.begin() ;
-			rawHit != m_triggerRawHit.end() ; rawHit++)
-	{
-		int time = int((*rawHit)->getTimeStamp());
+    for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit = m_triggerRawHit.begin() ;
+            rawHit != m_triggerRawHit.end() ; rawHit++)
+    {
+        int time = int((*rawHit)->getTimeStamp());
 
-		if(time >= 0)
-			timeSpectrum.at(time)++;
+        if(time >= 0)
+            timeSpectrum.at(time)++;
     }
 
     return timeSpectrum;
@@ -354,15 +354,15 @@ std::vector<int> Trivent::getTimeSpectrum()
 
 bool Trivent::peakOrNot(std::vector<int> timeSpectrum , int iTime, int threshold)
 {
-	return (timeSpectrum.at(iTime) >= threshold
-		  && timeSpectrum.at(iTime) > timeSpectrum.at(iTime+1));
+    return (timeSpectrum.at(iTime) >= threshold
+          && timeSpectrum.at(iTime) > timeSpectrum.at(iTime+1));
 }
 
 //-------------------------------------------------------------------------------------------------
 
 int Trivent::ijkToKey(int i, int j, int k)
 {
-	return 100*100*k+100*j+i;
+    return 100*100*k+100*j+i;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -370,7 +370,7 @@ int Trivent::ijkToKey(int i, int j, int k)
 int Trivent::findAsicKey(int i, int j, int k)
 {
     if(i>96 || i<0 || j>96 || j<0)
-    	return -1;
+        return -1;
 
     return k*1000+(((j-1)/8)*12 + (i-1)/8);
 }
@@ -387,163 +387,163 @@ dqm4hep::StatusCode Trivent::eventBuilder(EVENT::LCCollection *pLCCollection, in
     UTIL::CellIDEncoder<IMPL::CalorimeterHitImpl> cellIDDecoder( "M:3,S-1:3,I:9,J:9,K-1:6", pLCCollection) ;
 
     std::map<int, int> asicMap;
-	std::vector<int> hitKeys;
-	int previousTime = 0;
-	int cerenkovTime = 0;
+    std::vector<int> hitKeys;
+    int previousTime = 0;
+    int cerenkovTime = 0;
 
-	for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit = m_triggerRawHit.begin() ;
-			rawHit != m_triggerRawHit.end() ; rawHit++)
-	{
-		int time = (*rawHit)->getTimeStamp();
-		int difId = getCellDifId((*rawHit)->getCellID0());
+    for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit = m_triggerRawHit.begin() ;
+            rawHit != m_triggerRawHit.end() ; rawHit++)
+    {
+        int time = (*rawHit)->getTimeStamp();
+        int difId = getCellDifId((*rawHit)->getCellID0());
 
-		// CTag has an offset of ~5 in December 2014, 7-17 in May/April 2015
-		// Need to modify the timeWin in the following loop to analyse it
-		if (difId == m_cerenkovDifId)
-			m_timeWindow = m_cerenkovWindow;
-		else
-			m_timeWindow = 2;
+        // CTag has an offset of ~5 in December 2014, 7-17 in May/April 2015
+        // Need to modify the timeWin in the following loop to analyse it
+        if (difId == m_cerenkovDifId)
+            m_timeWindow = m_cerenkovWindow;
+        else
+            m_timeWindow = 2;
 
-		//
-		if(fabs(time-timePeak) <= m_timeWindow &&
-				(time > previousTimePeak + m_timeWindow ))
-		{
-			int asicId = getCellAsicId((*rawHit)->getCellID0());
-			int channelId = getCellChanId((*rawHit)->getCellID0());
-			std::vector<dqm4hep::dqm_uint> padIndex = getPadIndex(difId, asicId, channelId);
+        //
+        if(std::fabs(time-timePeak) <= m_timeWindow &&
+                (time > previousTimePeak + m_timeWindow ))
+        {
+            int asicId = getCellAsicId((*rawHit)->getCellID0());
+            int channelId = getCellChanId((*rawHit)->getCellID0());
+            std::vector<dqm4hep::dqm_uint> padIndex = getPadIndex(difId, asicId, channelId);
 
-			dqm4hep::dqm_uint I = padIndex[0];
-			dqm4hep::dqm_uint J = padIndex[1];
-			dqm4hep::dqm_uint K = padIndex[2];
+            dqm4hep::dqm_uint I = padIndex[0];
+            dqm4hep::dqm_uint J = padIndex[1];
+            dqm4hep::dqm_uint K = padIndex[2];
 
-			// Find and remove square events
-			int asicKey = findAsicKey(I,J,K);
+            // Find and remove square events
+            int asicKey = findAsicKey(I,J,K);
 
-			if(asicMap[asicKey])
-				asicMap[asicKey]++;
-			else
-				asicMap[asicKey] = 1;
+            if(asicMap[asicKey])
+                asicMap[asicKey]++;
+            else
+                asicMap[asicKey] = 1;
 
-			if(asicMap[asicKey] == 64)
-			{
-				_zCut.clear();
-				hitKeys.clear();
-				asicMap.clear();
+            if(asicMap[asicKey] == 64)
+            {
+                _zCut.clear();
+                hitKeys.clear();
+                asicMap.clear();
 
-				return dqm4hep::STATUS_CODE_SUCCESS;
-			}
+                return dqm4hep::STATUS_CODE_SUCCESS;
+            }
 
-			int aHitKey = ijkToKey(I,J,K);
+            int aHitKey = ijkToKey(I,J,K);
 
-			float pos[3];
-			pos[0] = I*m_cellSizeU;
-			pos[1] = J*m_cellSizeV;
-			pos[2] = K*m_layerThickness;
+            float pos[3];
+            pos[0] = I*m_cellSizeU;
+            pos[1] = J*m_cellSizeV;
+            pos[2] = K*m_layerThickness;
 
-			// If No more CTag Reset it to 0
-			if ( cerenkovTime - previousTime > 1)
-			{
-				m_cerenkovFlag[0] = m_cerenkovFlag[1] = m_cerenkovFlag[2] = 0;
-				m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
-			}
+            // If No more CTag Reset it to 0
+            if ( cerenkovTime - previousTime > 1)
+            {
+                m_cerenkovFlag[0] = m_cerenkovFlag[1] = m_cerenkovFlag[2] = 0;
+                m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
+            }
 
-			// Treat CTag
-			if (difId == m_cerenkovDifId)
-			{
-				cerenkovTime = time;
-				unsigned short cerenkovAmplitude = (*rawHit)->getAmplitude();
+            // Treat CTag
+            if (difId == m_cerenkovDifId)
+            {
+                cerenkovTime = time;
+                unsigned short cerenkovAmplitude = (*rawHit)->getAmplitude();
 
-				// In december 2014 only one Cerenkov was used and its signal spanned on 4-5times slot
-				// Need to be treated separately to not count the CTag multiple time
-				// Besides in Decmeber cerenkovAmplitude for the CTag is equal to 5
-				if (cerenkovAmplitude == 5)
-				{
-					m_cerenkovCount[2]++;
-					m_cerenkovCountTotal[2]++;
+                // In december 2014 only one Cerenkov was used and its signal spanned on 4-5times slot
+                // Need to be treated separately to not count the CTag multiple time
+                // Besides in Decmeber cerenkovAmplitude for the CTag is equal to 5
+                if (cerenkovAmplitude == 5)
+                {
+                    m_cerenkovCount[2]++;
+                    m_cerenkovCountTotal[2]++;
 
-					if (m_cerenkovFlag[2] == 0)
-						m_cerenkovFlag[2] = 1;
-				}
-				else if (cerenkovAmplitude<3) // In may/April 2015 2 Cerenkov. cerenkovAmplitude = 1 = CTag1
-									//                                                             = 2 = CTag2
-									//                                                             = 3 = CTag1 + CTag2
-				{
-					m_cerenkovCount[cerenkovAmplitude-1]++;
-					m_cerenkovCountTotal[cerenkovAmplitude-1]++;
+                    if (m_cerenkovFlag[2] == 0)
+                        m_cerenkovFlag[2] = 1;
+                }
+                else if (cerenkovAmplitude<3) // In may/April 2015 2 Cerenkov. cerenkovAmplitude = 1 = CTag1
+                                    //                                                             = 2 = CTag2
+                                    //                                                             = 3 = CTag1 + CTag2
+                {
+                    m_cerenkovCount[cerenkovAmplitude-1]++;
+                    m_cerenkovCountTotal[cerenkovAmplitude-1]++;
 
-					if (m_cerenkovFlag[cerenkovAmplitude-1] == 0)
-						m_cerenkovFlag[cerenkovAmplitude-1] = 1;
-				}
-			}
+                    if (m_cerenkovFlag[cerenkovAmplitude-1] == 0)
+                        m_cerenkovFlag[cerenkovAmplitude-1] = 1;
+                }
+            }
 
-			// last chamber id
-			std::map<int, double>::iterator it = m_chamberPositions.end();
-			it--;
-			int lastChamberId = it->first;
+            // last chamber id
+            std::map<int, double>::iterator it = m_chamberPositions.end();
+            it--;
+            int lastChamberId = it->first;
 
-			if(K > lastChamberId)
-			{
-				streamlog_out( ERROR ) << " difId  == " << difId
-										 << " asicId == " << asicId
-										 << " channelId == " << channelId
-										 << " I == " << I
-										 << " J == " << J
-										 << " K == " << K
-										 << std::endl;
-				continue;
-			}
+            if(K > lastChamberId)
+            {
+                streamlog_out( ERROR ) << " difId  == " << difId
+                                         << " asicId == " << asicId
+                                         << " channelId == " << channelId
+                                         << " I == " << I
+                                         << " J == " << J
+                                         << " K == " << K
+                                         << std::endl;
+                continue;
+            }
 
-			IMPL::CalorimeterHitImpl *pCaloHit = new IMPL::CalorimeterHitImpl();
-			pCaloHit->setTime(float((*rawHit)->getTimeStamp()));
+            IMPL::CalorimeterHitImpl *pCaloHit = new IMPL::CalorimeterHitImpl();
+            pCaloHit->setTime(float((*rawHit)->getTimeStamp()));
 
-			if(float((*rawHit)->getAmplitude()&3)>2.5)
-				pCaloHit->setEnergy(float((*rawHit)->getAmplitude()&3));         // 3rd treshold
-			else if(float((*rawHit)->getAmplitude()&3)>1.5)
-				pCaloHit->setEnergy(float((*rawHit)->getAmplitude()&3)-1);  // 2nd treshold -1 to shift color to green
-			else
-				pCaloHit->setEnergy(float((*rawHit)->getAmplitude()&3)+1);                                             // 1st treshold +1 to shift color to blue
+            if(float((*rawHit)->getAmplitude()&3)>2.5)
+                pCaloHit->setEnergy(float((*rawHit)->getAmplitude()&3));         // 3rd treshold
+            else if(float((*rawHit)->getAmplitude()&3)>1.5)
+                pCaloHit->setEnergy(float((*rawHit)->getAmplitude()&3)-1);  // 2nd treshold -1 to shift color to green
+            else
+                pCaloHit->setEnergy(float((*rawHit)->getAmplitude()&3)+1);                                             // 1st treshold +1 to shift color to blue
 
-			//avoid two hits in the same cell
-			std::vector<int>::iterator findIter = std::find(hitKeys.begin(), hitKeys.end(), aHitKey);
+            //avoid two hits in the same cell
+            std::vector<int>::iterator findIter = std::find(hitKeys.begin(), hitKeys.end(), aHitKey);
 
-			if(findIter != hitKeys.end())
-			{
-				IMPL::CalorimeterHitImpl* hit =
-						dynamic_cast<IMPL::CalorimeterHitImpl*>(pLCCollection->getElementAt(std::distance(hitKeys.begin(), findIter)));
+            if(findIter != hitKeys.end())
+            {
+                IMPL::CalorimeterHitImpl* hit =
+                        dynamic_cast<IMPL::CalorimeterHitImpl*>(pLCCollection->getElementAt(std::distance(hitKeys.begin(), findIter)));
 
-				float hitTime = hit->getTime();
+                float hitTime = hit->getTime();
 
-				if( fabs(timePeak - hitTime) > fabs( timePeak - time ))
-					hit->setEnergy(pCaloHit->getEnergy());
+                if( std::fabs(timePeak - hitTime) > std::fabs( timePeak - time ))
+                    hit->setEnergy(pCaloHit->getEnergy());
 
-				continue;
-			}
+                continue;
+            }
 
-			// set the cell id
-			cellIDDecoder["I"] = I;
-			cellIDDecoder["J"] = J;
-			cellIDDecoder["K-1"] = K-1;
-			cellIDDecoder["M"] = 0;
-			cellIDDecoder["S-1"] = 3;
+            // set the cell id
+            cellIDDecoder["I"] = I;
+            cellIDDecoder["J"] = J;
+            cellIDDecoder["K-1"] = K-1;
+            cellIDDecoder["M"] = 0;
+            cellIDDecoder["S-1"] = 3;
 
-			cellIDDecoder.setCellID(pCaloHit);
+            cellIDDecoder.setCellID(pCaloHit);
 
-			if(std::find(_zCut.begin(), _zCut.end(), K)==_zCut.end())
-				_zCut.push_back(K);
+            if(std::find(_zCut.begin(), _zCut.end(), K)==_zCut.end())
+                _zCut.push_back(K);
 
-			pCaloHit->setPosition(pos);
-			pLCCollection->addElement(pCaloHit);
-			hitKeys.push_back(aHitKey);
+            pCaloHit->setPosition(pos);
+            pLCCollection->addElement(pCaloHit);
+            hitKeys.push_back(aHitKey);
 
-			m_previousEvtNbr = m_evtNbr;
-		}
+            m_previousEvtNbr = m_evtNbr;
+        }
 
-		previousTime = time;
-	}
+        previousTime = time;
+    }
 
-	hitKeys.clear();
+    hitKeys.clear();
 
-	return dqm4hep::STATUS_CODE_SUCCESS;
+    return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -571,148 +571,148 @@ dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
 
     m_evtNbr = pLCEvent->getEventNumber();
 
-	// Grab the input collection
-	EVENT::LCCollection * pLCCollection = NULL;
+    // Grab the input collection
+    EVENT::LCCollection * pLCCollection = NULL;
 
-	try
-	{
-		pLCCollection = pLCEvent->getCollection(m_inputCollectionName);
-	}
-	catch (lcio::DataNotAvailableException &exception)
-	{
-		return dqm4hep::STATUS_CODE_NOT_FOUND;
-	}
+    try
+    {
+        pLCCollection = pLCEvent->getCollection(m_inputCollectionName);
+    }
+    catch (lcio::DataNotAvailableException &exception)
+    {
+        return dqm4hep::STATUS_CODE_NOT_FOUND;
+    }
 
-	if(NULL == pLCCollection)
-		return dqm4hep::STATUS_CODE_FAILURE;
+    if(NULL == pLCCollection)
+        return dqm4hep::STATUS_CODE_FAILURE;
 
-	if(pLCCollection->getTypeName() != EVENT::LCIO::RAWCALORIMETERHIT)
-		return dqm4hep::STATUS_CODE_INVALID_PARAMETER;
+    if(pLCCollection->getTypeName() != EVENT::LCIO::RAWCALORIMETERHIT)
+        return dqm4hep::STATUS_CODE_INVALID_PARAMETER;
 
-	int numberOfHits = pLCCollection->getNumberOfElements(); // hit number
+    int numberOfHits = pLCCollection->getNumberOfElements(); // hit number
 
-	// If numberOfHit too large do not process the event
-	if(numberOfHits > m_elecNoiseCut)
-	{
-		streamlog_out( MESSAGE ) << "TRIGGER SKIPED ... NoiseCut" << std::endl;
-		return dqm4hep::STATUS_CODE_SUCCESS;
-	}
+    // If numberOfHit too large do not process the event
+    if(numberOfHits > m_elecNoiseCut)
+    {
+        streamlog_out( MESSAGE ) << "TRIGGER SKIPED ... NoiseCut" << std::endl;
+        return dqm4hep::STATUS_CODE_SUCCESS;
+    }
 
-	// set raw hits
-	m_triggerRawHit.clear();
-	std::vector<int> vTrigger;
+    // set raw hits
+    m_triggerRawHit.clear();
+    std::vector<int> vTrigger;
 
-	// clear previous events
-	clear();
+    // clear previous events
+    clear();
 
-	for (int iHit=0 ; iHit<numberOfHits; iHit++) // loop over the hits
-	{
-		EVENT::RawCalorimeterHit *pRawHit = dynamic_cast<EVENT::RawCalorimeterHit*>( pLCCollection->getElementAt(iHit));
+    for (int iHit=0 ; iHit<numberOfHits; iHit++) // loop over the hits
+    {
+        EVENT::RawCalorimeterHit *pRawHit = dynamic_cast<EVENT::RawCalorimeterHit*>( pLCCollection->getElementAt(iHit));
 
-		// just in case ...
-		if(NULL == pRawHit)
-			continue;
+        // just in case ...
+        if(NULL == pRawHit)
+            continue;
 
-		// Get the difId
-		unsigned int difId = pRawHit->getCellID0()&0xFF;
+        // Get the difId
+        unsigned int difId = pRawHit->getCellID0()&0xFF;
 
-		// Extract abolute bcid information
-		if(iHit == 0)
-		{
-			if (difId == 0)
-				continue;
+        // Extract abolute bcid information
+        if(iHit == 0)
+        {
+            if (difId == 0)
+                continue;
 
-			std::stringstream pname("");
-			pname << "DIF" << difId << "_Triggers";
+            std::stringstream pname("");
+            pname << "DIF" << difId << "_Triggers";
 
-			pLCCollection->getParameters().getIntVals(pname.str(),vTrigger);
+            pLCCollection->getParameters().getIntVals(pname.str(),vTrigger);
 
-			if (vTrigger.size() != 0)
-			{
-				m_bcid1 = vTrigger[4]; // absoluteBCID/(0xFFFFFF+1))&0xFFFFFF;
-				m_bcid2 = vTrigger[3]; // absoluteBCID&0xFFFFFF;
+            if (vTrigger.size() != 0)
+            {
+                m_bcid1 = vTrigger[4]; // absoluteBCID/(0xFFFFFF+1))&0xFFFFFF;
+                m_bcid2 = vTrigger[3]; // absoluteBCID&0xFFFFFF;
 
-				// Shift the value from the 24 first bits
-				unsigned long long Shift = 16777216ULL;
-				unsigned long long theBCID_ = m_bcid1*Shift + m_bcid2;
+                // Shift the value from the 24 first bits
+                unsigned long long Shift = 16777216ULL;
+                unsigned long long theBCID_ = m_bcid1*Shift + m_bcid2;
 
-				streamlog_out( DEBUG1 ) << "trigger time : " << theBCID_ << std::endl;
-			}
-		}
+                streamlog_out( DEBUG1 ) << "trigger time : " << theBCID_ << std::endl;
+            }
+        }
 
-		m_triggerRawHit.push_back(pRawHit);
-	}
+        m_triggerRawHit.push_back(pRawHit);
+    }
 
-	std::vector<int> timeSpectrum = getTimeSpectrum();
+    std::vector<int> timeSpectrum = getTimeSpectrum();
 
-	//---------------------------------------------------------------
-	//! Find the candidate event
-	//!
-	int iBin=0; // The bin number
-	int previousBin = 0;
+    //---------------------------------------------------------------
+    //! Find the candidate event
+    //!
+    int iBin=0; // The bin number
+    int previousBin = 0;
 
-	while(iBin < (m_maxTime+1))
-	{
-		if(timeSpectrum[iBin] >= m_noiseCut                &&
-				timeSpectrum[iBin] >= timeSpectrum[iBin+2] &&
-				timeSpectrum[iBin] >= timeSpectrum[iBin+1] &&
-				timeSpectrum[iBin] >= timeSpectrum[iBin-1] &&
-				timeSpectrum[iBin] >= timeSpectrum[iBin-2]
-				)
-		{
-			IMPL::LCEventImpl *pEvt = new IMPL::LCEventImpl() ;     // create the event
+    while(iBin < (m_maxTime+1))
+    {
+        if(timeSpectrum[iBin] >= m_noiseCut                &&
+                timeSpectrum[iBin] >= timeSpectrum[iBin+2] &&
+                timeSpectrum[iBin] >= timeSpectrum[iBin+1] &&
+                timeSpectrum[iBin] >= timeSpectrum[iBin-1] &&
+                timeSpectrum[iBin] >= timeSpectrum[iBin-2]
+                )
+        {
+            IMPL::LCEventImpl *pEvt = new IMPL::LCEventImpl() ;     // create the event
 
-			//---------- set event paramters ------
-			const std::string parname_trigger = "trigger";
-			const std::string parname_energy  = "beamEnergy";
-			const std::string parname_bcid1 = "bcid1";
-			const std::string parname_bcid2 = "bcid2";
-			const std::string parname_cerenkov1 = "cerenkov1"; // First Cerenkov in April/May 2015
-			const std::string parname_cerenkov2 = "cerenkov2"; // Second Cerenkov in April/May 2015
-			const std::string parname_cerenkov3 = "cerenkov3"; // Both Cerenkov in April/May 2015 + Cerenkov in December 2014
+            //---------- set event paramters ------
+            const std::string parname_trigger = "trigger";
+            const std::string parname_energy  = "beamEnergy";
+            const std::string parname_bcid1 = "bcid1";
+            const std::string parname_bcid2 = "bcid2";
+            const std::string parname_cerenkov1 = "cerenkov1"; // First Cerenkov in April/May 2015
+            const std::string parname_cerenkov2 = "cerenkov2"; // Second Cerenkov in April/May 2015
+            const std::string parname_cerenkov3 = "cerenkov3"; // Both Cerenkov in April/May 2015 + Cerenkov in December 2014
 
-			pEvt->parameters().setValue(parname_trigger, pLCEvent->getEventNumber());
-			pEvt->parameters().setValue(parname_energy, m_beamEnergy);
-			pEvt->parameters().setValue(parname_bcid1, m_bcid1);
-			pEvt->parameters().setValue(parname_bcid2, m_bcid2);
+            pEvt->parameters().setValue(parname_trigger, pLCEvent->getEventNumber());
+            pEvt->parameters().setValue(parname_energy, m_beamEnergy);
+            pEvt->parameters().setValue(parname_bcid1, m_bcid1);
+            pEvt->parameters().setValue(parname_bcid2, m_bcid2);
 
-			pEvt->setRunNumber( pLCEvent->getRunNumber()) ;
+            pEvt->setRunNumber( pLCEvent->getRunNumber()) ;
 
-			//-------------------------------------
-			IMPL::LCCollectionVec* pCalorimeterHitCollection = new IMPL::LCCollectionVec(EVENT::LCIO::CALORIMETERHIT);
+            //-------------------------------------
+            IMPL::LCCollectionVec* pCalorimeterHitCollection = new IMPL::LCCollectionVec(EVENT::LCIO::CALORIMETERHIT);
 
-			m_evtNbr++;
-			m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
+            m_evtNbr++;
+            m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
 
-			Trivent::eventBuilder(pCalorimeterHitCollection, iBin, previousBin);
-			pEvt->parameters().setValue(parname_cerenkov1, m_cerenkovCount[0]); // Value determined in the eventBuilder
-			pEvt->parameters().setValue(parname_cerenkov2, m_cerenkovCount[1]); // Value determined in the eventBuilder
-			pEvt->parameters().setValue(parname_cerenkov3, m_cerenkovCount[2]); // Value determined in the eventBuilder
-			// ->Need to be after the EventBuilder function
+            Trivent::eventBuilder(pCalorimeterHitCollection, iBin, previousBin);
+            pEvt->parameters().setValue(parname_cerenkov1, m_cerenkovCount[0]); // Value determined in the eventBuilder
+            pEvt->parameters().setValue(parname_cerenkov2, m_cerenkovCount[1]); // Value determined in the eventBuilder
+            pEvt->parameters().setValue(parname_cerenkov3, m_cerenkovCount[2]); // Value determined in the eventBuilder
+            // ->Need to be after the EventBuilder function
 
-			pEvt->setEventNumber(m_evtNbr) ;
+            pEvt->setEventNumber(m_evtNbr) ;
 
-			// Add the collection to the event
-			pEvt->addCollection(pCalorimeterHitCollection, m_outputCollectionName);
+            // Add the collection to the event
+            pEvt->addCollection(pCalorimeterHitCollection, m_outputCollectionName);
 
-			if( (int)_zCut.size() > m_layerCut &&                                  // the min layer numb cut
-					abs( iBin - previousBin) > m_time2PreviousEventCut)// time2prev event  cut
-			{
-				m_reconstructedEvents.push_back(pEvt);
-			}
-			else
-			{
-				m_noiseEvents.push_back(pEvt);
-			}
+            if( (int)_zCut.size() > m_layerCut &&                                  // the min layer numb cut
+                    abs( iBin - previousBin) > m_time2PreviousEventCut)// time2prev event  cut
+            {
+                m_reconstructedEvents.push_back(pEvt);
+            }
+            else
+            {
+                m_noiseEvents.push_back(pEvt);
+            }
 
-			previousBin = iBin;
-			iBin = iBin + m_timeWindow;
-		}
-		else
-		{
-			iBin++;
-		}
-	}
+            previousBin = iBin;
+            iBin = iBin + m_timeWindow;
+        }
+        else
+        {
+            iBin++;
+        }
+    }
 
     return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -786,8 +786,8 @@ void Trivent::setCerenkovDifId(const int &cerenkovDifId)
 
 void Trivent::setCellSizes(const float &cellSizeU, const float &cellSizeV)
 {
-	m_cellSizeU = cellSizeU;
-	m_cellSizeV = cellSizeV;
+    m_cellSizeU = cellSizeU;
+    m_cellSizeV = cellSizeV;
 }
 
 }
