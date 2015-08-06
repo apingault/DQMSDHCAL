@@ -74,18 +74,16 @@ Trivent::Trivent():
     m_rejectedEvt(0),
     m_selectedEvt(0)
 {
-
 }
 
-Trivent::Trivent():
-    _output(0),
-    _runNbr(0),
-    _eventType(0),
-    _evtId(0)
+//-------------------------------------------------------------------------------------------------
+Trivent::~Trivent()
 {
 }
 
-void Trivent::XMLReader(std::string xmlfile){
+//-------------------------------------------------------------------------------------------------
+void Trivent::XMLReader(std::string xmlfile)
+{
     TiXmlDocument doc(xmlfile.c_str());
     bool load_key = doc.LoadFile();
     if(load_key){
@@ -192,42 +190,6 @@ void Trivent::XMLReader(std::string xmlfile){
     }
 }
 
-void Trivent::readDifGeomFile(std::string geomfile){
-
-    cout << "read the mapping file .."<< endl;
-
-    LayerID contenu;
-    ifstream file(geomfile.c_str(), ios::in);
-    if(file){
-        while(!file.eof()){
-            int difId;
-            char co;
-            file >> difId >> co
-                    >> contenu.K >> co
-                    >> contenu.DifX >> co
-                    >> contenu.DifY >> co
-                    >> contenu.IncX >> co
-                    >> contenu.IncY ;
-            _mapping [difId] = contenu;
-        }
-        file.close();
-    }
-    else
-        cerr << "ERROR ... maping file not correct !" << endl;
-}
-
-void Trivent::printDifGeom(){
-
-    for(std::map<int,LayerID>::iterator itt = _mapping.begin();itt!=_mapping.end();itt++)     {
-        streamlog_out( MESSAGE ) << itt->first << "\t" << itt->second.K
-                                 <<"\t"<<itt->second.DifX
-                                <<"\t"<<itt->second.DifY
-                               <<"\t"<<itt->second.IncX
-                              <<"\t"<<itt->second.IncY
-                             << std::endl;
-    }
-}
-
 // ============ decode the cell ids =============
 // Dif 1 => cellID0= 00983297 => DifID=1 / AsicID=1 / ChanID=15
 uint Trivent::getCellDifId(int cellId){
@@ -327,7 +289,8 @@ int findAsicKey(int i,int j,int k)
     return k*1000+num;
 }
 
-void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTimePeak){
+void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTimePeak)
+{
     _zCut.clear();
 
     colEvent->setFlag(colEvent->getFlag()|( 1 << LCIO::RCHBIT_LONG));
@@ -468,7 +431,7 @@ void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTime
                     IMPL::CalorimeterHitImpl* hit =
                             dynamic_cast<IMPL::CalorimeterHitImpl*>(colEvent->getElementAt(std::distance(hitKeys.begin(),std::find(hitKeys.begin(),hitKeys.end(),aHitKey))));
                     float hitTime = hit->getTime();
-                    if( fabs(timePeak-hitTime)>fabs(timePeak-time) )
+                    if( fabs(timePeak - hitTime) > fabs( timePeak - time ))
                     {
                         hit->setEnergy(caloHit->getEnergy());
                     }
@@ -492,9 +455,9 @@ void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTime
                 colEvent->addElement(caloHit);
                 hitKeys.push_back(aHitKey);
 
-                streamlog_out ( DEBUG0 ) << red << "Evt: " << m_evtNbr << "\t Previous: " << _previousEvtNbr << normal << std::endl;
-                _previousEvtNbr=m_evtNbr;
-                streamlog_out ( DEBUG0 ) << yellow << "Evt: " << m_evtNbr << "\t Previous: " << _previousEvtNbr << normal << std::endl;
+                streamlog_out ( DEBUG0 ) << red << "Evt: " << m_evtNbr << "\t Previous: " << m_previousEvtNbr << normal << std::endl;
+                m_previousEvtNbr = m_evtNbr;
+                streamlog_out ( DEBUG0 ) << yellow << "Evt: " << m_evtNbr << "\t Previous: " << m_previousEvtNbr << normal << std::endl;
             } // End if (timeWin)
             prevTime = time;
         }//loop over the hit
@@ -507,9 +470,9 @@ void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTime
 //===============================================
 void Trivent::init() {
     m_trigCount = 0;
-    _cerenkovFlag[0] = _cerenkovFlag[1] = _cerenkovFlag[2] = 0;
-    _cerenkovCount[0] = _cerenkovCount[1] = _cerenkovCount[2] = 0;
-    _cerenkovCountTotal[0] = _cerenkovCountTotal[1] = _cerenkovCountTotal[2] = 0;
+    m_cerenkovFlag[0] = m_cerenkovFlag[1] = m_cerenkovFlag[2] = 0;
+    m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
+    m_cerenkovCountTotal[0] = m_cerenkovCountTotal[1] = m_cerenkovCountTotal[2] = 0;
     //========================
     //readDifGeomFile(_mappingfile.c_str());
 
@@ -518,123 +481,24 @@ void Trivent::init() {
     printParameters();
     // new process
 
-    char cnormal[8] =  {0x1b,'[','0',';','3','9','m',0};
-    char cred[8]     = {0x1b,'[','1',';','3','1','m',0};
-    char cgreen[8]   = {0x1b,'[','1',';','3','2','m',0};
-    char cyellow[8]  = {0x1b,'[','1',';','3','3','m',0};
-    char cblue[8]    = {0x1b,'[','1',';','3','4','m',0};
-    char cmagenta[8] = {0x1b,'[','1',';','3','5','m',0};
-    char cwhite[8]   = {0x1b,'[','1',';','3','9','m',0};
-
-    normal   = cnormal;
-    red      = cred;
-    green    = cgreen;
-    yellow   = cyellow;
-    blue     = cblue;
-    magenta  = cmagenta;
-    white    = cwhite;
-
-    _lcWriter = LCFactory::getInstance()->createLCWriter() ;
-    _lcWriter->setCompressionLevel( 0 ) ;
-    _lcWriter->open(_outFileName.c_str(),LCIO::WRITE_NEW) ;
-
-
     XMLReader(m_geomXMLFile.c_str());
     printDifGeom();
-    m_evtNbr=0;// event number
-    _previousEvtNbr =0;
-
-    // ROOT File Creation
-    _file = new TFile(_rootFileName.c_str(),"RECREATE");
-    _tree = (TTree*)_file->Get("_tree");
-    if(!_tree)
-    {
-        std::cout << "tree creation" << std::endl;
-        _tree = new TTree("_treeName","Shower variables");
-    }
-
-    // Root Branches
-    _tree->Branch("X","std::vector<int>",&x);
-    _tree->Branch("Y","std::vector<int>",&y);
-    _tree->Branch("Z","std::vector<int>",&z);
-    _tree->Branch("Thr","std::vector<int>",&fThr);
-    _tree->Branch("difId","std::vector<int>",&fDifId);
-    _tree->Branch("EvtNbr","std::vector<int>",&fNevt);
-    _tree->Branch("EvtReconstructed","std::vector<int>",&fEvtReconstructed);
-    _tree->Branch("PrevTime","std::vector<int>", &fPrevTime);
-    _tree->Branch("Time","std::vector<int>", &fTime);
-    _tree->Branch("TimePeak","std::vector<int>", &fTimePeak);
-    _tree->Branch("PrevTimePeak","std::vector<int>", &fPrevTimePeak);
-    _tree->Branch("DeltaTimePeak","std::vector<int>", &fDeltaTimePeak);
-    _tree->Branch("TriggerNbr","std::vector<int>",&fTriggerNr);
-    _tree->Branch("Nhit","std::vector<int>",&fNhit);
-    _tree->Branch("CerenkovTag1","std::vector<int>",&fCerenkovTag1);
-    _tree->Branch("CerenkovTag2","std::vector<int>",&fCerenkovTag2);
-    _tree->Branch("CerenkovTag3","std::vector<int>",&fCerenkovTag3);
-    _tree->Branch("CerenkovCount1","std::vector<int>",&fCerenkovCount1);
-    _tree->Branch("CerenkovCount2","std::vector<int>",&fCerenkovCount2);
-    _tree->Branch("CerenkovCount3","std::vector<int>",&fCerenkovCount3);
-    _tree->Branch("CerenkovCountDecember","std::vector<int>",&fCerenkovCountDecember);
-
-    // _tree->Branch("Pion","std::vector<int>",&fPion);
-    // _tree->Branch("Electron","std::vector<int>",&fElectron);
-    // _tree->Branch("Muon","std::vector<int>",&fMuon);
+    m_evtNbr = 0;// event number
+    m_previousEvtNbr = 0;
 }
 
-//==================================================================================
-void Trivent::ClearVector()
-{
-    x.clear();
-    y.clear();
-    z.clear();
-    fThr.clear();
-    fDifId.clear();
-    fNevt.clear();
-    fEvtReconstructed.clear();
-    fPrevTime.clear();
-    fTime.clear();
-    fTimePeak.clear();
-    fPrevTimePeak.clear();
-    fDeltaTimePeak.clear();
-    fNhit.clear();
-    fTriggerNr.clear();
-    fCerenkovTag1.clear();
-    fCerenkovTag2.clear();
-    fCerenkovTag3.clear();
-    fCerenkovCount1.clear();
-    fCerenkovCount2.clear();
-    fCerenkovCount3.clear();
-    fCerenkovCountDecember.clear();
-
-    //    fPion.clear();
-    //    fElectron.clear();
-    //    fMuon.clear();
-}
-
-void Trivent::fillTree()
-{
-    _file->cd();
-    _tree->Fill();
-}
-
-//==================================================================================
-//void Trivent::setTriggerRawHit() {
-
-//}
 //==================================================================================
 void Trivent::processRunHeader( LCRunHeader * runHd ) {
-
 }
 
 //==================================================================================
 void Trivent::processEvent( LCEvent * evtP ){
 
-    ClearVector();
     if (evtP != NULL)
     {
         try
         {
-            _eventNbr=evtP->getEventNumber();
+            m_evtNbr = evtP->getEventNumber();
             for(unsigned int i=0; i< _hcalCollections.size(); i++){//!loop over collection
                 try
                 {
@@ -643,7 +507,7 @@ void Trivent::processEvent( LCEvent * evtP ){
                     int numElements = col->getNumberOfElements();// hit number
                     if ( m_trigCount==0 || (m_trigCount % 100) == 0)
                     {
-                        streamlog_out( MESSAGE ) << "Selected Event so far: " << _selectedNum << std::endl;
+                        streamlog_out( MESSAGE ) << "Selected Event so far: " << m_selectedEvt << std::endl;
                         streamlog_out( MESSAGE ) << yellow << "Trigger number == " << m_trigCount << normal << std::endl;
                     }
                     m_trigCount++;
@@ -683,10 +547,10 @@ void Trivent::processEvent( LCEvent * evtP ){
                                 col->getParameters().getIntVals(pname.str(),vTrigger);
                                 if (vTrigger.size()!=0)
                                 {
-                                    _bcid1=vTrigger[4] ;
-                                    _bcid2=vTrigger[3] ;
+                                    m_bcid1=vTrigger[4] ;
+                                    m_bcid2=vTrigger[3] ;
                                     unsigned long long Shift=16777216ULL;//to shift the value from the 24 first bits
-                                    unsigned long long theBCID_=_bcid1*Shift+_bcid2;
+                                    unsigned long long theBCID_=m_bcid1*Shift+m_bcid2;
                                     streamlog_out( DEBUG1 ) << "trigger time : " << theBCID_ << std::endl;
                                 }
                             }
@@ -741,21 +605,21 @@ void Trivent::processEvent( LCEvent * evtP ){
 
                             evt->parameters().setValue(parname_trigger,evtP->getEventNumber());
                             evt->parameters().setValue(parname_energy , m_beamEnergy);
-                            evt->parameters().setValue(parname_bcid1 , _bcid1);
-                            evt->parameters().setValue(parname_bcid2 , _bcid2);
+                            evt->parameters().setValue(parname_bcid1 , m_bcid1);
+                            evt->parameters().setValue(parname_bcid2 , m_bcid2);
                             evt->setRunNumber( evtP->getRunNumber()) ;
 
                             //-------------------------------------
                             LCCollectionVec* outcol = new LCCollectionVec(LCIO::CALORIMETERHIT);
 
                             m_evtNbr++;
-                            _cerenkovCount[0] = _cerenkovCount[1] = _cerenkovCount[2] = 0;
+                            m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
 
 
-                            Trivent::eventBuilder(outcol,ibin,bin_c_prev);
-                            evt->parameters().setValue(parname_cerenkov1, _cerenkovCount[0]); // Value determined in the eventBuilder
-                            evt->parameters().setValue(parname_cerenkov2, _cerenkovCount[1]); // Value determined in the eventBuilder
-                            evt->parameters().setValue(parname_cerenkov3, _cerenkovCount[2]); // Value determined in the eventBuilder
+                            Trivent::eventBuilder(outCol,ibin,bin_c_prev);
+                            evt->parameters().setValue(parname_cerenkov1, m_cerenkovCount[0]); // Value determined in the eventBuilder
+                            evt->parameters().setValue(parname_cerenkov2, m_cerenkovCount[1]); // Value determined in the eventBuilder
+                            evt->parameters().setValue(parname_cerenkov3, m_cerenkovCount[2]); // Value determined in the eventBuilder
                             // ->Need to be after the EventBuilder function
 
                             if( (int)_zCut.size() >m_layerCut &&                                  // the min layer numb cut
@@ -770,11 +634,11 @@ void Trivent::processEvent( LCEvent * evtP ){
                                 evt->addCollection(outcol, "SDHCAL_HIT");
                                 _lcWriter->writeEvent( evt ) ;
                                 evts.push_back(evt);
-                                _selectedNum++;
+                                m_selectedEvt++;
 
                             }else
                             {
-                                _rejectedNum++;
+                                m_rejectedEvt++;
                                 delete outcol; outcol = NULL;
                             }
                             time_prev = ibin;
@@ -783,7 +647,6 @@ void Trivent::processEvent( LCEvent * evtP ){
                             ibin = ibin+m_timeWindow;
                         }else{ibin++;}
                     }
-                    _tree->Fill();
                 }catch (lcio::DataNotAvailableException zero) {}
             }
         }catch (lcio::DataNotAvailableException err) {}
@@ -794,33 +657,13 @@ void Trivent::processEvent( LCEvent * evtP ){
 //==============================================================
 void Trivent::end()
 {
-    streamlog_out( MESSAGE )<< "Trivent Rejected "<<_rejectedNum <<" Candidate event"<<std::endl;
-    streamlog_out( MESSAGE )<< "Trivent Selected "<<_selectedNum <<" Candidate event"<<std::endl;
+    streamlog_out( MESSAGE )<< "Trivent Rejected "<< m_rejectedEvt <<" Candidate event"<<std::endl;
+    streamlog_out( MESSAGE )<< "Trivent Selected "<<m_selectedEvt <<" Candidate event"<<std::endl;
     streamlog_out( MESSAGE )<< "Trivent end"<<std::endl;
-    streamlog_out( MESSAGE )<< "Total Cerenkov1 Tags: " << _cerenkovCountTotal[0] << std::endl;
-    streamlog_out( MESSAGE )<< "Total Cerenkov2 Tags: " << _cerenkovCountTotal[1] << std::endl;
-    streamlog_out( MESSAGE )<< "Total Cerenkov3 Tags: " << _cerenkovCountTotal[2] << std::endl;
-
-
-    // cc.StoreHistos("test.root");
-    _lcWriter->close();
-
-
-    if (_tree) {
-        TFile *_logroot = _tree->GetCurrentFile();
-        _logroot->Write();
-        delete _logroot;
-    }
+    streamlog_out( MESSAGE )<< "Total Cerenkov1 Tags: " << m_cerenkovCountTotal[0] << std::endl;
+    streamlog_out( MESSAGE )<< "Total Cerenkov2 Tags: " << m_cerenkovCountTotal[1] << std::endl;
+    streamlog_out( MESSAGE )<< "Total Cerenkov3 Tags: " << m_cerenkovCountTotal[2] << std::endl;
 }
-//bool Trivent::getCerenkov() const
-//{
-//    return _cerenkov1;
-//}
-
-//void Trivent::setCerenkov(bool cerenkov)
-//{
-//    _cerenkov1 = cerenkov;
-//}
 
 //==============================================================
 
@@ -832,6 +675,11 @@ void Trivent::setInputCollectionName(const std::string &inputCollectionName)
 void Trivent::setOutputCollectionName(const std::string &outputCollectionName)
 {
     m_outputCollectionName = outputCollectionName;
+}
+
+void Trivent::setOutputFileName(const std::string &outputFileName)
+{
+    m_outputFileName = outputFileName;
 }
 
 void Trivent::setOutputNoiseFileName(const std::string &noiseFileName)

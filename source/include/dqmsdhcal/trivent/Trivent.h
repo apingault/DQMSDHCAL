@@ -59,12 +59,8 @@ public:
     void init();
 
     void    processEvent( LCEvent * evtP );
-    void    ClearVector();
-    void    fillTree();
     void    processRunHeader( LCRunHeader * runH);// added by me
     void    XMLReader(std::string xmlfile);
-    void    readDifGeomFile(std::string geomfile);
-    void    printDifGeom();
 
     uint    getCellDifId(int cellId);
     uint    getCellAsicId(int cellId);
@@ -81,6 +77,8 @@ public:
     void setInputCollectionName(const std::string &inputCollectionName);
 
     void setOutputCollectionName(const std::string &outputCollectionName);
+
+    void setOutputFileName(const std::string &outputFileName);
 
     void setOutputNoiseFileName(const std::string &noiseFileName);
 
@@ -118,6 +116,9 @@ public:
     // Cerenkov DifId (Default = 3)
     void setCerenkovDifId(const int &cerenkovDifId);
 
+
+    //    void setCellSize(const int &cellSize);
+
 private:
     // xml test
     std::map<std::string,std::string> m_parameters;
@@ -128,12 +129,11 @@ private:
 
     std::string _logRootName;
     std::string _mappingFile;
-    std::ostream *_output;
     std::vector<std::string> _hcalCollections;
-    int _overwrite;
 
     std::string m_inputCollectionName;
     std::string m_outputCollectionName;
+    std::string m_outputFileName;
     std::string m_noiseFileName;
     std::string m_geomXMLFile;
 
@@ -157,73 +157,15 @@ private:
     int m_selectedEvt;
     uint m_index[3];
     uintVec _zCut;
-    LCWriter* _lcWriter;
+
     int m_bcid1;
     int m_bcid2;
     bool m_cerenkovFlag[3];
     int m_cerenkovCount[3];
     int m_cerenkovCountTotal[3];
 
-
-
-    // ------------- ROOT
-    TH1F *noise_dist;
-    TH1F *gain_chan;
-    TH1F *mean_hit_dif;
-    TH1F *time_hit_dif;
-
-    TFile *_file;
-    TTree *_tree;
-    TClonesArray *_hitArray;
-    TClonesArray *_rootArray;// added by me
-    unsigned int _triggerNbr;
-    unsigned int _runNbr;
-    unsigned int _eventType;
-    Int_t _evtId;
-
-    std::vector<int> x;
-    std::vector<int> y;
-    std::vector<int> z;
-    std::vector<int> fThr;
-    std::vector<int> fDifId;
-    std::vector<int> fNevt;
-    std::vector<int> fEvtReconstructed;
-    std::vector<int> fPrevTime;
-    std::vector<int> fTime;
-    std::vector<int> fTimePeak;
-    std::vector<int> fPrevTimePeak;
-    std::vector<int> fDeltaTimePeak;
-    std::vector<int> fTriggerNr;
-    std::vector<int> fNhit;
-    std::vector<int> fCerenkovTag1;
-    std::vector<int> fCerenkovTag2;
-    std::vector<int> fCerenkovTag3;
-    std::vector<int> fCerenkovCount1;
-    std::vector<int> fCerenkovCount2;
-    std::vector<int> fCerenkovCount3;
-    std::vector<int> fCerenkovCountDecember;
-    std::vector<int> fPion;
-    std::vector<int> fElectron;
-    std::vector<int> fMuon;
-
-
-    unsigned int _eventNbr;
-    Int_t _nHit;
-    Int_t _elecNoiseCut;
-
     std::map<int, LayerID  > _mapping;
     std::map<int, double  > _chamberPos;//camber , pos
-
-
-
-    std::string normal  ;
-    std::string red     ;
-    std::string green   ;
-    std::string yellow  ;
-    std::string blue    ;
-    std::string magenta ;
-    std::string white   ;
-
 };
 
 }
