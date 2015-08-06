@@ -481,7 +481,7 @@ dqm4hep::StatusCode Trivent::eventBuilder(EVENT::LCCollection *pLCCollection, in
 			it--;
 			int lastChamberId = it->first;
 
-			if(K < 0 || K > lastChamberId)
+			if(K > lastChamberId)
 			{
 				streamlog_out( ERROR ) << " difId  == " << difId
 										 << " asicId == " << asicId
