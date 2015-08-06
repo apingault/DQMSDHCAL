@@ -319,9 +319,11 @@ void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTime
                 int Asic_id =  getCellAsicId((*rawHit)->getCellID0());
                 int Chan_id =  getCellChanId((*rawHit)->getCellID0());
 
-                uint I = getPadIndex(Dif_id, Asic_id, Chan_id)[0];
-                uint J = getPadIndex(Dif_id, Asic_id, Chan_id)[1];
-                uint K = getPadIndex(Dif_id, Asic_id, Chan_id)[2];
+                std::vector<dqm4hep::dqm_uint> padIndex = getPadIndex(Dif_id, Asic_id, Chan_id);
+
+                dqm4hep::dqm_uint I = padIndex[0];
+                dqm4hep::dqm_uint J = padIndex[1];
+                dqm4hep::dqm_uint K = padIndex[2];
 
                 // Find and remove square events
                 int asicKey = findAsicKey(I,J,K);
@@ -482,7 +484,6 @@ void Trivent::init() {
     // new process
 
     XMLReader(m_geomXMLFile.c_str());
-    printDifGeom();
     m_evtNbr = 0;// event number
     m_previousEvtNbr = 0;
 }
@@ -492,177 +493,168 @@ void Trivent::processRunHeader( LCRunHeader * runHd ) {
 }
 
 //==================================================================================
-void Trivent::processEvent( LCEvent * evtP ){
+dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
+{
+    if (NULL == pLCEvent)
+        return dqm4hep::STATUS_CODE_FAILURE;
 
-    if (evtP != NULL)
+    m_evtNbr = pLCEvent->getEventNumber();
+    for(unsigned int i=0; i< m_hcalCollections.size(); i++)//!loop over collection
     {
+        // Grab the input collection
+        EVENT::LCCollection * pLCCollection = NULL;
+
         try
         {
-            m_evtNbr = evtP->getEventNumber();
-            for(unsigned int i=0; i< _hcalCollections.size(); i++){//!loop over collection
-                try
+            pLCCollection = pLCEvent ->getCollection(m_hcalCollections[i].c_str());
+        }
+        catch (lcio::DataNotAvailableException &exception)
+        {
+            return dqm4hep::STATUS_CODE_NOT_FOUND;
+        }
+
+        if(NULL == pLCCollection)
+            return dqm4hep::STATUS_CODE_FAILURE;
+
+        int numberOfHits = pLCCollection->getNumberOfElements(); // hit number
+        m_trigCount++;
+
+        // If numberOfHit too large do not process the event
+        if(numberOfHits > m_elecNoiseCut)  {
+            streamlog_out( MESSAGE ) << "TRIGGER SKIPED ... NoiseCut" << std::endl;
+            break;
+        }
+
+        // set raw hits
+        m_triggerRawHit.clear();
+        m_cerenkovHits.clear();
+        std::vector<int> vTrigger;
+
+        for (int iHit(0); iHit < numberOfHits; ++iHit) // loop over the hits
+        {
+            EVENT::RawCalorimeterHit *pRawHit = dynamic_cast<EVENT::RawCalorimeterHit*>( pLCCollection->getElementAt(iHit));
+
+            if(NULL == pRawHit)
+                return dqm4hep::STATUS_CODE_FAILURE;
+
+            // Get the difId
+            unsigned int difId = pRawHit->getCellID0()&0xFF;
+
+            // Extract abolute bcid information:
+            if(iHit == 0)
+            {
+                if (difId == 0) continue;
+
+                std::stringstream pname("");
+                pname << "DIF" << difId << "_Triggers";
+
+                pLCCollection->getParameters().getIntVals(pname.str(),vTrigger);
+                if (vTrigger.size()!=0)
                 {
-                    LCCollection * col = NULL;
-                    col = evtP ->getCollection(_hcalCollections[i].c_str());
-                    int numElements = col->getNumberOfElements();// hit number
-                    if ( m_trigCount==0 || (m_trigCount % 100) == 0)
-                    {
-                        streamlog_out( MESSAGE ) << "Selected Event so far: " << m_selectedEvt << std::endl;
-                        streamlog_out( MESSAGE ) << yellow << "Trigger number == " << m_trigCount << normal << std::endl;
-                    }
-                    m_trigCount++;
+                    m_bcid1 = vTrigger[4]; // absoluteBCID/(0xFFFFFF+1))&0xFFFFFF;
+                    m_bcid2 = vTrigger[3]; // absoluteBCID&0xFFFFFF;
 
-                    if(col == NULL )  {
-                        streamlog_out( WARNING )<< red << "TRIGGER SKIPED ...Col == NULL"<< normal <<std::endl;
-                        break;
-                    }
-
-                    if(numElements > m_elecNoiseCut)  {
-                        streamlog_out( DEBUG ) << red << "TRIGGER SKIPED ...NoiseCut"<< normal <<std::endl;
-                        break;
-                    }
-
-                    // set raw hits
-                    m_triggerRawHit.clear();
-                    m_cerenkovHits.clear();
-                    std::vector<int> vTrigger;
-
-                    for (int ihit(0); ihit < col->getNumberOfElements(); ++ihit) // loop over the hits
-                    {
-                        RawCalorimeterHit *rawHit =
-                                dynamic_cast<RawCalorimeterHit*>( col->getElementAt(ihit)) ;
-                        if (NULL != rawHit)
-                        {
-                            unsigned int difid=0;
-                            difid = rawHit->getCellID0()&0xFF;
-
-                            //extract abolute bcid information:
-                            if(ihit==0)
-                            {
-                                if (difid==0) continue;
-
-                                std::stringstream pname("");
-                                pname <<"DIF"<<difid<<"_Triggers";
-
-                                col->getParameters().getIntVals(pname.str(),vTrigger);
-                                if (vTrigger.size()!=0)
-                                {
-                                    m_bcid1=vTrigger[4] ;
-                                    m_bcid2=vTrigger[3] ;
-                                    unsigned long long Shift=16777216ULL;//to shift the value from the 24 first bits
-                                    unsigned long long theBCID_=m_bcid1*Shift+m_bcid2;
-                                    streamlog_out( DEBUG1 ) << "trigger time : " << theBCID_ << std::endl;
-                                }
-                            }
-
-                            //                            // Shift the CTag to be around the Event Time
-                            //                            if (difid == _cerenkovDifId) {
-                            //                                streamlog_out( DEBUG ) << blue << "Hit: " << ihit << " Ca tape dans l'tcher!" << normal << std::endl;
-
-                            //                                // Copy RawHit into a CerenkovHit
-                            //                                IMPL::RawCalorimeterHitImpl *pCerenkRawHit = new IMPL::RawCalorimeterHitImpl;
-                            //                                pCerenkRawHit->setAmplitude(rawHit->getAmplitude());
-                            //                                pCerenkRawHit->setCellID0(rawHit->getCellID0());
-                            //                                pCerenkRawHit->setCellID1(rawHit->getCellID1());
-                            //                                pCerenkRawHit->setTimeStamp(rawHit->getTimeStamp() + _cerenkovOffset); // Shift CTag with delay added in the acquisition
-                            //                                //                                _cerenkovHits.push_back(pCerenkRawHit);
-                            //                                m_triggerRawHit.push_back(pCerenkRawHit);
-                            //                                //                                delete pCerenkRawHit; pCerenkRawHit = NULL;
-
-                            //                            }else
-                            //                            {
-                            //                                streamlog_out( MESSAGE ) << red << "Hit: " << ihit << " Ca tape pas dans l'tcher!" << normal << std::endl;
-                            m_triggerRawHit.push_back(rawHit);
-                            //                            }
-                        }
-                    }
-                    getMaxTime();
-                    std::vector<int> timeSpectrum = getTimeSpectrum();
-
-                    //---------------------------------------------------------------
-                    //! Find the candidate event
-                    int ibin=0;
-                    int bin_c_prev = -2 * m_timeWindow; //  the previous bin center
-
-                    int time_prev = 0;
-                    while(ibin < (m_maxTime+1)){
-                        if(timeSpectrum[ibin] >= m_noiseCut &&
-                                timeSpectrum[ibin] >= timeSpectrum[ibin+1] &&
-                                timeSpectrum[ibin] >= timeSpectrum[ibin-1] &&
-                                timeSpectrum[ibin] >= timeSpectrum[ibin-2] &&
-                                timeSpectrum[ibin] >= timeSpectrum[ibin+2] )
-                        {
-                            LCEventImpl*  evt = new LCEventImpl() ;     // create the event
-
-                            //---------- set event paramters ------
-                            const std::string parname_trigger = "trigger";
-                            const std::string parname_energy  = "beamEnergy";
-                            const std::string parname_bcid1 = "bcid1";
-                            const std::string parname_bcid2 = "bcid2";
-                            const std::string parname_cerenkov1 = "cerenkov1";
-                            const std::string parname_cerenkov2 = "cerenkov2";
-                            const std::string parname_cerenkov3 = "cerenkov3";
-
-                            evt->parameters().setValue(parname_trigger,evtP->getEventNumber());
-                            evt->parameters().setValue(parname_energy , m_beamEnergy);
-                            evt->parameters().setValue(parname_bcid1 , m_bcid1);
-                            evt->parameters().setValue(parname_bcid2 , m_bcid2);
-                            evt->setRunNumber( evtP->getRunNumber()) ;
-
-                            //-------------------------------------
-                            LCCollectionVec* outcol = new LCCollectionVec(LCIO::CALORIMETERHIT);
-
-                            m_evtNbr++;
-                            m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
-
-
-                            Trivent::eventBuilder(outCol,ibin,bin_c_prev);
-                            evt->parameters().setValue(parname_cerenkov1, m_cerenkovCount[0]); // Value determined in the eventBuilder
-                            evt->parameters().setValue(parname_cerenkov2, m_cerenkovCount[1]); // Value determined in the eventBuilder
-                            evt->parameters().setValue(parname_cerenkov3, m_cerenkovCount[2]); // Value determined in the eventBuilder
-                            // ->Need to be after the EventBuilder function
-
-                            if( (int)_zCut.size() >m_layerCut &&                                  // the min layer numb cut
-                                    abs(int(ibin)-time_prev) > m_time2PreviousEventCut)// time2prev event  cut
-                            {
-
-                                streamlog_out( DEBUG ) << "Evt number : " <<  m_evtNbr << std::endl;
-                                streamlog_out( DEBUG ) <<green<<" Trivent find event at :==> "<< red << ibin
-                                                      <<green<<"\t :Nhit: ==> "<< magenta
-                                                     <<outcol->getNumberOfElements() << normal <<std::endl;
-                                evt->setEventNumber( m_evtNbr ) ;
-                                evt->addCollection(outcol, "SDHCAL_HIT");
-                                _lcWriter->writeEvent( evt ) ;
-                                evts.push_back(evt);
-                                m_selectedEvt++;
-
-                            }else
-                            {
-                                m_rejectedEvt++;
-                                delete outcol; outcol = NULL;
-                            }
-                            time_prev = ibin;
-                            delete evt; evt=NULL;
-                            bin_c_prev = ibin;
-                            ibin = ibin+m_timeWindow;
-                        }else{ibin++;}
-                    }
-                }catch (lcio::DataNotAvailableException zero) {}
+                    //Shift the value from the 24 first bits
+                    unsigned long long Shift = 16777216ULL;
+                    unsigned long long theBCID_ = m_bcid1*Shift + m_bcid2;
+                    streamlog_out( DEBUG1 ) << "trigger time : " << theBCID_ << std::endl;
+                }
             }
-        }catch (lcio::DataNotAvailableException err) {}
-    }
+            m_triggerRawHit.push_back(pRawHit);
+        }
+        getMaxTime();
+        std::vector<int> timeSpectrum = getTimeSpectrum();
 
+        //---------------------------------------------------------------
+        //! Find the candidate event
+        //!
+        int iBin=0; // The bin number
+        int previousBin = 0;
 
+        while(iBin < (m_maxTime+1))
+        {
+            if(timeSpectrum[iBin] >= m_noiseCut                &&
+                    timeSpectrum[iBin] >= timeSpectrum[iBin+2] &&
+                    timeSpectrum[iBin] >= timeSpectrum[iBin+1] &&
+                    timeSpectrum[iBin] >= timeSpectrum[iBin-1] &&
+                    timeSpectrum[iBin] >= timeSpectrum[iBin-2]
+                    )
+            {
+                IMPL::LCEventImpl*  pEvt = new IMPL::LCEventImpl() ;     // create the event
+
+                //---------- set event paramters ------
+                const std::string parname_trigger = "trigger";
+                const std::string parname_energy  = "beamEnergy";
+                const std::string parname_bcid1 = "bcid1";
+                const std::string parname_bcid2 = "bcid2";
+                const std::string parname_cerenkov1 = "cerenkov1"; // First Cerenkov in April/May 2015
+                const std::string parname_cerenkov2 = "cerenkov2"; // Second Cerenkov in April/May 2015
+                const std::string parname_cerenkov3 = "cerenkov3"; // Both Cerenkov in April/May 2015 + Cerenkov in December 2014
+
+                pEvt->parameters().setValue(parname_trigger,pLCEvent->getEventNumber());
+                pEvt->parameters().setValue(parname_energy , m_beamEnergy);
+                pEvt->parameters().setValue(parname_bcid1 , m_bcid1);
+                pEvt->parameters().setValue(parname_bcid2 , m_bcid2);
+                pEvt->setRunNumber( pLCEvent->getRunNumber()) ;
+
+                //-------------------------------------
+                IMPL::LCCollectionVec* pCalorimeterHitCollection = new IMPL::LCCollectionVec(EVENT::LCIO::CALORIMETERHIT);
+
+                m_evtNbr++;
+                m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
+
+                Trivent::eventBuilder(pCalorimeterHitCollection, iBin, previousBin);
+                pEvt->parameters().setValue(parname_cerenkov1, m_cerenkovCount[0]); // Value determined in the eventBuilder
+                pEvt->parameters().setValue(parname_cerenkov2, m_cerenkovCount[1]); // Value determined in the eventBuilder
+                pEvt->parameters().setValue(parname_cerenkov3, m_cerenkovCount[2]); // Value determined in the eventBuilder
+                // ->Need to be after the EventBuilder function
+
+                if( (int)_zCut.size() >m_layerCut &&                                  // the min layer numb cut
+                        abs( iBin - previousBin) > m_time2PreviousEventCut)// time2prev event  cut
+                {
+
+                    pEvt->setEventNumber( m_evtNbr ) ;
+
+                    // Add the collection to the event
+                    try
+                    {
+                        pEvt->addCollection(pCalorimeterHitCollection, m_outputCollectionName);
+                    }
+                    catch(IO::IOException &exception)
+                    {
+                        delete pCalorimeterHitCollection;
+                        return dqm4hep::STATUS_CODE_ALREADY_PRESENT;
+                    }
+                    evts.push_back(pEvt);
+                    m_selectedEvt++;
+                }
+                else
+                {
+                    m_rejectedEvt++;
+                    delete pCalorimeterHitCollection; pCalorimeterHitCollection = NULL;
+                }
+                previousBin = iBin;
+                iBin = iBin + m_timeWindow;
+                delete pEvt; pEvt=NULL;
+            }
+            else
+            {
+                iBin++;
+            }
+        }
+    } // Loop on the collection
+
+    return dqm4hep::STATUS_CODE_SUCCESS;
 }
 //==============================================================
 void Trivent::end()
 {
-    streamlog_out( MESSAGE )<< "Trivent Rejected "<< m_rejectedEvt <<" Candidate event"<<std::endl;
-    streamlog_out( MESSAGE )<< "Trivent Selected "<<m_selectedEvt <<" Candidate event"<<std::endl;
-    streamlog_out( MESSAGE )<< "Trivent end"<<std::endl;
-    streamlog_out( MESSAGE )<< "Total Cerenkov1 Tags: " << m_cerenkovCountTotal[0] << std::endl;
-    streamlog_out( MESSAGE )<< "Total Cerenkov2 Tags: " << m_cerenkovCountTotal[1] << std::endl;
-    streamlog_out( MESSAGE )<< "Total Cerenkov3 Tags: " << m_cerenkovCountTotal[2] << std::endl;
+    streamlog_out( MESSAGE ) << "Trivent Rejected " << m_rejectedEvt << " Candidate event" << std::endl;
+    streamlog_out( MESSAGE ) << "Trivent Selected " << m_selectedEvt << " Candidate event" << std::endl;
+    streamlog_out( MESSAGE ) << " ====== Trivent end ======" << std::endl;
+    streamlog_out( MESSAGE ) << "Total Cerenkov1 Tags: " << m_cerenkovCountTotal[0] << std::endl;
+    streamlog_out( MESSAGE ) << "Total Cerenkov2 Tags: " << m_cerenkovCountTotal[1] << std::endl;
+    streamlog_out( MESSAGE ) << "Total Cerenkov3 Tags: " << m_cerenkovCountTotal[2] << std::endl;
 }
 
 //==============================================================

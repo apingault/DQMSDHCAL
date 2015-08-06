@@ -129,7 +129,7 @@ private:
 
     std::string _logRootName;
     std::string _mappingFile;
-    std::vector<std::string> _hcalCollections;
+    std::vector<std::string> m_hcalCollections;
 
     std::string m_inputCollectionName;
     std::string m_outputCollectionName;
