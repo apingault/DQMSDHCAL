@@ -83,6 +83,8 @@ public:
 
     void setOutputCollectionName(const std::string &outputCollectionName);
 
+    void setOutputFileName(const std::string &outputFileName);
+
     void setOutputNoiseFileName(const std::string &noiseFileName);
 
     //  GeometryXMLFile (Default = setup_geometry.xml)
@@ -119,6 +121,9 @@ public:
     // Cerenkov DifId (Default = 3)
     void setCerenkovDifId(const int &cerenkovDifId);
 
+
+    //    void setCellSize(const int &cellSize);
+
 private:
     // xml test
     std::map<std::string,std::string> m_parameters;
@@ -129,12 +134,11 @@ private:
 
     std::string _logRootName;
     std::string _mappingFile;
-    std::ostream *_output;
     std::vector<std::string> _hcalCollections;
-    int _overwrite;
 
     std::string m_inputCollectionName;
     std::string m_outputCollectionName;
+    std::string m_outputFileName;
     std::string m_noiseFileName;
     std::string m_geomXMLFile;
 
@@ -158,21 +162,12 @@ private:
     int m_selectedEvt;
     std::vector<dqm4hep::dqm_uint> m_index;
     uintVec _zCut;
-    LCWriter* _lcWriter;
+
     int m_bcid1;
     int m_bcid2;
     bool m_cerenkovFlag[3];
     int m_cerenkovCount[3];
     int m_cerenkovCountTotal[3];
-
-    unsigned int _triggerNbr;
-    unsigned int _runNbr;
-    unsigned int _eventType;
-    Int_t _evtId;
-
-    unsigned int _eventNbr;
-    Int_t _nHit;
-    Int_t _elecNoiseCut;
 
     std::map<int, LayerID> m_difMapping;
     std::map<int, double> m_chamberPositions; //chamber , position

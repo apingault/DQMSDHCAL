@@ -77,7 +77,7 @@ Trivent::~Trivent()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode readGeometry(const std::string &fileName)
+dqm4hep::StatusCode Trivent::readGeometry(const std::string &fileName)
 {
 	dqm4hep::TiXmlDocument document(filename);
 
@@ -339,7 +339,8 @@ int Trivent::findAsicKey(int i, int j, int k)
 
 //-------------------------------------------------------------------------------------------------
 
-void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTimePeak){
+void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTimePeak)
+{
     _zCut.clear();
 
     colEvent->setFlag(colEvent->getFlag()|( 1 << LCIO::RCHBIT_LONG));
@@ -480,7 +481,7 @@ void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTime
                     IMPL::CalorimeterHitImpl* hit =
                             dynamic_cast<IMPL::CalorimeterHitImpl*>(colEvent->getElementAt(std::distance(hitKeys.begin(),std::find(hitKeys.begin(),hitKeys.end(),aHitKey))));
                     float hitTime = hit->getTime();
-                    if( fabs(timePeak-hitTime)>fabs(timePeak-time) )
+                    if( fabs(timePeak - hitTime) > fabs( timePeak - time ))
                     {
                         hit->setEnergy(caloHit->getEnergy());
                     }
@@ -504,9 +505,9 @@ void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTime
                 colEvent->addElement(caloHit);
                 hitKeys.push_back(aHitKey);
 
-                streamlog_out ( DEBUG0 ) << red << "Evt: " << m_evtNbr << "\t Previous: " << _previousEvtNbr << normal << std::endl;
-                _previousEvtNbr=m_evtNbr;
-                streamlog_out ( DEBUG0 ) << yellow << "Evt: " << m_evtNbr << "\t Previous: " << _previousEvtNbr << normal << std::endl;
+                streamlog_out ( DEBUG0 ) << red << "Evt: " << m_evtNbr << "\t Previous: " << m_previousEvtNbr << normal << std::endl;
+                m_previousEvtNbr = m_evtNbr;
+                streamlog_out ( DEBUG0 ) << yellow << "Evt: " << m_evtNbr << "\t Previous: " << m_previousEvtNbr << normal << std::endl;
             } // End if (timeWin)
             prevTime = time;
         }//loop over the hit
@@ -519,33 +520,27 @@ void Trivent::eventBuilder(LCCollection* colEvent,int timePeak, int previousTime
 //===============================================
 void Trivent::init() {
     m_trigCount = 0;
-    _cerenkovFlag[0] = _cerenkovFlag[1] = _cerenkovFlag[2] = 0;
-    _cerenkovCount[0] = _cerenkovCount[1] = _cerenkovCount[2] = 0;
-    _cerenkovCountTotal[0] = _cerenkovCountTotal[1] = _cerenkovCountTotal[2] = 0;
-    //========================
-    //readDifGeomFile(_mappingfile.c_str());
-
-    // ========================
+    m_cerenkovFlag[0] = m_cerenkovFlag[1] = m_cerenkovFlag[2] = 0;
+    m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
+    m_cerenkovCountTotal[0] = m_cerenkovCountTotal[1] = m_cerenkovCountTotal[2] = 0;
 
     printParameters();
     // new process
 
+    readGeometry(m_geomXMLFile);
 
-    XMLReader(m_geomXMLFile.c_str());
-    m_evtNbr=0;// event number
-    _previousEvtNbr =0;
-
+    m_evtNbr = 0;// event number
+    m_previousEvtNbr = 0;
 }
 
 //==================================================================================
 void Trivent::processEvent( LCEvent * evtP ){
 
-    ClearVector();
     if (evtP != NULL)
     {
         try
         {
-            _eventNbr=evtP->getEventNumber();
+            m_evtNbr = evtP->getEventNumber();
             for(unsigned int i=0; i< _hcalCollections.size(); i++){//!loop over collection
                 try
                 {
@@ -554,7 +549,7 @@ void Trivent::processEvent( LCEvent * evtP ){
                     int numElements = col->getNumberOfElements();// hit number
                     if ( m_trigCount==0 || (m_trigCount % 100) == 0)
                     {
-                        streamlog_out( MESSAGE ) << "Selected Event so far: " << _selectedNum << std::endl;
+                        streamlog_out( MESSAGE ) << "Selected Event so far: " << m_selectedEvt << std::endl;
                         streamlog_out( MESSAGE ) << yellow << "Trigger number == " << m_trigCount << normal << std::endl;
                     }
                     m_trigCount++;
@@ -594,10 +589,10 @@ void Trivent::processEvent( LCEvent * evtP ){
                                 col->getParameters().getIntVals(pname.str(),vTrigger);
                                 if (vTrigger.size()!=0)
                                 {
-                                    _bcid1=vTrigger[4] ;
-                                    _bcid2=vTrigger[3] ;
+                                    m_bcid1=vTrigger[4] ;
+                                    m_bcid2=vTrigger[3] ;
                                     unsigned long long Shift=16777216ULL;//to shift the value from the 24 first bits
-                                    unsigned long long theBCID_=_bcid1*Shift+_bcid2;
+                                    unsigned long long theBCID_=m_bcid1*Shift+m_bcid2;
                                     streamlog_out( DEBUG1 ) << "trigger time : " << theBCID_ << std::endl;
                                 }
                             }
@@ -652,21 +647,21 @@ void Trivent::processEvent( LCEvent * evtP ){
 
                             evt->parameters().setValue(parname_trigger,evtP->getEventNumber());
                             evt->parameters().setValue(parname_energy , m_beamEnergy);
-                            evt->parameters().setValue(parname_bcid1 , _bcid1);
-                            evt->parameters().setValue(parname_bcid2 , _bcid2);
+                            evt->parameters().setValue(parname_bcid1 , m_bcid1);
+                            evt->parameters().setValue(parname_bcid2 , m_bcid2);
                             evt->setRunNumber( evtP->getRunNumber()) ;
 
                             //-------------------------------------
                             LCCollectionVec* outcol = new LCCollectionVec(LCIO::CALORIMETERHIT);
 
                             m_evtNbr++;
-                            _cerenkovCount[0] = _cerenkovCount[1] = _cerenkovCount[2] = 0;
+                            m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
 
 
-                            Trivent::eventBuilder(outcol,ibin,bin_c_prev);
-                            evt->parameters().setValue(parname_cerenkov1, _cerenkovCount[0]); // Value determined in the eventBuilder
-                            evt->parameters().setValue(parname_cerenkov2, _cerenkovCount[1]); // Value determined in the eventBuilder
-                            evt->parameters().setValue(parname_cerenkov3, _cerenkovCount[2]); // Value determined in the eventBuilder
+                            Trivent::eventBuilder(outCol,ibin,bin_c_prev);
+                            evt->parameters().setValue(parname_cerenkov1, m_cerenkovCount[0]); // Value determined in the eventBuilder
+                            evt->parameters().setValue(parname_cerenkov2, m_cerenkovCount[1]); // Value determined in the eventBuilder
+                            evt->parameters().setValue(parname_cerenkov3, m_cerenkovCount[2]); // Value determined in the eventBuilder
                             // ->Need to be after the EventBuilder function
 
                             if( (int)_zCut.size() >m_layerCut &&                                  // the min layer numb cut
@@ -681,11 +676,11 @@ void Trivent::processEvent( LCEvent * evtP ){
                                 evt->addCollection(outcol, "SDHCAL_HIT");
                                 _lcWriter->writeEvent( evt ) ;
                                 evts.push_back(evt);
-                                _selectedNum++;
+                                m_selectedEvt++;
 
                             }else
                             {
-                                _rejectedNum++;
+                                m_rejectedEvt++;
                                 delete outcol; outcol = NULL;
                             }
                             time_prev = ibin;
@@ -694,7 +689,6 @@ void Trivent::processEvent( LCEvent * evtP ){
                             ibin = ibin+m_timeWindow;
                         }else{ibin++;}
                     }
-                    _tree->Fill();
                 }catch (lcio::DataNotAvailableException zero) {}
             }
         }catch (lcio::DataNotAvailableException err) {}
@@ -702,27 +696,18 @@ void Trivent::processEvent( LCEvent * evtP ){
 
 
 }
+
 //==============================================================
 void Trivent::end()
 {
-    streamlog_out( MESSAGE )<< "Trivent Rejected "<<_rejectedNum <<" Candidate event"<<std::endl;
-    streamlog_out( MESSAGE )<< "Trivent Selected "<<_selectedNum <<" Candidate event"<<std::endl;
+    streamlog_out( MESSAGE )<< "Trivent Rejected "<< m_rejectedEvt <<" Candidate event"<<std::endl;
+    streamlog_out( MESSAGE )<< "Trivent Selected "<<m_selectedEvt <<" Candidate event"<<std::endl;
     streamlog_out( MESSAGE )<< "Trivent end"<<std::endl;
-    streamlog_out( MESSAGE )<< "Total Cerenkov1 Tags: " << _cerenkovCountTotal[0] << std::endl;
-    streamlog_out( MESSAGE )<< "Total Cerenkov2 Tags: " << _cerenkovCountTotal[1] << std::endl;
-    streamlog_out( MESSAGE )<< "Total Cerenkov3 Tags: " << _cerenkovCountTotal[2] << std::endl;
-
-
-    // cc.StoreHistos("test.root");
-    _lcWriter->close();
-
-
-    if (_tree) {
-        TFile *_logroot = _tree->GetCurrentFile();
-        _logroot->Write();
-        delete _logroot;
-    }
+    streamlog_out( MESSAGE )<< "Total Cerenkov1 Tags: " << m_cerenkovCountTotal[0] << std::endl;
+    streamlog_out( MESSAGE )<< "Total Cerenkov2 Tags: " << m_cerenkovCountTotal[1] << std::endl;
+    streamlog_out( MESSAGE )<< "Total Cerenkov3 Tags: " << m_cerenkovCountTotal[2] << std::endl;
 }
+
 //==============================================================
 
 void Trivent::setInputCollectionName(const std::string &inputCollectionName)
@@ -733,6 +718,11 @@ void Trivent::setInputCollectionName(const std::string &inputCollectionName)
 void Trivent::setOutputCollectionName(const std::string &outputCollectionName)
 {
     m_outputCollectionName = outputCollectionName;
+}
+
+void Trivent::setOutputFileName(const std::string &outputFileName)
+{
+    m_outputFileName = outputFileName;
 }
 
 void Trivent::setOutputNoiseFileName(const std::string &noiseFileName)
