@@ -30,10 +30,11 @@
 #define TRIVENT_H
 #define  HISTOGRAM_PARSER true
 
-
+// -- dqm4hep headers
 #include "dqm4hep/core/DQM4HEP.h"
 
 namespace EVENT { class LCEvent; }
+namespace dqm4hep { class TiXmlElement; }
 
 namespace dqm_sdhcal
 {
@@ -44,34 +45,38 @@ class Trivent
 {
 public:
     /** Constructor
-       */
+     */
     Trivent();
 
     /** Destructor
-       */
+     */
     ~Trivent();
 
-    /** Process Trivent on the lcio event.
-       *  Create a CalorimeterHit collection from a RawCalorimeterHit Collection from StreamOut
-       */
+	/** Process Trivent on the lcio event.
+	 *  Create a CalorimeterHit collection from a RawCalorimeterHit Collection from StreamOut
+	 */
     dqm4hep::StatusCode processEvent(EVENT::LCEvent *pLCEvent);
 
     void init();
 
     void    processEvent( LCEvent * evtP );
-    void    processRunHeader( LCRunHeader * runH);// added by me
-    void    XMLReader(std::string xmlfile);
 
-    uint    getCellDifId(int cellId);
-    uint    getCellAsicId(int cellId);
-    uint    getCellChanId(int cellId);
+    dqm4hep::StatusCode readGeometry(const std::string &fileName);
+    dqm4hep::StatusCode readDifGeometry(TiXmlElement *pElement);
+    dqm4hep::StatusCode readChamberGeometry(TiXmlElement *pElement);
 
-    void    getMaxTime();
+    int ijkToKey(int i, int j, int k);
+    int findAsicKey(int i, int j, int k);
+    unsigned int getCellDifId(int cellId);
+    unsigned int getCellAsicId(int cellId);
+    unsigned int getCellChanId(int cellId);
+
+    int getMaxTime();
     std::vector<int> getTimeSpectrum();
-    uint*   getPadIndex(uint difId, uint asicId, uint chanId);
-    void    eventBuilder(LCCollection* colEvent,int timePeak, int previousTimePeak);
-    bool    peakOrNot(std::vector<int> timeSpectrum, int iTime ,int threshold);
-    void    end();
+    std::vector<dqm4hep::dqm_uint> getPadIndex(uint difId, uint asicId, uint chanId);
+    void eventBuilder(LCCollection* colEvent,int timePeak, int previousTimePeak);
+    bool peakOrNot(std::vector<int> timeSpectrum, int iTime ,int threshold);
+    void end();
 
 
     void setInputCollectionName(const std::string &inputCollectionName);
@@ -155,7 +160,7 @@ private:
     int m_previousEvtNbr;
     int m_rejectedEvt;
     int m_selectedEvt;
-    uint m_index[3];
+    std::vector<dqm4hep::dqm_uint> m_index;
     uintVec _zCut;
 
     int m_bcid1;
@@ -164,8 +169,8 @@ private:
     int m_cerenkovCount[3];
     int m_cerenkovCountTotal[3];
 
-    std::map<int, LayerID  > _mapping;
-    std::map<int, double  > _chamberPos;//camber , pos
+    std::map<int, LayerID> m_difMapping;
+    std::map<int, double> m_chamberPositions; //chamber , position
 };
 
 }
