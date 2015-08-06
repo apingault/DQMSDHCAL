@@ -1,0 +1,33 @@
+<dqm4hep>
+
+	<ModuleApplication archiver="on">
+	 
+		<Network>
+		  <RunControl value="DEFAULT" />
+		  <DataCollectorName value="sdhcal_data_collector" />
+		  <EventStreamerType value="LCIO"/>
+		  <MonitorElementCollectorName value="sdhcal_me_collector"/>
+		</Network>
+			
+		<Cycle>
+			<CycleType value="EventCounterCycle" />
+			<CycleValue value="10" />
+			<CycleTimeout value="5" />
+		</Cycle>
+		 
+		<Archiver>
+			<OpeningMode value="RECREATE" />
+			<ArchiveName value="TestRawDataModuleArchive" />
+			<ArchiverDirectory value="/tmp"/>
+		</Archiver>
+		
+		<Module name="MyTestRawDataModule" type="TestRawDataModule">
+			<ShouldProcessStreamout> true </ShouldProcessStreamout>			
+			<ShouldProcessTrivent> false </ShouldProcessTrivent>           
+			<StreamoutInputCollectionName> RU_XDAQ </StreamoutInputCollectionName>
+			<StreamoutOutputCollectionName> DHCALRawHits </StreamoutOutputCollectionName>
+		</Module>
+	
+	</ModuleApplication>
+	
+</dqm4hep>
