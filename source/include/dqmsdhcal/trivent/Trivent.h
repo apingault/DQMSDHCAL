@@ -25,15 +25,16 @@
 * @copyright CNRS , IPNL, UGent
 */
 
-
 #ifndef TRIVENT_H
 #define TRIVENT_H
-#define  HISTOGRAM_PARSER true
 
 // -- dqm4hep headers
 #include "dqm4hep/core/DQM4HEP.h"
 
-namespace EVENT { class LCEvent; }
+// -- dqm sdhcal headers
+#include "dqmsdhcal/daq/Mapping.h"
+
+namespace EVENT { class LCEvent; class LCCollection; class RawCalorimeterHit; }
 namespace dqm4hep { class TiXmlElement; }
 
 namespace dqm_sdhcal
@@ -52,40 +53,32 @@ public:
      */
     ~Trivent();
 
+    /** Initialize Trivent.
+     *  Must be called after setting all the needed parameters and
+     *  must be called once.
+     */
+    dqm4hep::StatusCode init();
+
 	/** Process Trivent on the lcio event.
 	 *  Create a CalorimeterHit collection from a RawCalorimeterHit Collection from StreamOut
 	 */
     dqm4hep::StatusCode processEvent(EVENT::LCEvent *pLCEvent);
 
-    void init();
+    /**
+     */
+    const std::vector<EVENT::LCEvent*> &getReconstructedEvents() const;
 
-    void    processEvent( LCEvent * evtP );
+    /**
+     */
+    const std::vector<EVENT::LCEvent*> &getNoiseEvents() const;
 
-    dqm4hep::StatusCode readGeometry(const std::string &fileName);
-    dqm4hep::StatusCode readDifGeometry(TiXmlElement *pElement);
-    dqm4hep::StatusCode readChamberGeometry(TiXmlElement *pElement);
-
-    int ijkToKey(int i, int j, int k);
-    int findAsicKey(int i, int j, int k);
-    unsigned int getCellDifId(int cellId);
-    unsigned int getCellAsicId(int cellId);
-    unsigned int getCellChanId(int cellId);
-
-    int getMaxTime();
-    std::vector<int> getTimeSpectrum();
-    std::vector<dqm4hep::dqm_uint> getPadIndex(uint difId, uint asicId, uint chanId);
-    void eventBuilder(LCCollection* colEvent,int timePeak, int previousTimePeak);
-    bool peakOrNot(std::vector<int> timeSpectrum, int iTime ,int threshold);
-    void end();
-
-
+    /**
+     */
     void setInputCollectionName(const std::string &inputCollectionName);
 
+    /**
+     */
     void setOutputCollectionName(const std::string &outputCollectionName);
-
-    void setOutputFileName(const std::string &outputFileName);
-
-    void setOutputNoiseFileName(const std::string &noiseFileName);
 
     //  GeometryXMLFile (Default = setup_geometry.xml)
     void setGeometryXMLFile(const std::string &geomXMLFile);
@@ -98,7 +91,6 @@ public:
 
     //  TimeWindow in TimeBin (Default = 2)
     void setTimeWindow(const int &timeWindow);
-
 
     // LayerGap dimension in cm (Default = .9)
     void setLayerGap(const double &layerGap);
@@ -121,26 +113,80 @@ public:
     // Cerenkov DifId (Default = 3)
     void setCerenkovDifId(const int &cerenkovDifId);
 
-
-    //    void setCellSize(const int &cellSize);
+	/**
+	 */
+    void setCellSizes(const float &cellSizeU, const float &cellSizeV);
 
 private:
-    // xml test
-    std::map<std::string,std::string> m_parameters;
+    /**
+     */
+    void clear();
 
+    /** Read the xml geometry file (difs and chambers)
+     */
+    dqm4hep::StatusCode readGeometry(const std::string &fileName);
+
+    /**
+     */
+    dqm4hep::StatusCode readDifGeometry(dqm4hep::TiXmlElement *pElement);
+
+    /**
+     */
+    dqm4hep::StatusCode readChamberGeometry(dqm4hep::TiXmlElement *pElement);
+
+    /**
+     */
+    int ijkToKey(int i, int j, int k);
+
+    /**
+     */
+    int findAsicKey(int i, int j, int k);
+
+    /**
+     */
+    unsigned int getCellDifId(int cellId);
+
+    /**
+     */
+    unsigned int getCellAsicId(int cellId);
+
+    /**
+     */
+    unsigned int getCellChanId(int cellId);
+
+    /**
+     */
+    int getMaxTime();
+
+    /**
+     */
+    std::vector<int> getTimeSpectrum();
+
+    /**
+     */
+    std::vector<dqm4hep::dqm_uint> getPadIndex(unsigned int difId, unsigned int asicId, unsigned int chanId);
+
+    /**
+     */
+    dqm4hep::StatusCode eventBuilder(EVENT::LCCollection* colEvent,int timePeak, int previousTimePeak);
+
+    /**
+     */
+    bool peakOrNot(std::vector<int> timeSpectrum, int iTime, int threshold);
+
+private:
+
+    // trivent toolkit
     std::vector<EVENT::RawCalorimeterHit*> m_triggerRawHit;
-    std::vector<EVENT::RawCalorimeterHit*> m_cerenkovHits;
-    std::vector<EVENT::LCEvent*> evts; // Vector of evts reconstructed in the Trigger
-
-    std::string _logRootName;
-    std::string _mappingFile;
-    std::vector<std::string> m_hcalCollections;
+    std::vector<EVENT::LCEvent*> m_reconstructedEvents; ///< Vector of reconstructed events  in the Trigger
+    std::vector<EVENT::LCEvent*> m_noiseEvents; ///< Vector of noise events in the Trigger
 
     std::string m_inputCollectionName;
     std::string m_outputCollectionName;
-    std::string m_outputFileName;
-    std::string m_noiseFileName;
     std::string m_geomXMLFile;
+	float m_cellSizeU;
+	float m_cellSizeV;
+	float m_layerThickness;
 
     int m_layerCut;
     int m_noiseCut;
@@ -154,14 +200,10 @@ private:
     int m_cerenkovDifId;
 
     float m_beamEnergy;
-    int m_trigCount;
     int m_maxTime;
     int m_evtNbr;
     int m_previousEvtNbr;
-    int m_rejectedEvt;
-    int m_selectedEvt;
-    std::vector<dqm4hep::dqm_uint> m_index;
-    uintVec _zCut;
+    std::vector<unsigned int> _zCut;
 
     int m_bcid1;
     int m_bcid2;

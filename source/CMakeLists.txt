@@ -36,3 +36,15 @@ INSTALL(
     TARGETS start_sdhcal_shm_reader
     RUNTIME DESTINATION bin
 )
+
+# -------------------------------------------------
+# build test raw data module library
+
+ADD_SHARED_LIBRARY( TestRawDataModule src/modules/TestRawDataModule.cc )
+TARGET_LINK_LIBRARIES( TestRawDataModule ${PROJECT_NAME} )
+
+INSTALL(
+    TARGETS TestRawDataModule
+    LIBRARY DESTINATION lib
+)
+
