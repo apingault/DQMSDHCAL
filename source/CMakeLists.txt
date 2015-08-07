@@ -40,11 +40,11 @@ INSTALL(
 # -------------------------------------------------
 # build test raw data module library
 
-# ADD_SHARED_LIBRARY( TestRawDataModule src/modules/TestRawDataModule.cc )
-# TARGET_LINK_LIBRARIES( TestRawDataModule ${PROJECT_NAME} )
+ADD_SHARED_LIBRARY( TestRawDataModule src/modules/TestRawDataModule.cc )
+TARGET_LINK_LIBRARIES( TestRawDataModule ${PROJECT_NAME} )
 
-# INSTALL(
-#     TARGETS TestRawDataModule
-#     LIBRARY DESTINATION lib
-# )
+INSTALL(
+    TARGETS TestRawDataModule
+    LIBRARY DESTINATION lib
+)
 

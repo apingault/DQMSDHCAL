@@ -28,6 +28,7 @@
 // -- dqm sdhcal headers
 #include "dqmsdhcal/modules/TestRawDataModule.h"
 #include "dqmsdhcal/streamout/Streamout.h"
+#include "dqmsdhcal/trivent/Trivent.h"
 
 // -- dqm4hep headers
 #include "dqm4hep/module/DQMModuleApi.h"
@@ -37,6 +38,7 @@
 // -- lcio headers
 #include "EVENT/LCEvent.h"
 #include "EVENT/LCCollection.h"
+#include "EVENT/CalorimeterHit.h"
 #include "EVENT/RawCalorimeterHit.h"
 #include "UTIL/CellIDDecoder.h"
 
@@ -58,21 +60,23 @@ TestRawDataModule::TestRawDataModule() :
 {
 	setVersion(1, 0, 0);
 	setDetectorName("No detector (raw data test)");
+
+	m_pStreamout = new Streamout();
+	m_pTrivent = new Trivent();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 TestRawDataModule::~TestRawDataModule() 
 {
-	/* nop */
+	delete m_pStreamout;
+	delete m_pTrivent;
 }
 
 //-------------------------------------------------------------------------------------------------
 
 dqm4hep::StatusCode TestRawDataModule::initModule()
 {
-	m_pStreamout = new Streamout();
-
 	m_pStreamout->setInputCollectionName(m_streamoutInputCollectionName);
 	m_pStreamout->setOutputCollectionName(m_streamoutOutputCollectionName);
 
@@ -81,6 +85,9 @@ dqm4hep::StatusCode TestRawDataModule::initModule()
 
 	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::mkdir(this, "/RawData"));
 	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::mkdir(this, "/RawCalorimeterHit"));
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::mkdir(this, "/CalorimeterHit"));
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::mkdir(this, "/CalorimeterHit/Reco"));
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::mkdir(this, "/CalorimeterHit/Noise"));
 
 	// raw data elements
 	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::cd(this, "/RawData"));
@@ -99,6 +106,36 @@ dqm4hep::StatusCode TestRawDataModule::initModule()
 
 	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
 			m_pTimeDistribution, "Time", "Raw calorimeter hit time", 10000, 0, 10000-1));
+
+	// reconstructed calorimeter hits
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::cd(this, "/CalorimeterHit/Reco"));
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pRecNumberOfHits, "RecNHits", "Number of reconstructed hits", 1501, 0, 1500));
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pRecICellDistribution, "IRec", "I cell profile", 97, 0, 96));
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pRecJCellDistribution, "JRec", "J cell profile", 97, 0, 96));
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pRecKCellDistribution, "KRec", "K layer profile", 51, 0, 50));
+
+	// noise calorimeter hits
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::cd(this, "/CalorimeterHit/Noise"));
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pNoiseNumberOfHits, "NoiseNHits", "Number of noise hits", 1501, 0, 1500));
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pNoiseICellDistribution, "INoise", "I cell profile", 97, 0, 96));
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pNoiseJCellDistribution, "JNoise", "J cell profile", 97, 0, 96));
+
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookIntHistogram1D(this,
+			m_pNoiseKCellDistribution, "KNoise", "K layer profile", 51, 0, 50));
 
 	return STATUS_CODE_SUCCESS;
 }
@@ -138,39 +175,54 @@ dqm4hep::StatusCode TestRawDataModule::readSettings(const TiXmlHandle &xmlHandle
 
 dqm4hep::StatusCode TestRawDataModule::processEvent(DQMEvent *pEvent)
 {
-	std::cout << "dqm event addr " << pEvent << std::endl;
 	EVENT::LCEvent *pLCEvent = pEvent->getEvent<EVENT::LCEvent>();
 
 	if(NULL == pLCEvent)
 		return STATUS_CODE_FAILURE;
 
-	std::cout << "lc event addr " << pLCEvent << std::endl;
-
 	try
 	{
-		std::cout << "Collections in event (BEFORE Streamout) : " << std::endl;
-
-		for(int i=0 ; i<pLCEvent->getCollectionNames()->size() ; i++ )
-			std::cout << "  ** " << pLCEvent->getCollectionNames()->at(i) << std::endl;
-
-		std::cout << "m_shouldProcessStreamout : " << m_shouldProcessStreamout << std::endl;
+		// process Streamout if needed
 		if(m_shouldProcessStreamout)
-		{
-			std::cout << "Processing streamout ..." << std::endl;
 			THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pStreamout->processEvent(pLCEvent));
-		}
 
-		std::cout << "Collections in event (AFTER Streamout) : " << std::endl;
-//
-		for(int i=0 ; i<pLCEvent->getCollectionNames()->size() ; i++ )
-			std::cout << "  ** " << pLCEvent->getCollectionNames()->at(i) << std::endl;
+		// process Trivent if needed
+		if(m_shouldProcessTrivent)
+			THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->processEvent(pLCEvent));
 
-		// TODO process Trivent
-	//	if(m_shouldProcessTrivent)
-	//	{
-	//		// ...
-	//	}
+		// analyze raw data before and after streamout
+		THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->analyzeRawData(pLCEvent));
 
+		// analyze reconstructed events by Trivent
+		const std::vector<EVENT::LCEvent*> &reconstructedEvents(m_pTrivent->getReconstructedEvents());
+		THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->analyzeReconstructedEvents(reconstructedEvents));
+
+		// analyze noise events tagged by Trivent
+		const std::vector<EVENT::LCEvent*> &noiseEvents(m_pTrivent->getNoiseEvents());
+		THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->analyzeNoiseEvents(noiseEvents));
+	}
+	catch(StatusCodeException &exception)
+	{
+		streamlog_out(ERROR) << "Caught StatusCodeException : " << exception.toString() << std::endl;
+		return exception.getStatusCode();
+	}
+	catch(EVENT::DataNotAvailableException &exception)
+	{
+		streamlog_out(ERROR) << "Caught EVENT::DataNotAvailableException : " << exception.what() << std::endl;
+		streamlog_out(ERROR) << "Skipping event" << std::endl;
+
+		return STATUS_CODE_SUCCESS;
+	}
+
+	return STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode TestRawDataModule::analyzeRawData(EVENT::LCEvent *pLCEvent)
+{
+	try
+	{
 		EVENT::LCCollection *pRawDataCollection = pLCEvent->getCollection(m_streamoutInputCollectionName);
 		unsigned int nRawElements = pRawDataCollection->getNumberOfElements();
 		m_pRawNumberOfElement->get<TH1I>()->Fill(nRawElements);
@@ -192,6 +244,122 @@ dqm4hep::StatusCode TestRawDataModule::processEvent(DQMEvent *pEvent)
 
 			int time = pRawCalorimeterHit->getTimeStamp();
 			m_pTimeDistribution->get<TH1I>()->Fill(time);
+		}
+	}
+	catch(StatusCodeException &exception)
+	{
+		streamlog_out(ERROR) << "Caught StatusCodeException : " << exception.toString() << std::endl;
+		return exception.getStatusCode();
+	}
+	catch(EVENT::DataNotAvailableException &exception)
+	{
+		streamlog_out(ERROR) << "Caught EVENT::DataNotAvailableException : " << exception.what() << std::endl;
+		streamlog_out(ERROR) << "Skipping event" << std::endl;
+
+		return STATUS_CODE_SUCCESS;
+	}
+
+	return STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode TestRawDataModule::analyzeReconstructedEvents(const std::vector<EVENT::LCEvent*> &eventList)
+{
+	try
+	{
+		// loop over reconstructed events
+		for(std::vector<EVENT::LCEvent*>::const_iterator evtIter = eventList.begin(), evtEndIter = eventList.end() ;
+				evtEndIter != evtIter ; ++evtIter)
+		{
+			EVENT::LCEvent *pLCEvent = *evtIter;
+
+			if(NULL == pLCEvent)
+				continue;
+
+			EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(m_triventOutputCollectionName);
+
+			if(NULL == pCalorimeterHitCollection)
+				continue;
+
+			UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(pCalorimeterHitCollection);
+
+			m_pRecNumberOfHits->get<TH1I>()->Fill(pCalorimeterHitCollection->getNumberOfElements());
+
+			// loop over hits in this event
+			for(unsigned int h=0 ; h<pCalorimeterHitCollection->getNumberOfElements() ; h++)
+			{
+				EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit*>(pCalorimeterHitCollection->getElementAt(h));
+
+				if(NULL == pCaloHit)
+					continue;
+
+				int I = cellIDDecoder(pCaloHit)["I"];
+				int J = cellIDDecoder(pCaloHit)["J"];
+				int K = cellIDDecoder(pCaloHit)["K-1"];
+
+				m_pRecICellDistribution->get<TH1I>()->Fill(I);
+				m_pRecJCellDistribution->get<TH1I>()->Fill(J);
+				m_pRecKCellDistribution->get<TH1I>()->Fill(K);
+			}
+		}
+	}
+	catch(StatusCodeException &exception)
+	{
+		streamlog_out(ERROR) << "Caught StatusCodeException : " << exception.toString() << std::endl;
+		return exception.getStatusCode();
+	}
+	catch(EVENT::DataNotAvailableException &exception)
+	{
+		streamlog_out(ERROR) << "Caught EVENT::DataNotAvailableException : " << exception.what() << std::endl;
+		streamlog_out(ERROR) << "Skipping event" << std::endl;
+
+		return STATUS_CODE_SUCCESS;
+	}
+
+	return STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode TestRawDataModule::analyzeNoiseEvents(const std::vector<EVENT::LCEvent*> &eventList)
+{
+	try
+	{
+		// loop over reconstructed events
+		for(std::vector<EVENT::LCEvent*>::const_iterator evtIter = eventList.begin(), evtEndIter = eventList.end() ;
+				evtEndIter != evtIter ; ++evtIter)
+		{
+			EVENT::LCEvent *pLCEvent = *evtIter;
+
+			if(NULL == pLCEvent)
+				continue;
+
+			EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(m_triventOutputCollectionName);
+
+			if(NULL == pCalorimeterHitCollection)
+				continue;
+
+			UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(pCalorimeterHitCollection);
+
+			m_pNoiseNumberOfHits->get<TH1I>()->Fill(pCalorimeterHitCollection->getNumberOfElements());
+
+			// loop over hits in this event
+			for(unsigned int h=0 ; h<pCalorimeterHitCollection->getNumberOfElements() ; h++)
+			{
+				EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit*>(pCalorimeterHitCollection->getElementAt(h));
+
+				if(NULL == pCaloHit)
+					continue;
+
+				int I = cellIDDecoder(pCaloHit)["I"];
+				int J = cellIDDecoder(pCaloHit)["J"];
+				int K = cellIDDecoder(pCaloHit)["K-1"];
+
+				m_pNoiseICellDistribution->get<TH1I>()->Fill(I);
+				m_pNoiseJCellDistribution->get<TH1I>()->Fill(J);
+				m_pNoiseKCellDistribution->get<TH1I>()->Fill(K);
+			}
 		}
 	}
 	catch(StatusCodeException &exception)

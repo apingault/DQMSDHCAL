@@ -34,11 +34,13 @@
 #include "dqm4hep/module/DQMModule.h"
 
 namespace dqm4hep { class DQMMonitorElement; }
+namespace EVENT { class LCEvent; }
 
 namespace dqm_sdhcal
 {
 
 class Streamout;
+class Trivent;
 
 /** TestRawDataModule class
  */
@@ -65,23 +67,49 @@ public:
 
 protected:
 
-	bool                   m_shouldProcessStreamout;
-	bool                   m_shouldProcessTrivent;
-	std::string             m_streamoutInputCollectionName;
-	std::string             m_streamoutOutputCollectionName;
-	std::string             m_triventInputCollectionName;
-	std::string             m_triventOutputCollectionName;
-//	std::string             m_
+	/**
+	 */
+	dqm4hep::StatusCode analyzeRawData(EVENT::LCEvent *pLCEvent);
 
+	/**
+	 */
+	dqm4hep::StatusCode analyzeReconstructedEvents(const std::vector<EVENT::LCEvent*> &eventList);
+
+	/**
+	 */
+	dqm4hep::StatusCode analyzeNoiseEvents(const std::vector<EVENT::LCEvent*> &eventList);
+
+	// streamout
+	bool                              m_shouldProcessStreamout;
+	std::string                       m_streamoutInputCollectionName;
+	std::string                       m_streamoutOutputCollectionName;
+
+	// trivent
+	bool                              m_shouldProcessTrivent;
+	std::string            	          m_triventInputCollectionName;
+	std::string                       m_triventOutputCollectionName;
+
+	// raw data analysis
 	dqm4hep::DQMMonitorElement       *m_pRawNumberOfElement;
 	dqm4hep::DQMMonitorElement       *m_pNRawCalorimeterHits;
 	dqm4hep::DQMMonitorElement       *m_pAmplitudeDistribution;
 	dqm4hep::DQMMonitorElement       *m_pTimeDistribution;
-	dqm4hep::DQMMonitorElement       *m_pICellDistribution;
-	dqm4hep::DQMMonitorElement       *m_pJCellDistribution;
-	dqm4hep::DQMMonitorElement       *m_pKCellDistribution;
 
-	Streamout               *m_pStreamout;
+	// reconstructed events
+	dqm4hep::DQMMonitorElement       *m_pRecNumberOfHits;
+	dqm4hep::DQMMonitorElement       *m_pRecICellDistribution;
+	dqm4hep::DQMMonitorElement       *m_pRecJCellDistribution;
+	dqm4hep::DQMMonitorElement       *m_pRecKCellDistribution;
+
+	// noise events
+	dqm4hep::DQMMonitorElement       *m_pNoiseNumberOfHits;
+	dqm4hep::DQMMonitorElement       *m_pNoiseICellDistribution;
+	dqm4hep::DQMMonitorElement       *m_pNoiseJCellDistribution;
+	dqm4hep::DQMMonitorElement       *m_pNoiseKCellDistribution;
+
+	// event reco
+	Streamout                        *m_pStreamout;
+	Trivent                          *m_pTrivent;
 }; 
 
 } 
