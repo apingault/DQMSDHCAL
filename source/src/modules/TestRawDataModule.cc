@@ -33,7 +33,7 @@
 // -- dqm4hep headers
 #include "dqm4hep/module/DQMModuleApi.h"
 #include "dqm4hep/core/DQMMonitorElement.h"
-#include "dqm4hep/core/DQMXmlHelper.h"
+#include "dqm4hep/core/DQMEvent.h"
 
 // -- lcio headers
 #include "EVENT/LCEvent.h"
@@ -50,7 +50,7 @@ namespace dqm_sdhcal
 TestRawDataModule aTestRawDataModule;
 
 TestRawDataModule::TestRawDataModule() :
-		DQMModule("TestRawDataModule"),
+		DQMAnalysisModule("TestRawDataModule"),
 		m_shouldProcessStreamout(true),
 		m_shouldProcessTrivent(true),
 		m_streamoutInputCollectionName("RU_XDAQ"),
@@ -142,30 +142,21 @@ dqm4hep::StatusCode TestRawDataModule::initModule()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode TestRawDataModule::readSettings(const TiXmlHandle &xmlHandle)
+dqm4hep::StatusCode TestRawDataModule::readSettings(const Json::Value &value)
 {
-	RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, DQMXmlHelper::readValue(xmlHandle,
-			"ShouldProcessStreamout", m_shouldProcessStreamout));
-
-	RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, DQMXmlHelper::readValue(xmlHandle,
-			"ShouldProcessTrivent", m_shouldProcessTrivent));
+	m_shouldProcessStreamout = value.get("ShouldProcessStreamout", m_shouldProcessStreamout).asBool();
+	m_shouldProcessTrivent = value.get("ShouldProcessTrivent", m_shouldProcessTrivent).asBool();
 
 	if(m_shouldProcessStreamout)
 	{
-		RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, DQMXmlHelper::readValue(xmlHandle,
-				"StreamoutInputCollectionName", m_streamoutInputCollectionName));
-
-		RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, DQMXmlHelper::readValue(xmlHandle,
-				"StreamoutOutputCollectionName", m_streamoutOutputCollectionName));
+		m_streamoutInputCollectionName = value.get("StreamoutInputCollectionName", m_streamoutInputCollectionName).asString();
+		m_streamoutOutputCollectionName = value.get("StreamoutOutputCollectionName", m_streamoutOutputCollectionName).asString();
 	}
 
 	if(m_shouldProcessTrivent)
 	{
-		RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, DQMXmlHelper::readValue(xmlHandle,
-				"TriventInputCollectionName", m_triventInputCollectionName));
-
-		RETURN_RESULT_IF_AND_IF(STATUS_CODE_SUCCESS, STATUS_CODE_NOT_FOUND, !=, DQMXmlHelper::readValue(xmlHandle,
-				"TriventOutputCollectionName", m_triventOutputCollectionName));
+		m_triventInputCollectionName = value.get("TriventInputCollectionName", m_triventInputCollectionName).asString();
+		m_triventOutputCollectionName = value.get("TriventOutputCollectionName", m_triventOutputCollectionName).asString();
 	}
 
 	return STATUS_CODE_SUCCESS;
@@ -408,16 +399,14 @@ dqm4hep::StatusCode TestRawDataModule::endOfRun(DQMRun *pRun)
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode TestRawDataModule::resetModule()
-{
-	return DQMModuleApi::resetMonitorElements(this, END_OF_CYCLE_RESET_POLICY);
-}
-
-//-------------------------------------------------------------------------------------------------
-
 dqm4hep::StatusCode TestRawDataModule::endModule()
 {
 	return STATUS_CODE_SUCCESS;
+}
+
+dqm4hep::DQMPlugin *TestRawDataModule::clone() const
+{
+	return new TestRawDataModule();
 }
 
 } 
