@@ -1,0 +1,33 @@
+{
+	"OpenArchive" : false,
+	"ArchiveDirectory" : "/tmp",
+	"Network" :
+	{
+		"RunControl" : "SDHCALRunControl",
+		"DataCollector" : "sdhcal_data_collector",
+		"EventStreamer" : "LCIOStreamer",
+		"MonitorElementCollector" : "sdhcal_me_collector"
+	},
+	"Cycle" :
+	{
+		"Type" : "TimerCycle",
+		"Value" : 10,
+		"Timeout" : 5
+	},
+	"Module" :
+	{
+		"Type" : "AsicAnalysisModule",
+		"Name" : "MyAsicAnalysisModule",
+		"Settings" :
+		{
+		"ShouldProcessStreamout" : true,
+		"ShouldProcessTrivent" : true,
+		"StreamoutInputCollectionName" : "RU_XDAQ",
+		"StreamoutOutputCollectionName" : "DHCALRawHits",
+		"TriventInputCollectionName" : "DHCALRawHits",
+		"TriventOutputCollectionName" : "SDHCAL_HIT",
+		"NActiveLayers" : 48,
+		"ExpectedNTracksPerAsicOverRun" : 10000
+		}
+	}
+}
