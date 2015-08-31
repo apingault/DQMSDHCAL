@@ -643,6 +643,7 @@ dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
         m_triggerRawHit.push_back(pRawHit);
     }
 
+    getMaxTime();
     std::vector<int> timeSpectrum = getTimeSpectrum();
 
     //---------------------------------------------------------------
