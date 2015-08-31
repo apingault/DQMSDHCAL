@@ -6,6 +6,8 @@
 
 # include directories
 INCLUDE_DIRECTORIES( include )
+INCLUDE_DIRECTORIES( include/dqmsdhcal/asicAnalysisTools )
+
 
 # require proper c++
 ADD_DEFINITIONS( "-pedantic -Wunused-value -O2" )
@@ -20,6 +22,8 @@ FILE (
 	src/daq/*
 	src/streamout/*
 	src/trivent/*
+	src/asicAnalysisTools/*
+	src/services/*
 )
 
 ADD_SHARED_LIBRARY( ${PROJECT_NAME} ${SRC_FILES} )
@@ -29,11 +33,25 @@ INSTALL(
 	LIBRARY DESTINATION lib
 )
 
-ADD_EXECUTABLE( start_sdhcal_shm_reader main/start_sdhcal_shm_reader.cc )
-TARGET_LINK_LIBRARIES( start_sdhcal_shm_reader ${PROJECT_NAME} )
+# -------------------------------------------------
+# build shm reader executable
+
+ADD_EXECUTABLE( dqmsdhcal_start_shm_reader main/dqmsdhcal_start_shm_reader.cc )
+TARGET_LINK_LIBRARIES( dqmsdhcal_start_shm_reader ${PROJECT_NAME} )
 
 INSTALL(
-    TARGETS start_sdhcal_shm_reader
+    TARGETS dqmsdhcal_start_shm_reader
+    RUNTIME DESTINATION bin
+)
+
+# -------------------------------------------------
+# build raw data converter executable
+
+ADD_EXECUTABLE( dqmsdhcal_start_raw_data_converter main/dqmsdhcal_start_raw_data_converter.cc )
+TARGET_LINK_LIBRARIES( dqmsdhcal_start_raw_data_converter ${PROJECT_NAME} )
+
+INSTALL(
+    TARGETS dqmsdhcal_start_raw_data_converter
     RUNTIME DESTINATION bin
 )
 
@@ -45,6 +63,18 @@ TARGET_LINK_LIBRARIES( TestRawDataModule ${PROJECT_NAME} )
 
 INSTALL(
     TARGETS TestRawDataModule
+    LIBRARY DESTINATION lib
+)
+
+
+# -------------------------------------------------
+# build asic analysis module library
+
+ADD_SHARED_LIBRARY( AsicAnalysisModule src/modules/AsicAnalysisModule.cc )
+TARGET_LINK_LIBRARIES( AsicAnalysisModule ${PROJECT_NAME} )
+
+INSTALL(
+    TARGETS AsicAnalysisModule
     LIBRARY DESTINATION lib
 )
 
