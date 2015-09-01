@@ -190,15 +190,19 @@ dqm4hep::StatusCode Trivent::readDifGeometry(dqm4hep::TiXmlElement *pElement)
     std::vector<std::string> lines;
 
     // split the contents for each lines
-    dqm4hep::DQM4HEP::tokenize(value, lines, "\n");
+    dqm4hep::DQM4HEP::tokenize(value, lines, ";");
 
     for(unsigned int i=0 ; i<lines.size() ; i++)
     {
         std::string line = lines.at(i);
+
+        if(line.empty())
+        	continue;
+
         std::vector<std::string> tokens;
 
         LayerID layerId;
-                    int difId;
+        unsigned int difId;
 
         // split the line with commas
         dqm4hep::DQM4HEP::tokenize(line, tokens, ",");
@@ -238,11 +242,15 @@ dqm4hep::StatusCode Trivent::readChamberGeometry(dqm4hep::TiXmlElement *pElement
     std::vector<std::string> lines;
 
     // split the contents by lines
-    dqm4hep::DQM4HEP::tokenize(value, lines, "\n");
+    dqm4hep::DQM4HEP::tokenize(value, lines, ";");
 
     for(unsigned int i=0; i<lines.size(); i++)
     {
         std::string line = lines.at(i);
+
+        if(line.empty())
+        	continue;
+
         std::vector<std::string> tokens;
 
         double position;
@@ -302,13 +310,11 @@ unsigned int Trivent::getCellChanId(int cellId)
 std::vector<dqm4hep::dqm_uint> Trivent::getPadIndex(unsigned int difId, unsigned int asicId, unsigned int chanId)
 {
     std::vector<dqm4hep::dqm_uint> index(3, 0);
+    std::map<int, LayerID>::const_iterator findIter = m_difMapping.find(difId);
 
-    int difY = static_cast<int>(m_difMapping.find(difId)->second.DifY);
-    int difZ = static_cast<int>(m_difMapping.find(difId)->second.K);
     index[0] = ( 1 + MapILargeHR2[chanId] + AsicShiftI[asicId] );
-
-    index[1] = ( 32 - (MapJLargeHR2[chanId]+AsicShiftJ[asicId]) ) + difY;
-    index[2] = abs(difZ);
+    index[1] = ( 32 - (MapJLargeHR2[chanId]+AsicShiftJ[asicId]) ) + findIter->second.DifY;
+    index[2] = findIter->second.K;
 
     return index;
 }
@@ -317,7 +323,7 @@ std::vector<dqm4hep::dqm_uint> Trivent::getPadIndex(unsigned int difId, unsigned
 
 int Trivent::getMaxTime()
 {
-    int maxTime = 0;
+    m_maxTime = 0;
 
     for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit = m_triggerRawHit.begin() ;
             rawHit != m_triggerRawHit.end() ; rawHit++)
@@ -328,7 +334,7 @@ int Trivent::getMaxTime()
             m_maxTime = std::max(m_maxTime, time);
      }
 
-    return maxTime;
+    return m_maxTime;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -379,17 +385,18 @@ int Trivent::findAsicKey(int i, int j, int k)
 
 dqm4hep::StatusCode Trivent::eventBuilder(EVENT::LCCollection *pLCCollection, int timePeak, int previousTimePeak)
 {
-    _zCut.clear();
+	m_foundLayerList.clear();
 
     pLCCollection->setFlag(pLCCollection->getFlag()|( 1 << EVENT::LCIO::RCHBIT_LONG));
     pLCCollection->setFlag(pLCCollection->getFlag()|( 1 << EVENT::LCIO::RCHBIT_TIME));
 
-    UTIL::CellIDEncoder<IMPL::CalorimeterHitImpl> cellIDDecoder( "M:3,S-1:3,I:9,J:9,K-1:6", pLCCollection) ;
+    UTIL::CellIDEncoder<IMPL::CalorimeterHitImpl> cellIDEncoder( "M:3,S-1:3,I:9,J:9,K-1:6", pLCCollection) ;
 
     std::map<int, int> asicMap;
     std::vector<int> hitKeys;
     int previousTime = 0;
     int cerenkovTime = 0;
+    unsigned int timeWindow = m_timeWindow;
 
     for(std::vector<EVENT::RawCalorimeterHit*>::iterator rawHit = m_triggerRawHit.begin() ;
             rawHit != m_triggerRawHit.end() ; rawHit++)
@@ -400,13 +407,13 @@ dqm4hep::StatusCode Trivent::eventBuilder(EVENT::LCCollection *pLCCollection, in
         // CTag has an offset of ~5 in December 2014, 7-17 in May/April 2015
         // Need to modify the timeWin in the following loop to analyse it
         if (difId == m_cerenkovDifId)
-            m_timeWindow = m_cerenkovWindow;
+            timeWindow = m_cerenkovWindow;
         else
-            m_timeWindow = 2;
+        	timeWindow = m_timeWindow;
 
         //
-        if(std::fabs(time-timePeak) <= m_timeWindow &&
-                (time > previousTimePeak + m_timeWindow ))
+        if(std::fabs(time-timePeak) <= timeWindow &&
+                (time > previousTimePeak + timeWindow ))
         {
             int asicId = getCellAsicId((*rawHit)->getCellID0());
             int channelId = getCellChanId((*rawHit)->getCellID0());
@@ -418,15 +425,12 @@ dqm4hep::StatusCode Trivent::eventBuilder(EVENT::LCCollection *pLCCollection, in
 
             // Find and remove square events
             int asicKey = findAsicKey(I,J,K);
-
-            if(asicMap[asicKey])
-                asicMap[asicKey]++;
-            else
-                asicMap[asicKey] = 1;
+            asicMap[asicKey]++;
 
             if(asicMap[asicKey] == 64)
             {
-                _zCut.clear();
+            	streamlog_out(WARNING) << "Removing event with square event. Dif " << difId << " asic " << asicId << std::endl;
+            	m_foundLayerList.clear();
                 hitKeys.clear();
                 asicMap.clear();
 
@@ -516,20 +520,20 @@ dqm4hep::StatusCode Trivent::eventBuilder(EVENT::LCCollection *pLCCollection, in
                 if( std::fabs(timePeak - hitTime) > std::fabs( timePeak - time ))
                     hit->setEnergy(pCaloHit->getEnergy());
 
+                delete pCaloHit;
                 continue;
             }
 
             // set the cell id
-            cellIDDecoder["I"] = I;
-            cellIDDecoder["J"] = J;
-            cellIDDecoder["K-1"] = K-1;
-            cellIDDecoder["M"] = 0;
-            cellIDDecoder["S-1"] = 3;
+            cellIDEncoder["I"] = I;
+            cellIDEncoder["J"] = J;
+            cellIDEncoder["K-1"] = K;
+            cellIDEncoder["M"] = 0;
+            cellIDEncoder["S-1"] = 3;
 
-            cellIDDecoder.setCellID(pCaloHit);
+            cellIDEncoder.setCellID(pCaloHit);
 
-            if(std::find(_zCut.begin(), _zCut.end(), K)==_zCut.end())
-                _zCut.push_back(K);
+            m_foundLayerList.insert(K);
 
             pCaloHit->setPosition(pos);
             pLCCollection->addElement(pCaloHit);
@@ -556,7 +560,7 @@ dqm4hep::StatusCode Trivent::init()
 
     RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, readGeometry(m_geomXMLFile));
 
-    m_evtNbr = 0;// event number
+    m_evtNbr = 1; // event number
     m_previousEvtNbr = 0;
 
     return dqm4hep::STATUS_CODE_SUCCESS;
@@ -643,23 +647,40 @@ dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
         m_triggerRawHit.push_back(pRawHit);
     }
 
-    getMaxTime();
     std::vector<int> timeSpectrum = getTimeSpectrum();
+
 
     //---------------------------------------------------------------
     //! Find the candidate event
     //!
-    int iBin=0; // The bin number
+    int iBin = m_timeWindow; // The bin number
     int previousBin = 0;
 
-    while(iBin < (m_maxTime+1))
+    while(iBin < (m_maxTime+1-m_timeWindow))
     {
-        if(timeSpectrum[iBin] >= m_noiseCut                &&
-                timeSpectrum[iBin] >= timeSpectrum[iBin+2] &&
-                timeSpectrum[iBin] >= timeSpectrum[iBin+1] &&
-                timeSpectrum[iBin] >= timeSpectrum[iBin-1] &&
-                timeSpectrum[iBin] >= timeSpectrum[iBin-2]
-                )
+    	if(timeSpectrum.at(iBin) < m_noiseCut)
+    	{
+    		iBin++;
+    		continue;
+    	}
+
+    	bool select = true;
+
+    	for(int w=-m_timeWindow ; w<=m_timeWindow ; w++)
+    	{
+    		if(timeSpectrum.at(iBin) < timeSpectrum.at(iBin+w))
+    		{
+    			select = false;
+    			break;
+    		}
+    	}
+
+    	if(!select)
+    	{
+    		iBin++;
+    		continue;
+    	}
+    	else
         {
             IMPL::LCEventImpl *pEvt = new IMPL::LCEventImpl() ;     // create the event
 
@@ -685,7 +706,16 @@ dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
             m_evtNbr++;
             m_cerenkovCount[0] = m_cerenkovCount[1] = m_cerenkovCount[2] = 0;
 
-            Trivent::eventBuilder(pCalorimeterHitCollection, iBin, previousBin);
+            dqm4hep::StatusCode statusCode = this->eventBuilder(pCalorimeterHitCollection, iBin, previousBin);
+
+            if(statusCode != dqm4hep::STATUS_CODE_SUCCESS)
+            {
+            	delete pCalorimeterHitCollection;
+                previousBin = iBin;
+                iBin = iBin + m_timeWindow;
+            	continue;
+            }
+
             pEvt->parameters().setValue(parname_cerenkov1, m_cerenkovCount[0]); // Value determined in the eventBuilder
             pEvt->parameters().setValue(parname_cerenkov2, m_cerenkovCount[1]); // Value determined in the eventBuilder
             pEvt->parameters().setValue(parname_cerenkov3, m_cerenkovCount[2]); // Value determined in the eventBuilder
@@ -696,7 +726,7 @@ dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
             // Add the collection to the event
             pEvt->addCollection(pCalorimeterHitCollection, m_outputCollectionName);
 
-            if( (int)_zCut.size() > m_layerCut &&                                  // the min layer numb cut
+            if( m_foundLayerList.size() > m_layerCut &&   // the min layer numb cut
                     abs( iBin - previousBin) > m_time2PreviousEventCut)// time2prev event  cut
             {
                 m_reconstructedEvents.push_back(pEvt);
@@ -708,10 +738,6 @@ dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
 
             previousBin = iBin;
             iBin = iBin + m_timeWindow;
-        }
-        else
-        {
-            iBin++;
         }
     }
 
@@ -789,6 +815,11 @@ void Trivent::setCellSizes(const float &cellSizeU, const float &cellSizeV)
 {
     m_cellSizeU = cellSizeU;
     m_cellSizeV = cellSizeV;
+}
+
+void Trivent::setLayerThickness(const float &layerThickness)
+{
+	m_layerThickness = layerThickness;
 }
 
 }
