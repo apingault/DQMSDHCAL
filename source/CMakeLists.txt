@@ -24,6 +24,7 @@ FILE (
 	src/trivent/*
 	src/asicAnalysisTools/*
 	src/services/*
+	src/selectors/*
 )
 
 ADD_SHARED_LIBRARY( ${PROJECT_NAME} ${SRC_FILES} )
