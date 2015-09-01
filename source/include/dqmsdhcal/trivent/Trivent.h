@@ -113,9 +113,11 @@ public:
     // Cerenkov DifId (Default = 3)
     void setCerenkovDifId(const int &cerenkovDifId);
 
-	/**
-	 */
+    // CellSizes (Default 10.408 both)
     void setCellSizes(const float &cellSizeU, const float &cellSizeV);
+
+    // LayerThickness (Default 26.131 mm)
+    void setLayerThickness(const float &layerThickness);
 
 private:
     /**
@@ -203,7 +205,7 @@ private:
     int m_maxTime;
     int m_evtNbr;
     int m_previousEvtNbr;
-    std::vector<unsigned int> _zCut;
+    std::set<unsigned int>    m_foundLayerList;
 
     int m_bcid1;
     int m_bcid2;
