@@ -73,10 +73,23 @@ dqm4hep::StatusCode AsicAnalysisModule::initModule()
 {
 	m_pStreamout->setInputCollectionName(m_streamoutInputCollectionName);
 	m_pStreamout->setOutputCollectionName(m_streamoutOutputCollectionName);
+	m_pStreamout->setXDaqShift(m_xdaqShift);
 
 	m_pTrivent->setInputCollectionName(m_triventInputCollectionName);
 	m_pTrivent->setOutputCollectionName(m_triventOutputCollectionName);
 	m_pTrivent->setGeometryXMLFile(m_geometryFileName);
+	m_pTrivent->setLayerCut(m_layerCut);
+	m_pTrivent->setNoiseCut(m_noiseCut);
+	m_pTrivent->setTimeWindow(m_timeWindow);
+	m_pTrivent->setLayerGap(m_layerGap);
+	m_pTrivent->setElecNoiseCut(m_elecNoiseCut);
+	m_pTrivent->setTime2PreviousEventCut(m_time2PreviousEventCut);
+	m_pTrivent->setGainCorrectionMode(m_gainCorrectionMode);
+	m_pTrivent->setCerenkovWindow(m_cerenkovWindow);
+	m_pTrivent->setCerenkovLength(m_cerenkovLength);
+	m_pTrivent->setCerenkovDifId(m_cerenkovDifId);
+	m_pTrivent->setCellSizes(m_cellSizeU, m_cellSizeV);
+	m_pTrivent->setLayerThickness(m_layerThickness);
 
 	// initialize trivent
 	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->init());
@@ -182,6 +195,27 @@ dqm4hep::StatusCode AsicAnalysisModule::initModule()
 			+ "  Algorithm author : Arnaud Steen");
 	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
 
+	//----------------------------------------
+
+	pMonitorElement = NULL;
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookInt(this,
+			pMonitorElement, "NRecEvents", "N reconstructed events", 0));
+
+	pMonitorElement->setDescription("The number of reconstructed events in the run");
+	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
+
+	//----------------------------------------
+
+	pMonitorElement = NULL;
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookInt(this,
+			pMonitorElement, "NNoisyEvents", "N noisy events", 0));
+
+	pMonitorElement->setDescription("The number of noisy events in the run");
+	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
+
+	DQMModuleApi::cd(this);
+	DQMModuleApi::ls(this, true);
+
 	return STATUS_CODE_SUCCESS;
 }
 
@@ -194,15 +228,33 @@ dqm4hep::StatusCode AsicAnalysisModule::readSettings(const Json::Value &value)
 
 	if(m_shouldProcessStreamout)
 	{
-		m_streamoutInputCollectionName = value.get("StreamoutInputCollectionName", m_streamoutInputCollectionName).asString();
-		m_streamoutOutputCollectionName = value.get("StreamoutOutputCollectionName", m_streamoutOutputCollectionName).asString();
+		const Json::Value &streamoutValue = value["Streamout"];
+
+		m_streamoutInputCollectionName = streamoutValue.get("InputCollectionName", m_streamoutInputCollectionName).asString();
+		m_streamoutOutputCollectionName = streamoutValue.get("OutputCollectionName", m_streamoutOutputCollectionName).asString();
+		m_xdaqShift = streamoutValue.get("XDaqShift", 24).asUInt();
 	}
 
 	if(m_shouldProcessTrivent)
 	{
-		m_triventInputCollectionName = value.get("TriventInputCollectionName", m_triventInputCollectionName).asString();
-		m_triventOutputCollectionName = value.get("TriventOutputCollectionName", m_triventOutputCollectionName).asString();
-		m_geometryFileName = value.get("GeometryFile", "setup_geometry.xml").asString();
+		const Json::Value &triventValue = value["Trivent"];
+
+		m_triventInputCollectionName = triventValue.get("InputCollectionName", m_triventInputCollectionName).asString();
+		m_triventOutputCollectionName = triventValue.get("OutputCollectionName", m_triventOutputCollectionName).asString();
+		m_geometryFileName = triventValue["GeometryFile"].asString(); // only mandatory parameter !
+		m_layerCut = triventValue.get("LayerCut", 3).asUInt();
+		m_noiseCut = triventValue.get("NoiseCut", 10).asUInt();
+		m_timeWindow = triventValue.get("TimeWindow", 2).asUInt();
+		m_layerGap = triventValue.get("LayerGap", 0.9f).asFloat();
+		m_elecNoiseCut = triventValue.get("ElecNoiseCut", 100000).asFloat();
+	    m_time2PreviousEventCut = triventValue.get("Time2PreviousEventCut", 0).asUInt();
+	    m_gainCorrectionMode = triventValue.get("GainCorrectionMode", false).asBool();
+	    m_cerenkovWindow = triventValue.get("CherenkovWindow", 20).asUInt();
+	    m_cerenkovLength = triventValue.get("CherenkovLenght", 1).asUInt();
+	    m_cerenkovDifId = triventValue.get("CherenkovDifId", 0).asUInt();
+	    m_cellSizeU = triventValue.get("CellSizeU", 10.408f).asFloat();
+	    m_cellSizeV = triventValue.get("CellSizeV", 10.408f).asFloat();
+	    m_layerThickness = triventValue.get("LayerThickness", 26.131f).asFloat();
 	}
 
 	m_nActiveLayers = value.get("NActiveLayers", 48).asUInt();
@@ -215,6 +267,9 @@ dqm4hep::StatusCode AsicAnalysisModule::readSettings(const Json::Value &value)
 
 dqm4hep::StatusCode AsicAnalysisModule::processEvent(DQMEvent *pEvent)
 {
+	if(NULL == pEvent)
+		return STATUS_CODE_FAILURE;
+
 	EVENT::LCEvent *pLCEvent = pEvent->getEvent<EVENT::LCEvent>();
 
 	if(NULL == pLCEvent)
@@ -232,6 +287,17 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(DQMEvent *pEvent)
 
 		// analyze reconstructed events by Trivent
 		const std::vector<EVENT::LCEvent*> &reconstructedEvents(m_pTrivent->getReconstructedEvents());
+		unsigned int nRecEvts = reconstructedEvents.size();
+
+		TScalarInt *pNRecScalar = DQMModuleApi::getMonitorElement(this, "/Global", "NRecEvents")->get<TScalarInt>();
+		pNRecScalar->Set(pNRecScalar->Get() + nRecEvts);
+
+		const std::vector<EVENT::LCEvent*> &noiseEvents(m_pTrivent->getNoiseEvents());
+		unsigned int nNoiseEvts = noiseEvents.size();
+
+		TScalarInt *pNNoiseScalar = DQMModuleApi::getMonitorElement(this, "/Global", "NNoisyEvents")->get<TScalarInt>();
+		pNNoiseScalar->Set(pNNoiseScalar->Get() + nNoiseEvts);
+
 		THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->doTrackStudy(reconstructedEvents));
 	}
 	catch(StatusCodeException &exception)
@@ -287,6 +353,7 @@ dqm4hep::StatusCode AsicAnalysisModule::doTrackStudy(const std::vector<EVENT::LC
 				}
 
 				this->doTrackStudy();
+				m_calorimeterHitCollection.clear();
 			}
 			catch(EVENT::DataNotAvailableException &exception)
 			{
@@ -321,8 +388,8 @@ void AsicAnalysisModule::doTrackStudy()
 
   for(std::vector<EVENT::CalorimeterHit*>::iterator it=m_calorimeterHitCollection.begin(); it!=m_calorimeterHitCollection.end(); ++it)
   {
-    if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end())
-    	continue;
+	  if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end())
+		  continue;
 
     cluster = new Cluster(IDdecoder(*it)["K-1"]);
     cluster->AddHits(*it);
@@ -462,28 +529,28 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 			{
 				if(it->second->getAsicCounter()>0)
 				{
-					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, layerDir.str() + "/Efficiency", pMonitorElement));
+					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, layerDir.str(), "Efficiency", pMonitorElement));
 					pMonitorElement->get<TH2F>()->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter());
 
-					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "Global/Multiplicity", pMonitorElement));
+					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "Multiplicity", pMonitorElement));
 					pMonitorElement->get<TH1F>()->Fill(it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter());
 
-					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "Global/StackedMultiplicity", pMonitorElement));
+					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "StackedMultiplicity", pMonitorElement));
 					pMonitorElement->get<TH2F>()->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter()/(float)m_nActiveLayers);
 				}
 				if(it->second->getAsicEfficiency()>0)
 				{
-					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, layerDir.str() + "/Multiplicity", pMonitorElement));
+					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, layerDir.str(), "Multiplicity", pMonitorElement));
 					pMonitorElement->get<TH2F>()->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicMultiplicity()*1.0/it->second->getAsicEfficiency());
 
-					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "Global/Multiplicity", pMonitorElement));
+					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "Multiplicity", pMonitorElement));
 					pMonitorElement->get<TH1F>()->Fill(it->second->getAsicMultiplicity()*1.0/it->second->getAsicEfficiency());
 
-					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "Global/StackedMultiplicity", pMonitorElement));
+					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "StackedMultiplicity", pMonitorElement));
 					pMonitorElement->get<TH2F>()->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicMultiplicity()*1.0/it->second->getAsicEfficiency()/(float)m_nActiveLayers);
 				}
 
-				RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "Global/NTrackPerAsic", pMonitorElement));
+				RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "NTrackPerAsic", pMonitorElement));
 				pMonitorElement->get<TH1F>()->Fill(it->second->getAsicCounter());
 			}
 		}
