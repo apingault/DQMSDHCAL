@@ -532,10 +532,10 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, layerDir.str(), "Efficiency", pMonitorElement));
 					pMonitorElement->get<TH2F>()->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter());
 
-					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "Multiplicity", pMonitorElement));
+					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "Efficiency", pMonitorElement));
 					pMonitorElement->get<TH1F>()->Fill(it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter());
 
-					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "StackedMultiplicity", pMonitorElement));
+					RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "StackedEfficiency", pMonitorElement));
 					pMonitorElement->get<TH2F>()->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter()/(float)m_nActiveLayers);
 				}
 				if(it->second->getAsicEfficiency()>0)
