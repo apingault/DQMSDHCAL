@@ -80,8 +80,7 @@ dqm4hep::StatusCode TestRawDataModule::initModule()
 	m_pStreamout->setInputCollectionName(m_streamoutInputCollectionName);
 	m_pStreamout->setOutputCollectionName(m_streamoutOutputCollectionName);
 
-	// TODO declare Trivent here and configure it
-	// ...
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->init());
 
 	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::mkdir(this, "/RawData"));
 	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::mkdir(this, "/RawCalorimeterHit"));
@@ -155,8 +154,7 @@ dqm4hep::StatusCode TestRawDataModule::readSettings(const Json::Value &value)
 
 	if(m_shouldProcessTrivent)
 	{
-		m_triventInputCollectionName = value.get("TriventInputCollectionName", m_triventInputCollectionName).asString();
-		m_triventOutputCollectionName = value.get("TriventOutputCollectionName", m_triventOutputCollectionName).asString();
+		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(value["Trivent"]));
 	}
 
 	return STATUS_CODE_SUCCESS;

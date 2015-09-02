@@ -252,15 +252,16 @@ StatusCode DQMRawDataConverterApplication::readSettings(const std::string &setti
 
 		if(shouldUseTrivent)
 		{
-			m_pTrivent->setOutputCollectionName(outputCollectionName);
+			RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(rootValue["Trivent"]));
+//			m_pTrivent->setOutputCollectionName(outputCollectionName);
+//
+//			if(!shouldUseStreamout)
+//				m_pTrivent->setInputCollectionName(inputCollectionName);
+//			else
+//				m_pTrivent->setInputCollectionName("DHCALRawHits");
 
-			if(!shouldUseStreamout)
-				m_pTrivent->setInputCollectionName(inputCollectionName);
-			else
-				m_pTrivent->setInputCollectionName("DHCALRawHits");
-
-			std::string geometryFile = rootValue["GeometryFile"].asString();
-			m_pTrivent->setGeometryXMLFile(geometryFile);
+//			std::string geometryFile = rootValue["GeometryFile"].asString();
+//			m_pTrivent->setGeometryXMLFile(geometryFile);
 		}
 	}
 	catch(const std::runtime_error &exception)

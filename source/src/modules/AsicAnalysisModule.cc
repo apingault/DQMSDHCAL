@@ -75,22 +75,6 @@ dqm4hep::StatusCode AsicAnalysisModule::initModule()
 	m_pStreamout->setOutputCollectionName(m_streamoutOutputCollectionName);
 	m_pStreamout->setXDaqShift(m_xdaqShift);
 
-	m_pTrivent->setInputCollectionName(m_triventInputCollectionName);
-	m_pTrivent->setOutputCollectionName(m_triventOutputCollectionName);
-	m_pTrivent->setGeometryXMLFile(m_geometryFileName);
-	m_pTrivent->setLayerCut(m_layerCut);
-	m_pTrivent->setNoiseCut(m_noiseCut);
-	m_pTrivent->setTimeWindow(m_timeWindow);
-	m_pTrivent->setLayerGap(m_layerGap);
-	m_pTrivent->setElecNoiseCut(m_elecNoiseCut);
-	m_pTrivent->setTime2PreviousEventCut(m_time2PreviousEventCut);
-	m_pTrivent->setGainCorrectionMode(m_gainCorrectionMode);
-	m_pTrivent->setCerenkovWindow(m_cerenkovWindow);
-	m_pTrivent->setCerenkovLength(m_cerenkovLength);
-	m_pTrivent->setCerenkovDifId(m_cerenkovDifId);
-	m_pTrivent->setCellSizes(m_cellSizeU, m_cellSizeV);
-	m_pTrivent->setLayerThickness(m_layerThickness);
-
 	// initialize trivent
 	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->init());
 
@@ -238,23 +222,8 @@ dqm4hep::StatusCode AsicAnalysisModule::readSettings(const Json::Value &value)
 	if(m_shouldProcessTrivent)
 	{
 		const Json::Value &triventValue = value["Trivent"];
-
-		m_triventInputCollectionName = triventValue.get("InputCollectionName", m_triventInputCollectionName).asString();
-		m_triventOutputCollectionName = triventValue.get("OutputCollectionName", m_triventOutputCollectionName).asString();
-		m_geometryFileName = triventValue["GeometryFile"].asString(); // only mandatory parameter !
-		m_layerCut = triventValue.get("LayerCut", 3).asUInt();
-		m_noiseCut = triventValue.get("NoiseCut", 10).asUInt();
-		m_timeWindow = triventValue.get("TimeWindow", 2).asUInt();
-		m_layerGap = triventValue.get("LayerGap", 0.9f).asFloat();
-		m_elecNoiseCut = triventValue.get("ElecNoiseCut", 100000).asFloat();
-	    m_time2PreviousEventCut = triventValue.get("Time2PreviousEventCut", 0).asUInt();
-	    m_gainCorrectionMode = triventValue.get("GainCorrectionMode", false).asBool();
-	    m_cerenkovWindow = triventValue.get("CherenkovWindow", 20).asUInt();
-	    m_cerenkovLength = triventValue.get("CherenkovLenght", 1).asUInt();
-	    m_cerenkovDifId = triventValue.get("CherenkovDifId", 0).asUInt();
-	    m_cellSizeU = triventValue.get("CellSizeU", 10.408f).asFloat();
-	    m_cellSizeV = triventValue.get("CellSizeV", 10.408f).asFloat();
-	    m_layerThickness = triventValue.get("LayerThickness", 26.131f).asFloat();
+		// forward parsing to Trivent
+		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(value));
 	}
 
 	m_nActiveLayers = value.get("NActiveLayers", 48).asUInt();
