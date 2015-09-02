@@ -42,7 +42,8 @@
             "GainCorrectionMode" : false,
             "CherenkovWindow" : 20,
             "CherenkovLenght" : 1,
-            "CherenkovDifId" : 0, // 0 means no cherenkov
+            "CherenkovDifId" : 0, // 0 means no cherenkov written in file
+            "TreatCherenkov" : false, // whether to treat the cherenkov dif
             "CellSizeU" : 10.408, // SDHCAL pad size
             "CellSizeV" : 10.408, // SDHCAL pad size
             "LayerThickness" : 26.131 // 26.131 for SDHCAL ; 55 at GIF++

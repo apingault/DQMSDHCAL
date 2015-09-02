@@ -1,9 +1,12 @@
 {
+    "ConverterType" : 1,
     "TimeSleepPublication" : 1000,
     "InputCollectorName" : "sdhcal_data_collector",
     "OutputCollectorName" : "sdhcal_recevt_collector",
-    "ConverterType" : 1,
+    "Trivent":
+    {
     "InputCollectionName" : "RU_XDAQ",
     "OutputCollectionName" : "SDHCAL_HIT",
-    "GeometryFile" : "setup_geometry.xml"
+    "GeometryFile" : "setup_geometry.xml"    
+    }
 }
