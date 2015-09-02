@@ -139,10 +139,10 @@ void ShmReader::start()
 		for (int i=1; i<count+1; ++i)
 		{
 			uint32_t dif,dtc,gtc;
-			uint64_t abcid;
+			unsigned long long abcid;
 
 			// get the previous variables from the file name
-			sscanf(files[i-1]->d_name,"%llud_%ud_%ud_%ud",&abcid,&dtc,&gtc,&dif);
+			sscanf(files[i-1]->d_name,"%lld_%d_%d_%d",&abcid,&dtc,&gtc,&dif);
 
 			// open the event file (read only)
 			std::stringstream eventFileName;
