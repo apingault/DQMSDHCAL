@@ -34,6 +34,9 @@
 // -- dqm sdhcal headers
 #include "dqmsdhcal/daq/Mapping.h"
 
+// -- json headers
+#include "json/json.h"
+
 namespace EVENT { class LCEvent; class LCCollection; class RawCalorimeterHit; }
 namespace dqm4hep { class TiXmlElement; }
 
@@ -58,6 +61,10 @@ public:
      *  must be called once.
      */
     dqm4hep::StatusCode init();
+
+    /** Read settings from a json value
+     */
+    dqm4hep::StatusCode readSettings(const Json::Value &value);
 
 	/** Process Trivent on the lcio event.
 	 *  Create a CalorimeterHit collection from a RawCalorimeterHit Collection from StreamOut
@@ -200,6 +207,7 @@ private:
     int m_cerenkovWindow;
     int m_cerenkovLength;
     int m_cerenkovDifId;
+    bool m_treatCherenkov;
 
     float m_beamEnergy;
     int m_maxTime;

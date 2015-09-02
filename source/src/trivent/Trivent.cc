@@ -67,6 +67,7 @@ Trivent::Trivent():
     m_cerenkovWindow(20),
     m_cerenkovLength(1),
     m_cerenkovDifId(3),
+    m_treatCherenkov(false),
     m_cellSizeU(10.408f),
     m_cellSizeV(10.408f),
     m_layerThickness(26.131)
@@ -99,6 +100,39 @@ void Trivent::clear()
 
     m_reconstructedEvents.clear();
     m_noiseEvents.clear();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode Trivent::readSettings(const Json::Value &value)
+{
+	try
+	{
+		m_inputCollectionName = value.get("InputCollectionName", m_inputCollectionName).asString();
+		m_outputCollectionName = value.get("OutputCollectionName", m_outputCollectionName).asString();
+		m_geometryFileName = value["GeometryFile"].asString(); // only mandatory parameter !
+		m_layerCut = value.get("LayerCut", 3).asUInt();
+		m_noiseCut = value.get("NoiseCut", 10).asUInt();
+		m_timeWindow = value.get("TimeWindow", 2).asUInt();
+		m_layerGap = value.get("LayerGap", 0.9f).asFloat();
+		m_elecNoiseCut = value.get("ElecNoiseCut", 100000).asFloat();
+		m_time2PreviousEventCut = value.get("Time2PreviousEventCut", 0).asUInt();
+		m_gainCorrectionMode = value.get("GainCorrectionMode", false).asBool();
+		m_cerenkovWindow = value.get("CherenkovWindow", 20).asUInt();
+		m_cerenkovLength = value.get("CherenkovLenght", 1).asUInt();
+		m_cerenkovDifId = value.get("CherenkovDifId", 0).asUInt();
+		m_cellSizeU = value.get("CellSizeU", 10.408f).asFloat();
+		m_cellSizeV = value.get("CellSizeV", 10.408f).asFloat();
+		m_layerThickness = value.get("LayerThickness", 26.131f).asFloat();
+		m_treatCherenkov = value.get("TreatCherenkov", false).asBool();
+	}
+	catch(const std::runtime_error &exception)
+	{
+		std::cout << "Trivent::readSettings(v): " << exception.what() << std::endl;
+		return STATUS_CODE_FAILURE;
+	}
+
+	return STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -644,7 +678,13 @@ dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
             }
         }
 
-        m_triggerRawHit.push_back(pRawHit);
+        if(difId == m_cerenkovDifId)
+        {
+        	if(m_treatCherenkov)
+        		m_triggerRawHit.push_back(pRawHit);
+        }
+        else
+        	m_triggerRawHit.push_back(pRawHit);
     }
 
     std::vector<int> timeSpectrum = getTimeSpectrum();
