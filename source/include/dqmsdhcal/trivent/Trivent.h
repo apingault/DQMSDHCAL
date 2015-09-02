@@ -71,116 +71,28 @@ public:
 	 */
     dqm4hep::StatusCode processEvent(EVENT::LCEvent *pLCEvent);
 
-    /**
+    /** Get the event collection tagged as reconstructed events by Trivent
      */
     const std::vector<EVENT::LCEvent*> &getReconstructedEvents() const;
 
-    /**
+    /** Get the event collection tagged as noisy events by Trivent
      */
     const std::vector<EVENT::LCEvent*> &getNoiseEvents() const;
 
-    /**
-     */
-    void setInputCollectionName(const std::string &inputCollectionName);
-
-    /**
-     */
-    void setOutputCollectionName(const std::string &outputCollectionName);
-
-    //  GeometryXMLFile (Default = setup_geometry.xml)
-    void setGeometryXMLFile(const std::string &geomXMLFile);
-
-    //  Cut in number of layer (Default = 10)
-    void setLayerCut(const int &layerCut);
-
-    //  Noise Cut in time spectrum (Default = 10)
-    void setNoiseCut(const int &noiseCut);
-
-    //  TimeWindow in TimeBin (Default = 2)
-    void setTimeWindow(const int &timeWindow);
-
-    // LayerGap dimension in cm (Default = .9)
-    void setLayerGap(const double &layerGap);
-
-    // Cut on number of hit max (Electronic Noise)  (Default = 100000)
-    void setElecNoiseCut(const int &elecNoiseCut);
-
-    // Cut on time from previous event in TimeBin (Default = 0)
-    void setTime2PreviousEventCut(const int &time2PreviousEventCut);
-
-    // Activate/Deativate GainCorrectionMode (Default = False)
-    void setGainCorrectionMode(const bool &gainCorrectionMode);
-
-    // Cerenkov window for event recontstruction (Default = 20)
-    void setCerenkovWindow(const int &cerenkovWindow);
-
-    // Cerenkov signal Lenght, in TimeBin (Default = 1)
-    void setCerenkovLength(const int &cerenkovLength);
-
-    // Cerenkov DifId (Default = 3)
-    void setCerenkovDifId(const int &cerenkovDifId);
-
-    // CellSizes (Default 10.408 both)
-    void setCellSizes(const float &cellSizeU, const float &cellSizeV);
-
-    // LayerThickness (Default 26.131 mm)
-    void setLayerThickness(const float &layerThickness);
-
 private:
-    /**
-     */
     void clear();
-
-    /** Read the xml geometry file (difs and chambers)
-     */
     dqm4hep::StatusCode readGeometry(const std::string &fileName);
-
-    /**
-     */
     dqm4hep::StatusCode readDifGeometry(dqm4hep::TiXmlElement *pElement);
-
-    /**
-     */
     dqm4hep::StatusCode readChamberGeometry(dqm4hep::TiXmlElement *pElement);
-
-    /**
-     */
     int ijkToKey(int i, int j, int k);
-
-    /**
-     */
     int findAsicKey(int i, int j, int k);
-
-    /**
-     */
     unsigned int getCellDifId(int cellId);
-
-    /**
-     */
     unsigned int getCellAsicId(int cellId);
-
-    /**
-     */
     unsigned int getCellChanId(int cellId);
-
-    /**
-     */
     int getMaxTime();
-
-    /**
-     */
     std::vector<int> getTimeSpectrum();
-
-    /**
-     */
     std::vector<dqm4hep::dqm_uint> getPadIndex(unsigned int difId, unsigned int asicId, unsigned int chanId);
-
-    /**
-     */
     dqm4hep::StatusCode eventBuilder(EVENT::LCCollection* colEvent,int timePeak, int previousTimePeak);
-
-    /**
-     */
     bool peakOrNot(std::vector<int> timeSpectrum, int iTime, int threshold);
 
 private:

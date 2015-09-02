@@ -110,29 +110,28 @@ dqm4hep::StatusCode Trivent::readSettings(const Json::Value &value)
 	{
 		m_inputCollectionName = value.get("InputCollectionName", m_inputCollectionName).asString();
 		m_outputCollectionName = value.get("OutputCollectionName", m_outputCollectionName).asString();
-		m_geometryFileName = value["GeometryFile"].asString(); // only mandatory parameter !
-		m_layerCut = value.get("LayerCut", 3).asUInt();
-		m_noiseCut = value.get("NoiseCut", 10).asUInt();
-		m_timeWindow = value.get("TimeWindow", 2).asUInt();
-		m_layerGap = value.get("LayerGap", 0.9f).asFloat();
-		m_elecNoiseCut = value.get("ElecNoiseCut", 100000).asFloat();
-		m_time2PreviousEventCut = value.get("Time2PreviousEventCut", 0).asUInt();
-		m_gainCorrectionMode = value.get("GainCorrectionMode", false).asBool();
-		m_cerenkovWindow = value.get("CherenkovWindow", 20).asUInt();
-		m_cerenkovLength = value.get("CherenkovLenght", 1).asUInt();
-		m_cerenkovDifId = value.get("CherenkovDifId", 0).asUInt();
-		m_cellSizeU = value.get("CellSizeU", 10.408f).asFloat();
-		m_cellSizeV = value.get("CellSizeV", 10.408f).asFloat();
-		m_layerThickness = value.get("LayerThickness", 26.131f).asFloat();
-		m_treatCherenkov = value.get("TreatCherenkov", false).asBool();
+		m_geomXMLFile = value.get("GeometryFile", m_geomXMLFile).asString();
+		m_layerCut = value.get("LayerCut", m_layerCut).asUInt();
+		m_noiseCut = value.get("NoiseCut", m_noiseCut).asUInt();
+		m_timeWindow = value.get("TimeWindow", m_timeWindow).asUInt();
+		m_layerGap = value.get("LayerGap", m_layerGap).asFloat();
+		m_elecNoiseCut = value.get("ElecNoiseCut", m_elecNoiseCut).asFloat();
+		m_time2PreviousEventCut = value.get("Time2PreviousEventCut", m_time2PreviousEventCut).asUInt();
+		m_gainCorrectionMode = value.get("GainCorrectionMode", m_gainCorrectionMode).asBool();
+		m_cerenkovWindow = value.get("CherenkovWindow", m_cerenkovWindow).asUInt();
+		m_cerenkovDifId = value.get("CherenkovDifId", m_cerenkovDifId).asUInt();
+		m_cellSizeU = value.get("CellSizeU", m_cellSizeU).asFloat();
+		m_cellSizeV = value.get("CellSizeV", m_cellSizeV).asFloat();
+		m_layerThickness = value.get("LayerThickness", m_layerThickness).asFloat();
+		m_treatCherenkov = value.get("TreatCherenkov", m_treatCherenkov).asBool();
 	}
 	catch(const std::runtime_error &exception)
 	{
 		std::cout << "Trivent::readSettings(v): " << exception.what() << std::endl;
-		return STATUS_CODE_FAILURE;
+		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
-	return STATUS_CODE_SUCCESS;
+	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -782,84 +781,6 @@ dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
     }
 
     return dqm4hep::STATUS_CODE_SUCCESS;
-}
-
-//==============================================================
-
-void Trivent::setInputCollectionName(const std::string &inputCollectionName)
-{
-    m_inputCollectionName = inputCollectionName;
-}
-
-void Trivent::setOutputCollectionName(const std::string &outputCollectionName)
-{
-    m_outputCollectionName = outputCollectionName;
-}
-
-void Trivent::setGeometryXMLFile(const std::string &geomXMLFile)
-{
-    m_geomXMLFile = geomXMLFile;
-}
-
-void Trivent::setLayerCut(const int &layerCut)
-{
-    m_layerCut = layerCut;
-}
-
-void Trivent::setNoiseCut(const int &noiseCut)
-{
-    m_noiseCut = noiseCut;
-}
-
-void Trivent::setTimeWindow(const int &timeWindow)
-{
-    m_timeWindow = timeWindow;
-}
-
-void Trivent::setLayerGap(const double &layerGap)
-{
-    m_layerGap = layerGap;
-}
-
-void Trivent::setElecNoiseCut(const int &elecNoiseCut)
-{
-    m_elecNoiseCut = elecNoiseCut;
-}
-
-void Trivent::setTime2PreviousEventCut(const int &time2PreviousEventCut)
-{
-    m_time2PreviousEventCut = time2PreviousEventCut;
-}
-
-void Trivent::setGainCorrectionMode(const bool &gainCorrectionMode)
-{
-    m_gainCorrectionMode = gainCorrectionMode;
-}
-
-void Trivent::setCerenkovWindow(const int &cerenkovWindow)
-{
-    m_cerenkovWindow = cerenkovWindow;
-}
-
-void Trivent::setCerenkovLength(const int &cerenkovLength)
-{
-    m_cerenkovLength = cerenkovLength;
-}
-
-void Trivent::setCerenkovDifId(const int &cerenkovDifId)
-{
-    m_cerenkovDifId = cerenkovDifId;
-}
-
-void Trivent::setCellSizes(const float &cellSizeU, const float &cellSizeV)
-{
-    m_cellSizeU = cellSizeU;
-    m_cellSizeV = cellSizeV;
-}
-
-void Trivent::setLayerThickness(const float &layerThickness)
-{
-	m_layerThickness = layerThickness;
 }
 
 }
