@@ -99,24 +99,11 @@ protected:
 	bool                              m_shouldProcessTrivent;
 	std::string            	          m_triventInputCollectionName;
 	std::string                       m_triventOutputCollectionName;
-	std::string                       m_geometryFileName;
-	unsigned int                     m_layerCut;
-	unsigned int                     m_noiseCut;
-	unsigned int                     m_timeWindow;
-	float                             m_layerGap;
-	unsigned int                     m_elecNoiseCut;
-    unsigned int                     m_time2PreviousEventCut;
-    bool                              m_gainCorrectionMode;
-    unsigned int                     m_cerenkovWindow;
-    unsigned int                     m_cerenkovLength;
-    unsigned int                     m_cerenkovDifId;
-    float                             m_cellSizeU;
-    float                             m_cellSizeV;
-    float                             m_layerThickness;
 	Trivent                          *m_pTrivent;
 
 	unsigned int                    m_nActiveLayers;
 	unsigned int                    m_expectedNTracksPerAsicOverRun;
+	std::string                      m_inputCollectionName;
 
 	std::vector<EVENT::CalorimeterHit*> m_calorimeterHitCollection;
 

@@ -144,7 +144,7 @@ dqm4hep::StatusCode AsicAnalysisModule::initModule()
 			160, 0, 16));
 
 	pMonitorElement->setDescription(std::string("Global multiplicity over the set of asics.")
-	+ " The global multiplicity is evaluated by analysing muons from beam (or cosmics) with a tracking algorithm.\n"
+	+ " The global multiplicity is evaluated by analyzing muons from beam (or cosmics) with a tracking algorithm.\n"
 			"  Algorithm author : Arnaud Steen");
 	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
 
@@ -224,8 +224,8 @@ dqm4hep::StatusCode AsicAnalysisModule::readSettings(const Json::Value &value)
 	{
 		const Json::Value &streamoutValue = value["Streamout"];
 
-		m_streamoutInputCollectionName = streamoutValue.get("InputCollectionName", m_streamoutInputCollectionName).asString();
-		m_streamoutOutputCollectionName = streamoutValue.get("OutputCollectionName", m_streamoutOutputCollectionName).asString();
+		m_streamoutInputCollectionName = streamoutValue.get("InputCollectionName", "RU_XDAQ").asString();
+		m_streamoutOutputCollectionName = streamoutValue.get("OutputCollectionName", "DHCALRawHits").asString();
 		m_xdaqShift = streamoutValue.get("XDaqShift", 24).asUInt();
 	}
 
@@ -233,14 +233,15 @@ dqm4hep::StatusCode AsicAnalysisModule::readSettings(const Json::Value &value)
 	{
 		const Json::Value &triventValue = value["Trivent"];
 
-		m_triventInputCollectionName = triventValue.get("InputCollectionName", m_triventInputCollectionName).asString();
-		m_triventOutputCollectionName = triventValue.get("OutputCollectionName", m_triventOutputCollectionName).asString();
+		m_triventInputCollectionName = triventValue.get("InputCollectionName", "DHCALRawHits").asString();
+		m_triventOutputCollectionName = triventValue.get("OutputCollectionName", "SDHCAL_HIT").asString();
 		// forward parsing to Trivent
 		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(triventValue));
 	}
 
 	m_nActiveLayers = value.get("NActiveLayers", 48).asUInt();
 	m_expectedNTracksPerAsicOverRun = value.get("ExpectedNTracksPerAsicOverRun", 10000).asUInt();
+	m_inputCollectionName = value.get("InputCollectionName", "SDHCAL_HIT").asString();
 
 	return STATUS_CODE_SUCCESS;
 }
@@ -324,7 +325,7 @@ dqm4hep::StatusCode AsicAnalysisModule::doTrackStudy(const std::vector<EVENT::LC
 
 			try
 			{
-				EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(m_triventOutputCollectionName);
+				EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(m_inputCollectionName);
 
 				if(NULL == pCalorimeterHitCollection)
 					continue;
