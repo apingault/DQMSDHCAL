@@ -71,12 +71,18 @@ AsicAnalysisModule::~AsicAnalysisModule()
 
 dqm4hep::StatusCode AsicAnalysisModule::initModule()
 {
+  if(m_shouldProcessStreamout)
+    {
 	m_pStreamout->setInputCollectionName(m_streamoutInputCollectionName);
 	m_pStreamout->setOutputCollectionName(m_streamoutOutputCollectionName);
 	m_pStreamout->setXDaqShift(m_xdaqShift);
+    }
 
+  if(m_shouldProcessTrivent)
+    {
 	// initialize trivent
 	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->init());
+    }
 
 	// global element used for booking
 	// direct element access is provided by dqm4hep module API
@@ -222,8 +228,11 @@ dqm4hep::StatusCode AsicAnalysisModule::readSettings(const Json::Value &value)
 	if(m_shouldProcessTrivent)
 	{
 		const Json::Value &triventValue = value["Trivent"];
+
+		m_triventInputCollectionName = triventValue.get("InputCollectionName", m_triventInputCollectionName).asString();
+		m_triventOutputCollectionName = triventValue.get("OutputCollectionName", m_triventOutputCollectionName).asString();
 		// forward parsing to Trivent
-		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(value));
+		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(triventValue));
 	}
 
 	m_nActiveLayers = value.get("NActiveLayers", 48).asUInt();
