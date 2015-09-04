@@ -35,6 +35,7 @@
 #include "dqm4hep/lcio/DQMLCEventStreamer.h"
 
 #include "EVENT/LCEvent.h"
+#include "UTIL/LCTOOLS.h"
 
 #include <fstream>
 #include <stdexcept>
@@ -123,16 +124,33 @@ StatusCode DQMRawDataConverterApplication::run()
 			continue;
 		}
 
+		streamlog_out(DEBUG) << "Event received, ready to process ..." << std::endl;
+		StatusCode statusCode = STATUS_CODE_SUCCESS;
+
 		if(shouldUseStreamout)
-			m_pStreamout->processEvent(pLCEvent);
+		  {
+		    streamlog_out(DEBUG) << "Processing streamout ..." << std::endl;
+			statusCode = m_pStreamout->processEvent(pLCEvent);
+		  }
+
+		if(statusCode != STATUS_CODE_SUCCESS)
+		  continue;
 
 		if(shouldUseTrivent)
-			m_pTrivent->processEvent(pLCEvent);
+		  {
+		    streamlog_out(DEBUG) << "Processing trivent ..." << std::endl;
+			statusCode = m_pTrivent->processEvent(pLCEvent);
+		  }
 
+		if(statusCode != STATUS_CODE_SUCCESS)
+		  continue;
+		
 		// output is Trivent
 		if(shouldUseTrivent)
 		{
 			const std::vector<EVENT::LCEvent*> &reconstructedEventList(m_pTrivent->getReconstructedEvents());
+
+			streamlog_out(DEBUG) << "Number of reconstructed events (Trivent) : " << reconstructedEventList.size() << std::endl;
 
 			for(std::vector<EVENT::LCEvent*>::const_iterator iter = reconstructedEventList.begin(), endIter = reconstructedEventList.end() ;
 					endIter != iter ; ++iter)
@@ -145,6 +163,7 @@ StatusCode DQMRawDataConverterApplication::run()
 				DQMEvent *pDQMLCEvent = new DQMLCEvent();
 				pDQMLCEvent->setEvent<EVENT::LCEvent>(pLCEvent, false);
 
+				streamlog_out(DEBUG) << "Sending post trivent event" << std::endl;
 				StatusCode statusCode = m_pDataSender->sendEvent(pDQMLCEvent);
 
 				if(statusCode != STATUS_CODE_SUCCESS)
@@ -159,9 +178,12 @@ StatusCode DQMRawDataConverterApplication::run()
 		// output is streamout
 		else
 		{
+		  //		  pLCEvent->dropCollection();
 			DQMEvent *pDQMLCEvent = new DQMLCEvent();
 			pDQMLCEvent->setEvent<EVENT::LCEvent>(pLCEvent, false);
+			UTIL::LCTOOLS::dumpEvent(pLCEvent);
 
+			streamlog_out(DEBUG) << "Sending post streamout event" << std::endl;
 			StatusCode statusCode = m_pDataSender->sendEvent(pDQMLCEvent);
 
 			if(statusCode != STATUS_CODE_SUCCESS)
@@ -234,25 +256,27 @@ StatusCode DQMRawDataConverterApplication::readSettings(const std::string &setti
 
 		m_name = converterTypeToString(m_converterType);
 
-		std::string inputCollectionName = rootValue["InputCollectionName"].asString();
-		std::string outputCollectionName = rootValue["OutputCollectionName"].asString();
-
 		bool shouldUseStreamout = (m_converterType != RAW_CALORIMETER_HIT_TO_CALORIMETER_HIT);
 		bool shouldUseTrivent =   (m_converterType != RAW_DATA_TO_RAW_CALORIMETER_HIT);
 
 		if(shouldUseStreamout)
 		{
-			m_pStreamout->setInputCollectionName(inputCollectionName);
+		  const Json::Value &streamoutValue = rootValue["Streamout"];
 
-			if(!shouldUseTrivent)
-				m_pStreamout->setOutputCollectionName(outputCollectionName);
-			else
-				m_pStreamout->setOutputCollectionName("DHCALRawHits");
+		  std::string inputCollectionName = streamoutValue["InputCollectionName"].asString();
+		  std::string outputCollectionName = streamoutValue["OutputCollectionName"].asString();
+		  
+		  streamlog_out(DEBUG) << "Setting input collection : " << inputCollectionName << std::endl;
+		  streamlog_out(DEBUG) << "Setting output collection : " << outputCollectionName << std::endl;
+		  
+		  m_pStreamout->setInputCollectionName(inputCollectionName);
+		  m_pStreamout->setOutputCollectionName(outputCollectionName);
 		}
 
 		if(shouldUseTrivent)
 		{
 			RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(rootValue["Trivent"]));
+			RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->init());
 //			m_pTrivent->setOutputCollectionName(outputCollectionName);
 //
 //			if(!shouldUseStreamout)
