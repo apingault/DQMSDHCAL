@@ -617,7 +617,17 @@ dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
     }
     catch (lcio::DataNotAvailableException &exception)
     {
-        return dqm4hep::STATUS_CODE_NOT_FOUND;
+      streamlog_out(ERROR) << "Collection '" << m_inputCollectionName << "' not found !" << std::endl;
+      const std::vector<std::string> *pCollectionNameList = pLCEvent->getCollectionNames();
+
+      streamlog_out(ERROR) << "Available collections are :  " << std::endl;
+      
+      for(dqm4hep::StringVector::const_iterator iter = pCollectionNameList->begin(), endIter = pCollectionNameList->end() ; endIter != iter ; ++iter)
+      {
+	streamlog_out(ERROR) << "Collection '" << *iter << "', type :  " << pLCEvent->getCollection(*iter)->getTypeName() << std::endl;
+      }
+      
+      return dqm4hep::STATUS_CODE_NOT_FOUND;
     }
 
     if(NULL == pLCCollection)

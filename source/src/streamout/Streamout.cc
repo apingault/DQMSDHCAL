@@ -94,6 +94,7 @@ dqm4hep::StatusCode Streamout::processEvent(EVENT::LCEvent *pLCEvent)
 	}
 	catch(EVENT::DataNotAvailableException &exception)
 	{
+	  streamlog_out(ERROR) << "Input collection name not found : " << m_inputCollectionName << std::endl;
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 
