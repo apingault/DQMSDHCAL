@@ -71,18 +71,18 @@ AsicAnalysisModule::~AsicAnalysisModule()
 
 dqm4hep::StatusCode AsicAnalysisModule::initModule()
 {
-  if(m_shouldProcessStreamout)
-    {
-	m_pStreamout->setInputCollectionName(m_streamoutInputCollectionName);
-	m_pStreamout->setOutputCollectionName(m_streamoutOutputCollectionName);
-	m_pStreamout->setXDaqShift(m_xdaqShift);
-    }
+	if(m_shouldProcessStreamout)
+	{
+		m_pStreamout->setInputCollectionName(m_streamoutInputCollectionName);
+		m_pStreamout->setOutputCollectionName(m_streamoutOutputCollectionName);
+		m_pStreamout->setXDaqShift(m_xdaqShift);
+	}
 
-  if(m_shouldProcessTrivent)
-    {
-	// initialize trivent
-	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->init());
-    }
+	if(m_shouldProcessTrivent)
+	{
+		// initialize trivent
+		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->init());
+	}
 
 	// global element used for booking
 	// direct element access is provided by dqm4hep module API
@@ -187,21 +187,25 @@ dqm4hep::StatusCode AsicAnalysisModule::initModule()
 
 	//----------------------------------------
 
-	pMonitorElement = NULL;
-	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookInt(this,
-			pMonitorElement, "NRecEvents", "N reconstructed events", 0));
+	if(m_shouldProcessTrivent)
+	{
+		pMonitorElement = NULL;
+		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookInt(this,
+				pMonitorElement, "NRecEvents", "N reconstructed events", 0));
 
-	pMonitorElement->setDescription("The number of reconstructed events in the run");
-	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
+		pMonitorElement->setDescription("The number of reconstructed events in the run");
+		pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
 
-	//----------------------------------------
+		//----------------------------------------
 
-	pMonitorElement = NULL;
-	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookInt(this,
-			pMonitorElement, "NNoisyEvents", "N noisy events", 0));
+		pMonitorElement = NULL;
+		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookInt(this,
+				pMonitorElement, "NNoisyEvents", "N noisy events", 0));
 
-	pMonitorElement->setDescription("The number of noisy events in the run");
-	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
+		pMonitorElement->setDescription("The number of noisy events in the run");
+		pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
+	}
+
 
 	DQMModuleApi::cd(this);
 	DQMModuleApi::ls(this, true);
@@ -259,22 +263,30 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(DQMEvent *pEvent)
 		if(m_shouldProcessStreamout)
 			THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pStreamout->processEvent(pLCEvent));
 
+		std::vector<EVENT::LCEvent*> reconstructedEvents;
+
 		// process Trivent if needed
 		if(m_shouldProcessTrivent)
+		{
 			THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->processEvent(pLCEvent));
 
-		// analyze reconstructed events by Trivent
-		const std::vector<EVENT::LCEvent*> &reconstructedEvents(m_pTrivent->getReconstructedEvents());
-		unsigned int nRecEvts = reconstructedEvents.size();
+			reconstructedEvents = m_pTrivent->getReconstructedEvents();
+			// analyze reconstructed events by Trivent
+			unsigned int nRecEvts = reconstructedEvents.size();
+			TScalarInt *pNRecScalar = DQMModuleApi::getMonitorElement(this, "/Global", "NRecEvents")->get<TScalarInt>();
+			pNRecScalar->Set(pNRecScalar->Get() + nRecEvts);
 
-		TScalarInt *pNRecScalar = DQMModuleApi::getMonitorElement(this, "/Global", "NRecEvents")->get<TScalarInt>();
-		pNRecScalar->Set(pNRecScalar->Get() + nRecEvts);
+			const std::vector<EVENT::LCEvent*> &noiseEvents(m_pTrivent->getNoiseEvents());
+			unsigned int nNoiseEvts = noiseEvents.size();
 
-		const std::vector<EVENT::LCEvent*> &noiseEvents(m_pTrivent->getNoiseEvents());
-		unsigned int nNoiseEvts = noiseEvents.size();
-
-		TScalarInt *pNNoiseScalar = DQMModuleApi::getMonitorElement(this, "/Global", "NNoisyEvents")->get<TScalarInt>();
-		pNNoiseScalar->Set(pNNoiseScalar->Get() + nNoiseEvts);
+			TScalarInt *pNNoiseScalar = DQMModuleApi::getMonitorElement(this, "/Global", "NNoisyEvents")->get<TScalarInt>();
+			pNNoiseScalar->Set(pNNoiseScalar->Get() + nNoiseEvts);
+		}
+		else
+		{
+			// the received event is a reconstructed event
+			reconstructedEvents.push_back(pLCEvent);
+		}
 
 		THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, this->doTrackStudy(reconstructedEvents));
 	}
