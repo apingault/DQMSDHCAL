@@ -247,7 +247,15 @@ StatusCode DQMRawDataConverterApplication::readSettings(const std::string &setti
 		m_pDataClient->setCollectorName(inputCollectorName);
 		m_pDataSender->setCollectorName(outputCollectorName);
 
-		unsigned int converterType = rootValue["ConverterType"].asUInt();
+		unsigned int converterType = rootValue.get("ConverterType", 0).asUInt();
+
+		if(converterType != 0)
+		{
+			streamlog_out(ERROR) << "Other converter than raw data to raw calorimeter hits not implemented." << std::endl;
+			streamlog_out(ERROR) << "Sorry !" << std::endl;
+
+			return STATUS_CODE_INVALID_PARAMETER;
+		}
 
 		if(converterType >= NUMBER_OF_CONVERTER_TYPES)
 			return STATUS_CODE_INVALID_PARAMETER;
