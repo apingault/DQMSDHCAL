@@ -71,7 +71,7 @@ DQMRawDataConverterApplication::DQMRawDataConverterApplication() :
 	DQMLCEventStreamer *pOutputLCEventStreamer = NULL;
 
 	THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMPluginManager::instance()->getCastedPluginClone("LCIOStreamer", pInputLCEventStreamer));
-	pOutputLCEventStreamer = dynamic_cast<DQMLCEventStreamer*>(pInputLCEventStreamer->clone());
+	THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMPluginManager::instance()->getCastedPluginClone("LCIOStreamer", pOutputLCEventStreamer));
 
 	m_pDataClient->setEventStreamer(pInputLCEventStreamer);
 	m_pDataSender->setEventStreamer(pOutputLCEventStreamer);
