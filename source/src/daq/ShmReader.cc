@@ -48,6 +48,7 @@
 #include "IMPL/LCGenericObjectImpl.h"
 
 // -- dqm4hep headers
+#include "dqm4hep/core/DQMPluginManager.h"
 #include "dqm4hep/network/DQMDataSender.h"
 #include "dqm4hep/network/DQMNetworkTool.h"
 #include "dqm4hep/lcio/DQMLCEventStreamer.h"
@@ -75,7 +76,9 @@ ShmReader::ShmReader(const std::string &eventCollectorName) :
 	try
 	{
 		m_pEventSender = new dqm4hep::DQMDataSender();
-		m_pEventSender->setEventStreamer(new dqm4hep::DQMLCEventStreamer());
+		dqm4hep::DQMLCEventStreamer *pLCEventStreamer = NULL;
+		THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMPluginManager::instance()->getCastedPluginClone("LCIOStreamer", pLCEventStreamer));
+		m_pEventSender->setEventStreamer(pLCEventStreamer);
 		m_pEventSender->setCollectorName(eventCollectorName);
 
 		if(!dqm4hep::DQMNetworkTool::dataCollectorExists(eventCollectorName))
