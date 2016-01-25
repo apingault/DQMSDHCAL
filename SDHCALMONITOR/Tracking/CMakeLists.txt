@@ -1,7 +1,7 @@
 # CMakeList.txt for ExampleModule
 CMAKE_MINIMUM_REQUIRED( VERSION 2.6 FATAL_ERROR )
 # project name
-PROJECT( ExampleModule )
+PROJECT( LaurentTrackingModule )
 SET( ${PROJECT_NAME}_VERSION_MAJOR 1 )
 SET( ${PROJECT_NAME}_VERSION_MINOR 0 )
 SET( ${PROJECT_NAME}_VERSION_PATCH 0 )
@@ -50,9 +50,9 @@ ADD_DEFINITIONS ( ${DQMCore_DEFINITIONS} )
 # specify where our includes are
 INCLUDE_DIRECTORIES( source )
 # build our shared library libModuleExample.so (.dylib)
-ADD_SHARED_LIBRARY( ExampleModule source/ExampleModule.cc source/DQMTrackAnalyzer.cc source/DQMSDHCALMonitor.cc )
+ADD_SHARED_LIBRARY( ${PROJECT_NAME} source/ExampleModule.cc source/DQMTrackAnalyzer.cc source/DQMSDHCALMonitor.cc )
 # install the shared library in the lib directory
 INSTALL(
-TARGETS ExampleModule
+TARGETS ${PROJECT_NAME}
 LIBRARY DESTINATION lib
 )

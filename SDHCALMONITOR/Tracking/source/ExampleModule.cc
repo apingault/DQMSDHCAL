@@ -30,7 +30,7 @@
 ExampleModule anExampleModule;
 
 
-ExampleModule::ExampleModule() : DQMAnalysisModule("ExampleModule")
+ExampleModule::ExampleModule() : DQMAnalysisModule("LaurentTrackingModule")
 {
 setDetectorName("MySweetCalorimeter");
 setVersion(1, 0, 0);
