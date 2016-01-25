@@ -1,9 +1,9 @@
 #include "DQMSDHCALMonitor.h"
-#include "dqm4hep/core/DQMMonitorElement.h"
-#include "dqm4hep/core/DQMRun.h"
-#include "dqm4hep/core/DQMXmlHelper.h"
-#include "dqm4hep/module/DQMModuleApi.h"
-#include "dqm4hep/core/DQMCoreTool.h"
+#include "dqm4hep/DQMMonitorElement.h"
+#include "dqm4hep/DQMRun.h"
+#include "dqm4hep/DQMXmlHelper.h"
+#include "dqm4hep/DQMModuleApi.h"
+#include "dqm4hep/DQMCoreTool.h"
 
 DQMSDHCALMonitor::DQMSDHCALMonitor(DQMModule* m) : theModule_(m),theTrackIndex_(0),theFirstChamber_(1),theLastChamber_(50),
 						   theExtrapolationMinimumPoint_(6),theExtrapolationMinimumChi2_(0.001),theExtrapolationDistanceCut_(8),theTrackAngularCut_(0.1),theChamberEdgeCut_(5.),useTk4_(true),theIntegratedTime_(0)
