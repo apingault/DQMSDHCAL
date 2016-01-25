@@ -30,14 +30,13 @@
 #define PIONSELECTOR_H
 
 // -- dqm4hep headers
-#include "dqm4hep/core/DQM4HEP.h"
+#include "dqm4hep/DQM4HEP.h"
 
 // -- lcio headers
 #include "EVENT/LCEvent.h"
 #include "EVENT/CalorimeterHit.h"
 
-// -- json headers
-#include "json/json.h"
+namespace dqm4hep { class TiXmlHandle; }
 
 namespace dqm_sdhcal
 {
@@ -56,9 +55,9 @@ public:
 	~PionSelector();
 
 	/** Read the settings needed to configure the pion event selector
-	 *  from a JSON section value
+	 *  from a xml handle
 	 */
-	dqm4hep::StatusCode readSettings(const Json::Value &value);
+	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle &value);
 
 	/** Process an event and fills the properties to decide
 	 *  whether the event is pion event

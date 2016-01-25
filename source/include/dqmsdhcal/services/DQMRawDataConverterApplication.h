@@ -30,10 +30,9 @@
 #define DQMRAWDATACONVERTER_H
 
 // -- dqm4hep headers
-#include "dqm4hep/core/DQM4HEP.h"
-#include "dqm4hep/application/DQMApplication.h"
-#include "dqm4hep/network/DQMDataClient.h"
-#include "dqm4hep/network/DQMDataSender.h"
+#include "dqm4hep/DQM4HEP.h"
+#include "dqm4hep/DQMApplication.h"
+#include "dqm4hep/DQMEventClient.h"
 
 #include "dqmsdhcal/streamout/Streamout.h"
 #include "dqmsdhcal/trivent/Trivent.h"
@@ -98,8 +97,8 @@ private:
 
 	ConverterType        m_converterType;
 
-	dqm4hep::DQMDataClient    *m_pDataClient;
-	dqm4hep::DQMDataSender    *m_pDataSender;
+	dqm4hep::DQMEventClient    *m_pEventClient;  ///< To receive events from collector
+	dqm4hep::DQMEventClient    *m_pEventSender;  ///< To forward events to collector
 
 	Streamout                 *m_pStreamout;
 	Trivent                   *m_pTrivent;

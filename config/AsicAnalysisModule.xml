@@ -1,0 +1,56 @@
+<dqm4hep>
+
+    <archiver open="true" directory="/tmp" />
+    
+    <network>
+        <runcontrol name="SDHCALRunControl" />
+        <eventcollector name="sdhcal_event_collector" />
+        <eventstreamer name="LCIOStreamer" />
+        <monitorelementcollector name="sdhcal_me_collector"/>
+    </network>
+    
+    <cycle type="TimerCycle" value="10" timeout="5" />
+
+    <module type="AsicAnalysisModule" name="MyAsicAnalysisModule">
+        
+        <parameter name="ShouldProcessStreamout"> false </parameter>
+        <parameter name="ShouldProcessTrivent">  false </parameter>
+        
+        <Streamout>
+        	<parameter name="InputCollectionName">  RU_XDAQ </parameter>
+        	<parameter name="OutputCollectionName">  DHCALRawHits </parameter>
+        	<parameter name="XDaqShift">  92 </parameter>
+        </Streamout>
+        
+        <Trivent>
+        	<parameter name="InputCollectionName">  DHCALRawHits </parameter>
+        	<parameter name="OutputCollectionName">  SDHCAL_HIT </parameter>	
+        	
+        	<!-- To adjust ! -->
+        	<parameter name="GeometryFile">  /home/rete/soft/DQMSDHCAL/config/setup_geometry_nov.xml </parameter> 
+        	
+        	<parameter name="LayerCut">  3 </parameter>
+        	<parameter name="NoiseCut">  10 </parameter>
+        	<parameter name="TimeWindow">  2 </parameter>
+        	<parameter name="LayerGap">  0.9 </parameter>
+        	<parameter name="ElecNoiseCut">  100000 </parameter>
+        	<parameter name="Time2PreviousEventCut">  0 </parameter>
+        	<parameter name="GainCorrectionMode">  false </parameter>
+        	<parameter name="CherenkovWindow">  20 </parameter>
+        	<parameter name="CherenkovLenght">  1 </parameter>
+        	<parameter name="CherenkovDifId">  0 </parameter>
+        	<parameter name="TreatCherenkov">  false </parameter>
+        	<parameter name="CellSizeU">  10.408 </parameter>
+        	<parameter name="CellSizeV">  10.408 </parameter>
+        	
+        	<!-- 26.131 for SDHCAL ; 55 at GIF++ -->
+        	<parameter name="LayerThickness">  26.131 </parameter>
+        </Trivent>
+        
+        <parameter name="NActiveLayers">  48 </parameter>
+        <parameter name="ExpectedNTracksPerAsicOverRun">  10000 </parameter>
+        <parameter name="InputCollectionName"> HCALEndcap </parameter>
+        
+    </module>
+
+</dqm4hep>

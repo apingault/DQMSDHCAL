@@ -27,9 +27,10 @@
 
 
 #include "dqmsdhcal/modules/AsicAnalysisModule.h"
-#include "dqm4hep/core/DQMMonitorElement.h"
-#include "dqm4hep/core/DQMEvent.h"
-#include "dqm4hep/module/DQMModuleApi.h"
+#include "dqm4hep/DQMMonitorElement.h"
+#include "dqm4hep/DQMEvent.h"
+#include "dqm4hep/DQMXmlHelper.h"
+#include "dqm4hep/DQMModuleApi.h"
 
 // -- std headers
 #include <iostream>
@@ -215,33 +216,72 @@ dqm4hep::StatusCode AsicAnalysisModule::initModule()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode AsicAnalysisModule::readSettings(const Json::Value &value)
+dqm4hep::StatusCode AsicAnalysisModule::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
-	m_shouldProcessStreamout = value.get("ShouldProcessStreamout", m_shouldProcessStreamout).asBool();
-	m_shouldProcessTrivent = value.get("ShouldProcessTrivent", m_shouldProcessTrivent).asBool();
+	m_shouldProcessStreamout = true;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"ShouldProcessStreamout", m_shouldProcessStreamout));
+
+	m_shouldProcessTrivent = true;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"ShouldProcessTrivent", m_shouldProcessTrivent));
 
 	if(m_shouldProcessStreamout)
 	{
-		const Json::Value &streamoutValue = value["Streamout"];
+		dqm4hep::TiXmlElement *pXmlElement = xmlHandle.FirstChild("Streamout").Element();
 
-		m_streamoutInputCollectionName = streamoutValue.get("InputCollectionName", "RU_XDAQ").asString();
-		m_streamoutOutputCollectionName = streamoutValue.get("OutputCollectionName", "DHCALRawHits").asString();
-		m_xdaqShift = streamoutValue.get("XDaqShift", 24).asUInt();
+		m_streamoutInputCollectionName = "RU_XDAQ";
+		m_streamoutOutputCollectionName = "DHCALRawHits";
+		m_xdaqShift = 24;
+
+		if(pXmlElement)
+		{
+			TiXmlHandle streamoutHandle(pXmlElement);
+
+			RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(streamoutHandle,
+					"InputCollectionName", m_streamoutInputCollectionName));
+
+			RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(streamoutHandle,
+					"OutputCollectionName", m_streamoutOutputCollectionName));
+
+			RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(streamoutHandle,
+					"XDaqShift", m_xdaqShift));
+		}
 	}
 
 	if(m_shouldProcessTrivent)
 	{
-		const Json::Value &triventValue = value["Trivent"];
+		dqm4hep::TiXmlElement *pXmlElement = xmlHandle.FirstChild("Trivent").Element();
 
-		m_triventInputCollectionName = triventValue.get("InputCollectionName", "DHCALRawHits").asString();
-		m_triventOutputCollectionName = triventValue.get("OutputCollectionName", "SDHCAL_HIT").asString();
-		// forward parsing to Trivent
-		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(triventValue));
+		m_triventInputCollectionName = "DHCALRawHits";
+		m_triventOutputCollectionName = "SDHCAL_HIT";
+
+		if(pXmlElement)
+		{
+			TiXmlHandle triventHandle(pXmlElement);
+
+			RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(triventHandle,
+					"InputCollectionName", m_triventInputCollectionName));
+
+			RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(triventHandle,
+					"OutputCollectionName", m_triventOutputCollectionName));
+
+			// forward parsing to Trivent
+			RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(triventHandle));
+		}
 	}
 
-	m_nActiveLayers = value.get("NActiveLayers", 48).asUInt();
-	m_expectedNTracksPerAsicOverRun = value.get("ExpectedNTracksPerAsicOverRun", 10000).asUInt();
-	m_inputCollectionName = value.get("InputCollectionName", "SDHCAL_HIT").asString();
+	m_nActiveLayers = 48;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NActiveLayers", m_nActiveLayers));
+
+	m_expectedNTracksPerAsicOverRun = 10000;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"ExpectedNTracksPerAsicOverRun", m_expectedNTracksPerAsicOverRun));
+
+	m_inputCollectionName = "SDHCAL_HIT";
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"InputCollectionName", m_inputCollectionName));
 
 	return STATUS_CODE_SUCCESS;
 }

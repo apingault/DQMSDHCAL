@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "dqm4hep/core/DQMLogging.h"
+#include "dqm4hep/DQMLogging.h"
 
 ThreeVector Distance::VectorProduct(ThreeVector vec1, ThreeVector vec2)
 {

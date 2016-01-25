@@ -31,9 +31,10 @@
 #include "dqmsdhcal/trivent/Trivent.h"
 
 // -- dqm4hep headers
-#include "dqm4hep/module/DQMModuleApi.h"
-#include "dqm4hep/core/DQMMonitorElement.h"
-#include "dqm4hep/core/DQMEvent.h"
+#include "dqm4hep/DQMModuleApi.h"
+#include "dqm4hep/DQMMonitorElement.h"
+#include "dqm4hep/DQMEvent.h"
+#include "dqm4hep/DQMXmlHelper.h"
 
 // -- lcio headers
 #include "EVENT/LCEvent.h"
@@ -141,20 +142,55 @@ dqm4hep::StatusCode TestRawDataModule::initModule()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode TestRawDataModule::readSettings(const Json::Value &value)
+dqm4hep::StatusCode TestRawDataModule::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
-	m_shouldProcessStreamout = value.get("ShouldProcessStreamout", m_shouldProcessStreamout).asBool();
-	m_shouldProcessTrivent = value.get("ShouldProcessTrivent", m_shouldProcessTrivent).asBool();
+	m_shouldProcessStreamout = true;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"ShouldProcessStreamout", m_shouldProcessStreamout));
+
+	m_shouldProcessTrivent = true;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"ShouldProcessTrivent", m_shouldProcessTrivent));
 
 	if(m_shouldProcessStreamout)
 	{
-		m_streamoutInputCollectionName = value.get("StreamoutInputCollectionName", m_streamoutInputCollectionName).asString();
-		m_streamoutOutputCollectionName = value.get("StreamoutOutputCollectionName", m_streamoutOutputCollectionName).asString();
+		dqm4hep::TiXmlElement *pXmlElement = xmlHandle.FirstChild("Streamout").Element();
+
+		m_streamoutInputCollectionName = "RU_XDAQ";
+		m_streamoutOutputCollectionName = "DHCALRawHits";
+
+		if(pXmlElement)
+		{
+			TiXmlHandle streamoutHandle(pXmlElement);
+
+			RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(streamoutHandle,
+					"InputCollectionName", m_streamoutInputCollectionName));
+
+			RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(streamoutHandle,
+					"OutputCollectionName", m_streamoutOutputCollectionName));
+		}
 	}
 
 	if(m_shouldProcessTrivent)
 	{
-		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(value["Trivent"]));
+		dqm4hep::TiXmlElement *pXmlElement = xmlHandle.FirstChild("Trivent").Element();
+
+		m_triventInputCollectionName = "DHCALRawHits";
+		m_triventOutputCollectionName = "SDHCAL_HIT";
+
+		if(pXmlElement)
+		{
+			TiXmlHandle triventHandle(pXmlElement);
+
+			RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(triventHandle,
+					"InputCollectionName", m_triventInputCollectionName));
+
+			RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(triventHandle,
+					"OutputCollectionName", m_triventOutputCollectionName));
+
+			// forward parsing to Trivent
+			RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(triventHandle));
+		}
 	}
 
 	return STATUS_CODE_SUCCESS;

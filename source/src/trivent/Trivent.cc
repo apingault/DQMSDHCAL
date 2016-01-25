@@ -48,7 +48,8 @@
 #include <algorithm>
 
 // -- dqm4hep headers
-#include "dqm4hep/core/tinyxml.h"
+#include "dqm4hep/tinyxml.h"
+#include "dqm4hep/DQMXmlHelper.h"
 
 namespace dqm_sdhcal
 {
@@ -104,32 +105,55 @@ void Trivent::clear()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode Trivent::readSettings(const Json::Value &value)
+dqm4hep::StatusCode Trivent::readSettings(const dqm4hep::TiXmlHandle &xmlHandle)
 {
-	try
-	{
-		m_inputCollectionName = value.get("InputCollectionName", m_inputCollectionName).asString();
-		m_outputCollectionName = value.get("OutputCollectionName", m_outputCollectionName).asString();
-		m_geomXMLFile = value.get("GeometryFile", m_geomXMLFile).asString();
-		m_layerCut = value.get("LayerCut", m_layerCut).asUInt();
-		m_noiseCut = value.get("NoiseCut", m_noiseCut).asUInt();
-		m_timeWindow = value.get("TimeWindow", m_timeWindow).asUInt();
-		m_layerGap = value.get("LayerGap", m_layerGap).asFloat();
-		m_elecNoiseCut = value.get("ElecNoiseCut", m_elecNoiseCut).asFloat();
-		m_time2PreviousEventCut = value.get("Time2PreviousEventCut", m_time2PreviousEventCut).asUInt();
-		m_gainCorrectionMode = value.get("GainCorrectionMode", m_gainCorrectionMode).asBool();
-		m_cerenkovWindow = value.get("CherenkovWindow", m_cerenkovWindow).asUInt();
-		m_cerenkovDifId = value.get("CherenkovDifId", m_cerenkovDifId).asUInt();
-		m_cellSizeU = value.get("CellSizeU", m_cellSizeU).asFloat();
-		m_cellSizeV = value.get("CellSizeV", m_cellSizeV).asFloat();
-		m_layerThickness = value.get("LayerThickness", m_layerThickness).asFloat();
-		m_treatCherenkov = value.get("TreatCherenkov", m_treatCherenkov).asBool();
-	}
-	catch(const std::runtime_error &exception)
-	{
-		std::cout << "Trivent::readSettings(v): " << exception.what() << std::endl;
-		return dqm4hep::STATUS_CODE_FAILURE;
-	}
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"InputCollectionName", m_inputCollectionName));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"OutputCollectionName", m_outputCollectionName));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"GeometryFile", m_geomXMLFile));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"LayerCut", m_layerCut));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NoiseCut", m_noiseCut));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"TimeWindow", m_timeWindow));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"LayerGap", m_layerGap));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"ElecNoiseCut", m_elecNoiseCut));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Time2PreviousEventCut", m_time2PreviousEventCut));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"GainCorrectionMode", m_gainCorrectionMode));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"CherenkovWindow", m_cerenkovWindow));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"CherenkovDifId", m_cerenkovDifId));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"CellSizeU", m_cellSizeU));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"CellSizeV", m_cellSizeV));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"LayerThickness", m_layerThickness));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"TreatCherenkov", m_treatCherenkov));
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }

@@ -48,9 +48,9 @@
 #include "IMPL/LCGenericObjectImpl.h"
 
 // -- dqm4hep headers
-#include "dqm4hep/core/DQMPluginManager.h"
-#include "dqm4hep/network/DQMDataSender.h"
-#include "dqm4hep/network/DQMNetworkTool.h"
+#include "dqm4hep/DQMPluginManager.h"
+#include "dqm4hep/DQMEventClient.h"
+#include "dqm4hep/DQMNetworkTool.h"
 #include "dqm4hep/lcio/DQMLCEventStreamer.h"
 #include "dqm4hep/lcio/DQMLCEvent.h"
 
@@ -75,21 +75,21 @@ ShmReader::ShmReader(const std::string &eventCollectorName) :
 {
 	try
 	{
-		m_pEventSender = new dqm4hep::DQMDataSender();
+		m_pEventClient = new dqm4hep::DQMEventClient();
 		dqm4hep::DQMLCEventStreamer *pLCEventStreamer = NULL;
 		THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMPluginManager::instance()->getCastedPluginClone("LCIOStreamer", pLCEventStreamer));
-		m_pEventSender->setEventStreamer(pLCEventStreamer);
-		m_pEventSender->setCollectorName(eventCollectorName);
+		m_pEventClient->setEventStreamer(pLCEventStreamer);
+		m_pEventClient->setCollectorName(eventCollectorName);
 
-		if(!dqm4hep::DQMNetworkTool::dataCollectorExists(eventCollectorName))
+		if(!dqm4hep::DQMNetworkTool::eventCollectorExists(eventCollectorName))
 			streamlog_out(WARNING) << "SDHCAL ShmReader : collector '" << eventCollectorName << "' not yet registered over the network" << std::endl;
 	}
 	catch(dqm4hep::StatusCodeException &statusCodeException)
 	{
-		if(m_pEventSender)
+		if(m_pEventClient)
 		{
-			delete m_pEventSender;
-			m_pEventSender = NULL;
+			delete m_pEventClient;
+			m_pEventClient = NULL;
 		}
 
 		throw statusCodeException;
@@ -100,8 +100,8 @@ ShmReader::ShmReader(const std::string &eventCollectorName) :
 
 ShmReader::~ShmReader() 
 {
-	if(m_pEventSender)
-		delete m_pEventSender;
+	if(m_pEventClient)
+		delete m_pEventClient;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -245,7 +245,7 @@ void ShmReader::start()
 			// send it to the system
 			try
 			{
-				THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventSender->sendEvent(&dqmEvent));
+				THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventClient->sendEvent(&dqmEvent));
 			}
 			catch(dqm4hep::StatusCodeException &exception)
 			{

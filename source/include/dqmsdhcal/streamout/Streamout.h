@@ -29,7 +29,7 @@
 #ifndef STREAMOUT_H
 #define STREAMOUT_H
 
-#include "dqm4hep/core/DQM4HEP.h"
+#include "dqm4hep/DQM4HEP.h"
 
 namespace EVENT { class LCEvent; }
 

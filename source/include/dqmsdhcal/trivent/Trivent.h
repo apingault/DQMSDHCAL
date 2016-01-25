@@ -29,16 +29,13 @@
 #define TRIVENT_H
 
 // -- dqm4hep headers
-#include "dqm4hep/core/DQM4HEP.h"
+#include "dqm4hep/DQM4HEP.h"
 
 // -- dqm sdhcal headers
 #include "dqmsdhcal/daq/Mapping.h"
 
-// -- json headers
-#include "json/json.h"
-
 namespace EVENT { class LCEvent; class LCCollection; class RawCalorimeterHit; }
-namespace dqm4hep { class TiXmlElement; }
+namespace dqm4hep { class TiXmlElement; class TiXmlHandle; }
 
 namespace dqm_sdhcal
 {
@@ -62,9 +59,9 @@ public:
      */
     dqm4hep::StatusCode init();
 
-    /** Read settings from a json value
+    /** Read settings from a xml handle
      */
-    dqm4hep::StatusCode readSettings(const Json::Value &value);
+    dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle &xmlHandle);
 
 	/** Process Trivent on the lcio event.
 	 *  Create a CalorimeterHit collection from a RawCalorimeterHit Collection from StreamOut

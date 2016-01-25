@@ -29,9 +29,9 @@
 #ifndef SHMREADER_H
 #define SHMREADER_H
 
-#include "dqm4hep/core/DQM4HEP.h"
+#include "dqm4hep/DQM4HEP.h"
 
-namespace dqm4hep { class DQMDataSender; }
+namespace dqm4hep { class DQMEventClient; }
 namespace EVENT { class LCEvent; class LCCollection; }
 
 
@@ -64,10 +64,10 @@ private:
 	std::string                 m_monitoringDirectory;
 	std::string                 m_detectorName;
 	std::string                 m_collectionName;
-	unsigned int              m_numberOfDifs;
+	unsigned int                m_numberOfDifs;
 
 	int                         m_currentEventNumber;
-	dqm4hep::DQMDataSender     *m_pEventSender;
+	dqm4hep::DQMEventClient    *m_pEventClient;
 };
 
 inline void ShmReader::setMonitoringDirectory(const std::string &directory)

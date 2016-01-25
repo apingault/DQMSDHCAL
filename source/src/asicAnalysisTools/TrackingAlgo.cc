@@ -2,7 +2,7 @@
 #include <TPrincipal.h>
 #include <UTIL/CellIDDecoder.h>
 
-#include "dqm4hep/core/DQMLogging.h"
+#include "dqm4hep/DQMLogging.h"
 
 TrackingAlgo::TrackingAlgo()
 {

@@ -38,6 +38,9 @@
 
 #include "Linear3DFit.hh"
 
+#include "dqm4hep/tinyxml.h"
+#include "dqm4hep/DQMXmlHelper.h"
+
 namespace dqm_sdhcal
 {
 
@@ -82,29 +85,46 @@ PionSelector::~PionSelector()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode PionSelector::readSettings(const Json::Value &value)
+dqm4hep::StatusCode PionSelector::readSettings(const dqm4hep::TiXmlHandle &xmlHandle)
 {
-	try
-	{
-		m_nHitCut = value.get("nHitCut", m_nHitCut).asInt();
-		m_nHitOverNLayerCut = value.get("NHitOverNLayerCut", m_nHitOverNLayerCut).asDouble();
-		m_radiusOverCog2Cut = value.get("RadiusOverCog2Cut", m_radiusOverCog2Cut).asDouble();
-		m_showerStartingLayerCut = value.get("ShowerStartingLayerCut", m_showerStartingLayerCut).asInt();
-		m_nTouchedLayersCut = value.get("NTouchedLayersCut", m_nTouchedLayersCut).asInt();
-		m_fractalTimesCentralCellsCut = value.get("FractalTimesCentralCellsCut", m_fractalTimesCentralCellsCut).asDouble();
-		m_nHolesCut = value.get("NHolesCut", m_nHolesCut).asInt();
-		m_nHitEdgePercentCut = value.get("NHitEdgePercentCut", m_nHitEdgePercentCut).asDouble();
-		m_electronStartingLayerCut = value.get("ElectronStartingLayerCut", m_electronStartingLayerCut).asInt();
-		m_largeRMSCut = value.get("m_largeRMSCut", m_largeRMSCut).asDouble();
-		m_barycenterPositionCut = value.get("m_barycenterPositionCut", m_barycenterPositionCut).asDouble();
-		m_cosThetaCut = value.get("m_cosThetaCut", m_cosThetaCut).asDouble();
-		m_neutralFirstLayerCut = value.get("m_neutralFirstLayerCut", m_neutralFirstLayerCut).asInt();
-	}
-	catch(const std::runtime_error &exception)
-	{
-		streamlog_out(ERROR) << "PionSelector::readSettings(v): " << exception.what() << std::endl;
-		return dqm4hep::STATUS_CODE_FAILURE;
-	}
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NHitCut", m_nHitCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NHitOverNLayerCut", m_nHitOverNLayerCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"RadiusOverCog2Cut", m_radiusOverCog2Cut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"ShowerStartingLayerCut", m_showerStartingLayerCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NTouchedLayersCut", m_nTouchedLayersCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"FractalTimesCentralCellsCut", m_fractalTimesCentralCellsCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NHolesCut", m_nHitEdgePercentCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NHitEdgePercentCut", m_nHitEdgePercentCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"ElectronStartingLayerCut", m_electronStartingLayerCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"LargeRMSCut", m_largeRMSCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"BarycenterPositionCut", m_barycenterPositionCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"CosThetaCut", m_cosThetaCut));
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NeutralFirstLayerCut", m_neutralFirstLayerCut));
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }

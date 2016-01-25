@@ -30,8 +30,8 @@
 #define ASICANALYSISMODULE_H
 
 // -- dqm4hep headers
-#include "dqm4hep/core/DQM4HEP.h"
-#include "dqm4hep/module/DQMAnalysisModule.h"
+#include "dqm4hep/DQM4HEP.h"
+#include "dqm4hep/DQMAnalysisModule.h"
 
 // -- lcio headers
 #include "lcio.h"
@@ -70,12 +70,12 @@ public:
 	virtual ~AsicAnalysisModule();
 
 	dqm4hep::StatusCode initModule();
-	dqm4hep::StatusCode readSettings(const Json::Value &value);
-	dqm4hep::StatusCode processEvent(dqm4hep::DQMEvent *pEvent);
+	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
+	dqm4hep::StatusCode processEvent(dqm4hep::DQMEvent *const pEvent);
 	dqm4hep::StatusCode startOfCycle();
 	dqm4hep::StatusCode endOfCycle();
-	dqm4hep::StatusCode startOfRun(dqm4hep::DQMRun *pRun);
-	dqm4hep::StatusCode endOfRun(dqm4hep::DQMRun *pRun);
+	dqm4hep::StatusCode startOfRun(dqm4hep::DQMRun *const pRun);
+	dqm4hep::StatusCode endOfRun(dqm4hep::DQMRun *const pRun);
 	dqm4hep::StatusCode endModule();
 	dqm4hep::DQMPlugin *clone() const;
 

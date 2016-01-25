@@ -31,8 +31,8 @@
 //#include "streamlog/streamlog.h"
 
 // -- dqm4hep headers
-#include "dqm4hep/core/DQM4HEP.h"
-#include "dqm4hep/core/DQMLogging.h"
+#include "dqm4hep/DQM4HEP.h"
+#include "dqm4hep/DQMLogging.h"
 
 // -- tclap headers
 #include "tclap/CmdLine.h"

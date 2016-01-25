@@ -7,7 +7,7 @@
 #include "math.h"
 #include <TMath.h>
 
-#include "dqm4hep/core/DQMLogging.h"
+#include "dqm4hep/DQMLogging.h"
 
 Layer::Layer(int ID)
 {

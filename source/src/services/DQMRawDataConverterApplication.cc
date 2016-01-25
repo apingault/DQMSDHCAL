@@ -30,7 +30,7 @@
 
 #include "dis.hxx"
 
-#include "dqm4hep/core/DQMPluginManager.h"
+#include "dqm4hep/DQMPluginManager.h"
 #include "dqm4hep/lcio/DQMLCEvent.h"
 #include "dqm4hep/lcio/DQMLCEventStreamer.h"
 
@@ -63,9 +63,9 @@ DQMRawDataConverterApplication::DQMRawDataConverterApplication() :
 		m_type("RawDataConverter"),
 		m_name("UNKNOWN")
 {
-	// data client and sender
-	m_pDataClient = new DQMDataClient();
-	m_pDataSender = new DQMDataSender();
+	// event client and sender
+	m_pEventClient = new DQMEventClient();
+	m_pEventSender = new DQMEventClient();
 
 	DQMLCEventStreamer *pInputLCEventStreamer = NULL;
 	DQMLCEventStreamer *pOutputLCEventStreamer = NULL;
@@ -73,8 +73,8 @@ DQMRawDataConverterApplication::DQMRawDataConverterApplication() :
 	THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMPluginManager::instance()->getCastedPluginClone("LCIOStreamer", pInputLCEventStreamer));
 	THROW_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMPluginManager::instance()->getCastedPluginClone("LCIOStreamer", pOutputLCEventStreamer));
 
-	m_pDataClient->setEventStreamer(pInputLCEventStreamer);
-	m_pDataSender->setEventStreamer(pOutputLCEventStreamer);
+	m_pEventClient->setEventStreamer(pInputLCEventStreamer);
+	m_pEventSender->setEventStreamer(pOutputLCEventStreamer);
 
 	// streamout and trivent
 	m_pStreamout = new Streamout();
@@ -85,8 +85,8 @@ DQMRawDataConverterApplication::DQMRawDataConverterApplication() :
 
 DQMRawDataConverterApplication::~DQMRawDataConverterApplication()
 {
-	delete m_pDataClient;
-	delete m_pDataSender;
+	delete m_pEventClient;
+	delete m_pEventSender;
 
 	delete m_pStreamout;
 	delete m_pTrivent;
@@ -96,8 +96,8 @@ DQMRawDataConverterApplication::~DQMRawDataConverterApplication()
 
 StatusCode DQMRawDataConverterApplication::run()
 {
-	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pDataClient->connectToService());
-	m_pDataClient->startReceive();
+	m_pEventClient->setUpdateMode(true);
+	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pEventClient->connectToService());
 
 	DimServer::start( ("DQMSDHCAL/" + getType() + "/" + getName()).c_str() );
 
@@ -106,7 +106,8 @@ StatusCode DQMRawDataConverterApplication::run()
 
 	while(!m_stopFlag)
 	{
-		DQMEvent *pEvent = m_pDataClient->takeEvent();
+		DQMEvent *pEvent = NULL;
+		RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pEventClient->takeEvent(pEvent));
 
 		if(!pEvent)
 		{
@@ -164,7 +165,7 @@ StatusCode DQMRawDataConverterApplication::run()
 				pDQMLCEvent->setEvent<EVENT::LCEvent>(pLCEvent, false);
 
 				streamlog_out(DEBUG) << "Sending post trivent event" << std::endl;
-				StatusCode statusCode = m_pDataSender->sendEvent(pDQMLCEvent);
+				StatusCode statusCode = m_pEventSender->sendEvent(pDQMLCEvent);
 
 				if(statusCode != STATUS_CODE_SUCCESS)
 				{
@@ -184,7 +185,7 @@ StatusCode DQMRawDataConverterApplication::run()
 			UTIL::LCTOOLS::dumpEvent(pLCEvent);
 
 			streamlog_out(DEBUG) << "Sending post streamout event" << std::endl;
-			StatusCode statusCode = m_pDataSender->sendEvent(pDQMLCEvent);
+			StatusCode statusCode = m_pEventSender->sendEvent(pDQMLCEvent);
 
 			if(statusCode != STATUS_CODE_SUCCESS)
 			{
@@ -205,8 +206,8 @@ StatusCode DQMRawDataConverterApplication::run()
 
 StatusCode DQMRawDataConverterApplication::exit(int returnCode)
 {
-	if(m_pDataClient)
-		m_pDataClient->stopReceive();
+	if(m_pEventClient)
+		m_pEventClient->setUpdateMode(false);
 
 	m_stopFlag = true;
 
@@ -222,84 +223,85 @@ StatusCode DQMRawDataConverterApplication::exit(int returnCode)
 
 StatusCode DQMRawDataConverterApplication::readSettings(const std::string &settingsFileName)
 {
-	try
-	{
-		// parse json file
-		Json::Reader reader;
-		std::ifstream settingsFile (settingsFileName.c_str(), std::ifstream::in);
-
-		Json::Value rootValue;
-		bool parsedSuccess = reader.parse(settingsFile, rootValue, false);
-
-		if(!parsedSuccess)
-		{
-			streamlog_out(ERROR) << "Couldn't parse json file :" << std::endl;
-			streamlog_out(ERROR) << reader.getFormatedErrorMessages() << std::endl;
-
-			return STATUS_CODE_FAILURE;
-		}
-
-		m_timeSleepPublication = rootValue.get("TimeSleepPublication", 1000).asUInt();
-
-		std::string inputCollectorName = rootValue["InputCollectorName"].asString();
-		std::string outputCollectorName = rootValue["OutputCollectorName"].asString();
-
-		m_pDataClient->setCollectorName(inputCollectorName);
-		m_pDataSender->setCollectorName(outputCollectorName);
-
-		unsigned int converterType = rootValue.get("ConverterType", 0).asUInt();
-
-		if(converterType != 0)
-		{
-			streamlog_out(ERROR) << "Other converter than raw data to raw calorimeter hits not implemented." << std::endl;
-			streamlog_out(ERROR) << "Sorry !" << std::endl;
-
-			return STATUS_CODE_INVALID_PARAMETER;
-		}
-
-		if(converterType >= NUMBER_OF_CONVERTER_TYPES)
-			return STATUS_CODE_INVALID_PARAMETER;
-
-		m_converterType = static_cast<ConverterType>(converterType);
-
-		m_name = converterTypeToString(m_converterType);
-
-		bool shouldUseStreamout = (m_converterType != RAW_CALORIMETER_HIT_TO_CALORIMETER_HIT);
-		bool shouldUseTrivent =   (m_converterType != RAW_DATA_TO_RAW_CALORIMETER_HIT);
-
-		if(shouldUseStreamout)
-		{
-		  const Json::Value &streamoutValue = rootValue["Streamout"];
-
-		  std::string inputCollectionName = streamoutValue["InputCollectionName"].asString();
-		  std::string outputCollectionName = streamoutValue["OutputCollectionName"].asString();
-		  
-		  streamlog_out(DEBUG) << "Setting input collection : " << inputCollectionName << std::endl;
-		  streamlog_out(DEBUG) << "Setting output collection : " << outputCollectionName << std::endl;
-		  
-		  m_pStreamout->setInputCollectionName(inputCollectionName);
-		  m_pStreamout->setOutputCollectionName(outputCollectionName);
-		}
-
-		if(shouldUseTrivent)
-		{
-			RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(rootValue["Trivent"]));
-			RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->init());
-//			m_pTrivent->setOutputCollectionName(outputCollectionName);
+//	try
+//	{
 //
-//			if(!shouldUseStreamout)
-//				m_pTrivent->setInputCollectionName(inputCollectionName);
-//			else
-//				m_pTrivent->setInputCollectionName("DHCALRawHits");
-
-//			std::string geometryFile = rootValue["GeometryFile"].asString();
-//			m_pTrivent->setGeometryXMLFile(geometryFile);
-		}
-	}
-	catch(const std::runtime_error &exception)
-	{
-		return STATUS_CODE_NOT_FOUND;
-	}
+//		// parse json file
+//		Json::Reader reader;
+//		std::ifstream settingsFile (settingsFileName.c_str(), std::ifstream::in);
+//
+//		Json::Value rootValue;
+//		bool parsedSuccess = reader.parse(settingsFile, rootValue, false);
+//
+//		if(!parsedSuccess)
+//		{
+//			streamlog_out(ERROR) << "Couldn't parse json file :" << std::endl;
+//			streamlog_out(ERROR) << reader.getFormatedErrorMessages() << std::endl;
+//
+//			return STATUS_CODE_FAILURE;
+//		}
+//
+//		m_timeSleepPublication = rootValue.get("TimeSleepPublication", 1000).asUInt();
+//
+//		std::string inputCollectorName = rootValue["InputCollectorName"].asString();
+//		std::string outputCollectorName = rootValue["OutputCollectorName"].asString();
+//
+//		m_pDataClient->setCollectorName(inputCollectorName);
+//		m_pDataSender->setCollectorName(outputCollectorName);
+//
+//		unsigned int converterType = rootValue.get("ConverterType", 0).asUInt();
+//
+//		if(converterType != 0)
+//		{
+//			streamlog_out(ERROR) << "Other converter than raw data to raw calorimeter hits not implemented." << std::endl;
+//			streamlog_out(ERROR) << "Sorry !" << std::endl;
+//
+//			return STATUS_CODE_INVALID_PARAMETER;
+//		}
+//
+//		if(converterType >= NUMBER_OF_CONVERTER_TYPES)
+//			return STATUS_CODE_INVALID_PARAMETER;
+//
+//		m_converterType = static_cast<ConverterType>(converterType);
+//
+//		m_name = converterTypeToString(m_converterType);
+//
+//		bool shouldUseStreamout = (m_converterType != RAW_CALORIMETER_HIT_TO_CALORIMETER_HIT);
+//		bool shouldUseTrivent =   (m_converterType != RAW_DATA_TO_RAW_CALORIMETER_HIT);
+//
+//		if(shouldUseStreamout)
+//		{
+//		  const Json::Value &streamoutValue = rootValue["Streamout"];
+//
+//		  std::string inputCollectionName = streamoutValue["InputCollectionName"].asString();
+//		  std::string outputCollectionName = streamoutValue["OutputCollectionName"].asString();
+//
+//		  streamlog_out(DEBUG) << "Setting input collection : " << inputCollectionName << std::endl;
+//		  streamlog_out(DEBUG) << "Setting output collection : " << outputCollectionName << std::endl;
+//
+//		  m_pStreamout->setInputCollectionName(inputCollectionName);
+//		  m_pStreamout->setOutputCollectionName(outputCollectionName);
+//		}
+//
+//		if(shouldUseTrivent)
+//		{
+//			RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(rootValue["Trivent"]));
+//			RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, m_pTrivent->init());
+////			m_pTrivent->setOutputCollectionName(outputCollectionName);
+////
+////			if(!shouldUseStreamout)
+////				m_pTrivent->setInputCollectionName(inputCollectionName);
+////			else
+////				m_pTrivent->setInputCollectionName("DHCALRawHits");
+//
+////			std::string geometryFile = rootValue["GeometryFile"].asString();
+////			m_pTrivent->setGeometryXMLFile(geometryFile);
+//		}
+//	}
+//	catch(const std::runtime_error &exception)
+//	{
+//		return STATUS_CODE_NOT_FOUND;
+//	}
 
 	return STATUS_CODE_SUCCESS;
 }
