@@ -1,3 +1,0 @@
-/home/mirabito/SDHCALMONITOR/Tracking/lib/libExampleModule.so...
-/home/mirabito/SDHCALMONITOR/Tracking/lib/libExampleModule.so..
-/home/mirabito/SDHCALMONITOR/Tracking/lib/libExampleModule.so

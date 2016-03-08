@@ -1,9 +1,9 @@
 #define NPLANS_USED 6
-#include "dqm4hep/core/DQMMonitorElement.h"
-#include "dqm4hep/core/DQMRun.h"
-#include "dqm4hep/core/DQMXmlHelper.h"
-#include "dqm4hep/module/DQMModuleApi.h"
-#include "dqm4hep/core/DQMCoreTool.h"
+#include "dqm4hep/DQMMonitorElement.h"
+#include "dqm4hep/DQMRun.h"
+#include "dqm4hep/DQMXmlHelper.h"
+#include "dqm4hep/DQMModuleApi.h"
+#include "dqm4hep/DQMCoreTool.h"
 #include "DQMShowerAnalyzer.h"
 #include "DIFUnpacker.h"
 #include <TLine.h>

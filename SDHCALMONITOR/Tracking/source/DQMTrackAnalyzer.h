@@ -5,7 +5,7 @@
 #include <vector>
 #include "DHCALAnalyzer.h"
 #include "DHCalEventReader.h"
-#include "dqm4hep/module/DQMModule.h"
+#include "dqm4hep/DQMModule.h"
 using namespace dqm4hep;
 
 #include <iostream>
