@@ -24,3 +24,15 @@ INSTALL(
 )
 
 
+# -------------------------------------------------
+# build SlowControlModule library
+
+INCLUDE_DIRECTORIES( SlowControlModule )
+ADD_SHARED_LIBRARY( SlowControlModule SlowControlModule/SlowControlModule.cc )
+TARGET_LINK_LIBRARIES( SlowControlModule ${PROJECT_NAME}Common )
+
+INSTALL(
+    TARGETS SlowControlModule
+    LIBRARY DESTINATION lib
+)
+

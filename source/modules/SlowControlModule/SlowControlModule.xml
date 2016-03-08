@@ -1,0 +1,31 @@
+<dqm4hep>
+
+    <monitorelementcollector name="sdhcal_me_collector"/>    
+    <archiver open="true" directory="/tmp" />
+    <cycle sleep="2000" period="3" reset="false" />
+
+    <module type="SlowControlModule" name="SlowControl">
+        
+		<monitorElement ID="GlobalTemperature"
+			name="GlobalTemperature" path="/" type="float" 
+			title="Global temperature" value="0"/>
+			
+		<monitorElement ID="GlobalPressure"
+			name="GlobalPressure" path="/" type="float" 
+			title="Global pressure" value="0"/>
+		
+		<monitorElement ID="HighVoltage"
+			name="HighVoltage" path="/" type="TH1I" title="High voltage" 
+			nBins="50" min="0" max="49" 
+			drawOption="E"/>
+			
+		<monitorElement ID="LowVoltage"
+			name="LowVoltage" path="/" type="TH1I" title="Low voltage" 
+			nBins="50" min="0" max="49" 
+			drawOption="E"/>
+        	
+		<parameter name="NLayers"> 48 </parameter>
+
+    </module>
+
+</dqm4hep>
