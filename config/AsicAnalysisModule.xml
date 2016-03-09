@@ -1,11 +1,16 @@
 <dqm4hep>
 
-    <archiver open="true" directory="/tmp" />
+    <archiver open="false" directory="/tmp" />
     
     <network>
-        <runcontrol name="SDHCALRunControl" />
-        <eventcollector name="sdhcal_event_collector" />
-        <eventstreamer name="LCIOStreamer" />
+        <runcontrol type="DimRunControlClient" name="SDHCALRunControl" />
+        
+        <eventcollector type="DimEventClient">
+        	<parameter name="collectorName"> sdhcal_event_collector </parameter>
+        	<parameter name="maxQueueSize"> 100 </parameter>
+        	<parameter name="streamerName"> LCIOStreamer </parameter>
+        </eventcollector>
+        
         <monitorelementcollector name="sdhcal_me_collector"/>
     </network>
     
@@ -14,7 +19,6 @@
     <module type="AsicAnalysisModule" name="MyAsicAnalysisModule">
         
         <parameter name="ShouldProcessStreamout"> false </parameter>
-        <parameter name="ShouldProcessTrivent">  false </parameter>
         
         <Streamout>
         	<parameter name="InputCollectionName">  RU_XDAQ </parameter>
@@ -49,7 +53,7 @@
         
         <parameter name="NActiveLayers">  48 </parameter>
         <parameter name="ExpectedNTracksPerAsicOverRun">  10000 </parameter>
-        <parameter name="InputCollectionName"> HCALEndcap </parameter>
+        <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
         
     </module>
 
