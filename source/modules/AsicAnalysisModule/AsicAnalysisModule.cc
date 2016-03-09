@@ -204,6 +204,8 @@ dqm4hep::StatusCode AsicAnalysisModule::processNoisyEvent(EVENT::LCEvent *pLCEve
 
 dqm4hep::StatusCode AsicAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLCEvent)
 {
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "Processing physics event no " << pLCEvent->getEventNumber() );
+
 	try
 	{
 		EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(m_inputCollectionName);
