@@ -52,8 +52,61 @@
         </Trivent>
         
         <parameter name="NActiveLayers">  48 </parameter>
-        <parameter name="ExpectedNTracksPerAsicOverRun">  10000 </parameter>
         <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
+        
+        
+		<monitorElement ID="EfficiencyMap"
+			name="EfficiencyMap" path="/Layers/EfficiencyMaps" type="TH2F" title="Efficiency map" 
+			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"
+			drawOption="colz" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="MultiplicityMap"
+			name="MultiplicityMap" path="/Layers/MultiplicityMaps" type="TH2F" title="Multiplicity map" 
+			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"
+			drawOption="colz" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="LayerEfficiency"
+			name="LayerEfficiency" path="/Global" type="TH1I" title="Layer efficiencies" 
+			nBins="49" min="0" max="48" drawOption="E"
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="LayerMultiplicity"
+			name="LayerMultiplicity" path="/Global" type="TH1I" title="Layer multiplicities" 
+			nBins="49" min="0" max="48" drawOption="E"
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="AsicEfficiency"
+			name="AsicEfficiency" path="/Global" type="TH1F" title="Asic efficiencies" 
+			nBins="101" min="0" max="1"
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="AsicMultiplicity"
+			name="AsicMultiplicity" path="/Global" type="TH1F" title="Asic multiplicities" 
+			nBins="101" min="0" max="10"
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="StackedEfficiencyMap"
+			name="StackedEfficiencyMap" path="/Global" type="TH2F" title="Stacked efficiency map" 
+			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"  
+			drawOption="colz" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="StackedMultiplicityMap"
+			name="StackedMultiplicityMap" path="/Global" type="TH2F" title="Stacked multiplicity map" 
+			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"
+			drawOption="colz" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="GlobalEfficiency"
+			name="GlobalEfficiency" path="/Global" type="float" title="Global efficiency" 
+			value="0" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="GlobalMultiplicity"
+			name="GlobalMultiplicity" path="/Global" type="float" title="Global multiplicities" 
+			value="0" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="NTracksPerAsic"
+			name="NTracksPerAsic" path="/Global" type="TH1F" title="Number of rec tracks per asic" 
+			nBins="10001" min="0" max="10000"
+			resetPolicy="EndOfRun"/>
         
     </module>
 

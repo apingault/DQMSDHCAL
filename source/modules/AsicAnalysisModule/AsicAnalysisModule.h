@@ -85,16 +85,36 @@ public:
 	void LayerProperties(std::vector<Cluster*> &clVec);
 	int findAsicKey(int layer,float x, float y);
 
-protected:
+	void resetElements();
+
+private:
+	struct LayerElements
+	{
+		dqm4hep::DQMMonitorElement *m_pEfficiencyMap;
+		dqm4hep::DQMMonitorElement *m_pMultiplicityMap;
+	};
 
 	unsigned int                    m_nActiveLayers;
-	unsigned int                    m_expectedNTracksPerAsicOverRun;
 	std::string                     m_inputCollectionName;
 
 	std::vector<EVENT::CalorimeterHit*> m_calorimeterHitCollection;
 
 	std::vector<Cluster*> clusters;
 	std::map<int,Asic*> asicMap;
+
+
+
+	std::map<unsigned int, LayerElements>     m_layerElementMap;
+
+	dqm4hep::DQMMonitorElement               *m_pLayerEfficiency;
+	dqm4hep::DQMMonitorElement               *m_pLayerMultiplicity;
+	dqm4hep::DQMMonitorElement               *m_pAsicEfficiency;
+	dqm4hep::DQMMonitorElement               *m_pAsicMultiplicity;
+	dqm4hep::DQMMonitorElement               *m_pStackedEfficiencyMap;
+	dqm4hep::DQMMonitorElement               *m_pStackedMultiplicityMap;
+	dqm4hep::DQMMonitorElement               *m_pGlobalEfficiency;
+	dqm4hep::DQMMonitorElement               *m_pGlobalMultiplicity;
+	dqm4hep::DQMMonitorElement               *m_pNTracksPerAsic;
 }; 
 
 } 

@@ -71,110 +71,6 @@ AsicAnalysisModule::~AsicAnalysisModule()
 
 dqm4hep::StatusCode AsicAnalysisModule::userInitModule()
 {
-	// global element used for booking
-	// direct element access is provided by dqm4hep module API
-	dqm4hep::DQMMonitorElement *pMonitorElement = NULL;
-
-    for(unsigned int l=0 ; l<m_nActiveLayers ; l++)
-    {
-    	std::stringstream layerDir;
-    	layerDir << "/Layer_" << l;
-
-    	DQMModuleApi::mkdir(this, layerDir.str());
-    	DQMModuleApi::cd(this, layerDir.str());
-
-    	//------------------------
-
-    	pMonitorElement = NULL;
-    	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookRealHistogram2D(this,
-    			pMonitorElement, "Efficiency", "Asic efficiency of layer" + DQM4HEP::typeToString(l),
-    			12, 0, 12, 12, 0, 12));
-
-    	pMonitorElement->setDescription("Map of asic efficiency of layer " + DQM4HEP::typeToString(l)
-    	+ ". The efficiency is evaluated by analysing muons from beam (or cosmics) with a tracking algorithm.\n"
-    			"Algorithm author : Arnaud Steen");
-    	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
-    	pMonitorElement->setDrawOption("colz");
-
-    	//------------------------
-
-    	pMonitorElement = NULL;
-    	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookRealHistogram2D(this,
-    			pMonitorElement, "Multiplicity", "Asic multiplicity of layer" + DQM4HEP::typeToString(l),
-    			12, 0, 12, 12, 0, 12));
-
-    	pMonitorElement->setDescription("Map of asic multiplicity of layer " + DQM4HEP::typeToString(l)
-    	+ ". The multiplicity is evaluated by analysing muons from beam (or cosmics) with a tracking algorithm.\n"
-    			"Algorithm author : Arnaud Steen");
-    	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
-    	pMonitorElement->setDrawOption("colz");
-    }
-
-    DQMModuleApi::mkdir(this, "/Global");
-    DQMModuleApi::cd(this, "/Global");
-
-	pMonitorElement = NULL;
-	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookRealHistogram1D(this,
-			pMonitorElement, "Efficiency", "Global efficiency",
-			100, 0, 1));
-
-	pMonitorElement->setDescription(std::string("Global efficiency over the set of asics.")
-	+ " The global efficiency is evaluated by analysing muons from beam (or cosmics) with a tracking algorithm.\n"
-			+ "  Algorithm author : Arnaud Steen");
-	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
-
-	//----------------------------------------
-
-	pMonitorElement = NULL;
-	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookRealHistogram1D(this,
-			pMonitorElement, "Multiplicity", "Global multiplicity",
-			160, 0, 16));
-
-	pMonitorElement->setDescription(std::string("Global multiplicity over the set of asics.")
-	+ " The global multiplicity is evaluated by analyzing muons from beam (or cosmics) with a tracking algorithm.\n"
-			"  Algorithm author : Arnaud Steen");
-	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
-
-	//----------------------------------------
-
-	pMonitorElement = NULL;
-	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookRealHistogram2D(this,
-			pMonitorElement, "StackedEfficiency", "Efficiency (all asics)",
-			12, 0, 12, 12, 0, 12));
-
-	pMonitorElement->setDescription(std::string("Stacked efficiency over the set of asics.")
-	+ " The stacked efficiency is evaluated by analysing muons from beam (or cosmics) with a tracking algorithm.\n"
-			"  Algorithm author : Arnaud Steen");
-	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
-	pMonitorElement->setDrawOption("colz");
-
-	//----------------------------------------
-
-	pMonitorElement = NULL;
-	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookRealHistogram2D(this,
-			pMonitorElement, "StackedMultiplicity", "Multiplicity (all asics)",
-			12, 0, 12, 12, 0, 12));
-
-	pMonitorElement->setDescription(std::string("Stacked multiplicity over the set of asics.")
-	+ " The stacked multiplicity is evaluated by analysing muons from beam (or cosmics) with a tracking algorithm.\n"
-			"  Algorithm author : Arnaud Steen");
-	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
-	pMonitorElement->setDrawOption("colz");
-
-	//----------------------------------------
-
-	pMonitorElement = NULL;
-	RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMModuleApi::bookRealHistogram1D(this,
-			pMonitorElement, "NTrackPerAsic", "N tracks per asic",
-			m_expectedNTracksPerAsicOverRun+1, 0, m_expectedNTracksPerAsicOverRun));
-
-	pMonitorElement->setDescription(std::string("The number of reconstructed tracks per asics.\n")
-			+ "  Algorithm author : Arnaud Steen");
-	pMonitorElement->setResetPolicy(END_OF_RUN_RESET_POLICY);
-
-	DQMModuleApi::cd(this);
-	DQMModuleApi::ls(this, true);
-
 	return STATUS_CODE_SUCCESS;
 }
 
@@ -186,9 +82,41 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"NActiveLayers", m_nActiveLayers));
 
-	m_expectedNTracksPerAsicOverRun = 10000;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"ExpectedNTracksPerAsicOverRun", m_expectedNTracksPerAsicOverRun));
+	for(unsigned int l=0 ; l<m_nActiveLayers ; l++)
+	{
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"EfficiencyMap", l, m_layerElementMap[l].m_pEfficiencyMap));
+
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"MultiplicityMap", l, m_layerElementMap[l].m_pMultiplicityMap));
+	}
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"LayerEfficiency", m_pLayerEfficiency));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"LayerMultiplicity", m_pLayerMultiplicity));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"AsicEfficiency", m_pAsicEfficiency));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"AsicMultiplicity", m_pAsicMultiplicity));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"StackedEfficiencyMap", m_pStackedEfficiencyMap));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"StackedMultiplicityMap", m_pStackedMultiplicityMap));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"GlobalEfficiency", m_pGlobalEfficiency));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"GlobalMultiplicity", m_pGlobalMultiplicity));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"NTracksPerAsic", m_pNTracksPerAsic));
 
 	m_inputCollectionName = "SDHCAL_HIT";
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
@@ -383,43 +311,82 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 {
 	DQMMonitorElement *pMonitorElement = NULL;
 
-	for(int i=0; i<m_nActiveLayers; i++)
+	float totalEfficiency = 0.f;
+	unsigned int nEfficientAsics = 0;
+
+	float totalMultiplicity = 0.f;
+	unsigned int nMultiplicityAsics = 0;
+
+	this->resetElements();
+
+	for(unsigned int i=0; i<m_nActiveLayers; i++)
 	{
-		std::stringstream layerDir;
-		layerDir << "/Layer_" << i;
+		std::map<unsigned int, LayerElements>::iterator iter = m_layerElementMap.find(i);
 
-		for(std::map<int,Asic*>::iterator it = asicMap.begin(); it != asicMap.end(); it++)
+		if(iter == m_layerElementMap.end())
+			continue;
+
+		float layerEfficiency = 0.f;
+		unsigned int nLayerEfficientAsics = 0;
+
+		float layerMultiplicity = 0.f;
+		unsigned int nLayerMultiplicityAsics = 0;
+
+		for( std::map<int,Asic*>::iterator it = asicMap.begin() ; it != asicMap.end() ; it++ )
 		{
-			if(it->first/1000==i)
+			if( it->first/1000 != i )
+				continue;
+
+			if( it->second->getAsicCounter() > 0 )
 			{
-				if(it->second->getAsicCounter()>0)
-				{
-					RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, layerDir.str(), "Efficiency", pMonitorElement));
-					pMonitorElement->get<TH2F>()->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter());
+				nLayerEfficientAsics++;
+				nEfficientAsics++;
 
-					RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "Efficiency", pMonitorElement));
-					pMonitorElement->get<TH1F>()->Fill(it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter());
+				float asicEfficiency = it->second->getAsicEfficiency()*1.f/it->second->getAsicCounter();
+				std::cout << "asicEfficiency : " << asicEfficiency << std::endl;
+				layerEfficiency += asicEfficiency;
+				totalEfficiency += asicEfficiency;
 
-					RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "StackedEfficiency", pMonitorElement));
-					pMonitorElement->get<TH2F>()->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicEfficiency()*1.0/it->second->getAsicCounter()/(float)m_nActiveLayers);
-				}
-				if(it->second->getAsicEfficiency()>0)
-				{
-					RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, layerDir.str(), "Multiplicity", pMonitorElement));
-					pMonitorElement->get<TH2F>()->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicMultiplicity()*1.0/it->second->getAsicEfficiency());
-
-					RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "Multiplicity", pMonitorElement));
-					pMonitorElement->get<TH1F>()->Fill(it->second->getAsicMultiplicity()*1.0/it->second->getAsicEfficiency());
-
-					RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, DQMModuleApi::getMonitorElement(this, "/Global", "StackedMultiplicity", pMonitorElement));
-					pMonitorElement->get<TH2F>()->Fill(it->second->getAsicPosition()[0],it->second->getAsicPosition()[1],it->second->getAsicMultiplicity()*1.0/it->second->getAsicEfficiency()/(float)m_nActiveLayers);
-				}
-
-				RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::getMonitorElement(this, "/Global", "NTrackPerAsic", pMonitorElement));
-				pMonitorElement->get<TH1F>()->Fill(it->second->getAsicCounter());
+				// fill elements
+				iter->second.m_pEfficiencyMap->get<TH2F>()->Fill( it->second->getAsicPosition()[0], it->second->getAsicPosition()[1], asicEfficiency );
+				m_pAsicEfficiency->get<TH1F>()->Fill( asicEfficiency );
+				m_pStackedEfficiencyMap->get<TH2F>()->Fill( it->second->getAsicPosition()[0], it->second->getAsicPosition()[1], asicEfficiency / m_nActiveLayers );
 			}
+
+			if( it->second->getAsicEfficiency() > 0 )
+			{
+				nMultiplicityAsics++;
+				nLayerMultiplicityAsics++;
+
+				float asicMultiplicity = it->second->getAsicMultiplicity()*1.f/it->second->getAsicEfficiency();
+				layerMultiplicity += asicMultiplicity;
+				totalMultiplicity += asicMultiplicity;
+
+				// fill elements with multiplicity
+				iter->second.m_pMultiplicityMap->get<TH2F>()->Fill( it->second->getAsicPosition()[0], it->second->getAsicPosition()[1], asicMultiplicity );
+				m_pAsicMultiplicity->get<TH1F>()->Fill( asicMultiplicity );
+				m_pStackedEfficiencyMap->get<TH2F>()->Fill( it->second->getAsicPosition()[0], it->second->getAsicPosition()[1] , asicMultiplicity / m_nActiveLayers );
+			}
+
+			m_pNTracksPerAsic->get<TH1F>()->Fill( it->second->getAsicCounter() );
 		}
+
+		if( nLayerEfficientAsics != 0 )
+		{
+			std::cout << "m_pLayerEfficiency = " << m_pLayerEfficiency << std::endl;
+			std::cout << "m_pLayerEfficiency->get<TH1I>() = " << m_pLayerEfficiency->get<TH1I>() << std::endl;
+			m_pLayerEfficiency->get<TH1I>()->Fill( i , layerEfficiency/nLayerEfficientAsics );
+		}
+
+		if( nLayerMultiplicityAsics != 0 )
+			m_pLayerMultiplicity->get<TH1I>()->Fill( i , layerMultiplicity/nLayerMultiplicityAsics );
 	}
+
+	if( nEfficientAsics != 0 )
+		m_pGlobalEfficiency->get< TScalarObject<float> >()->Set( totalEfficiency / nEfficientAsics );
+
+	if( nMultiplicityAsics != 0 )
+		m_pGlobalMultiplicity->get< TScalarObject<float> >()->Set( totalMultiplicity / nMultiplicityAsics );
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -435,6 +402,7 @@ dqm4hep::StatusCode AsicAnalysisModule::startOfRun(DQMRun *pRun)
 
 dqm4hep::StatusCode AsicAnalysisModule::endOfRun(DQMRun *pRun)
 {
+	this->clearContents();
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -467,6 +435,29 @@ void AsicAnalysisModule::clearContents()
 
 	asicMap.clear();
 }
+
+//-------------------------------------------------------------------------------------------------
+
+void AsicAnalysisModule::resetElements()
+{
+	for(std::map<unsigned int, LayerElements>::iterator iter = m_layerElementMap.begin(), endIter = m_layerElementMap.end() ;
+			endIter != iter ; ++iter)
+	{
+		iter->second.m_pEfficiencyMap->reset();
+		iter->second.m_pMultiplicityMap->reset();
+	}
+
+	m_pLayerEfficiency->reset();
+	m_pLayerMultiplicity->reset();
+	m_pAsicEfficiency->reset();
+	m_pAsicMultiplicity->reset();
+	m_pStackedEfficiencyMap->reset();
+	m_pStackedMultiplicityMap->reset();
+	m_pGlobalEfficiency->reset();
+	m_pGlobalMultiplicity->reset();
+	m_pNTracksPerAsic->reset();
+}
+
 
 }
 
