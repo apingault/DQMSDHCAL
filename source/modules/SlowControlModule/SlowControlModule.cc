@@ -45,7 +45,7 @@ SlowControlModule::SlowControlModule() :
 
 //-------------------------------------------------------------------------------------------------
 
-SlowControlModule::~SlowControlModule() 
+SlowControlModule::~SlowControlModule()
 {
 	/* nop */
 }

@@ -71,7 +71,7 @@ private:
 	 */
 	void getLowVoltageMap( std::map<unsigned int, float> &lowVoltageMap );
 
-	// TODO Add functions to query values to the gs control
+	// TODO Add functions to query values to the slow control
 
 private:
 	unsigned int                        m_nLayers;
