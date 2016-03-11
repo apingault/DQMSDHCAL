@@ -36,3 +36,17 @@ INSTALL(
     LIBRARY DESTINATION lib
 )
 
+# -------------------------------------------------
+# build EventDisplayModule library
+
+INCLUDE_DIRECTORIES( EventDisplayModule )
+ADD_SHARED_LIBRARY( EventDisplayModule EventDisplayModule/EventDisplayModule.cc )
+TARGET_LINK_LIBRARIES( EventDisplayModule ${PROJECT_NAME}Common )
+
+INSTALL(
+    TARGETS EventDisplayModule
+    LIBRARY DESTINATION lib
+)
+
+
+
