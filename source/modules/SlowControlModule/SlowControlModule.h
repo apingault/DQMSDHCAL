@@ -31,6 +31,8 @@
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMStandaloneModule.h"
 
+class TGraph;
+
 namespace dqm_sdhcal
 {
 
