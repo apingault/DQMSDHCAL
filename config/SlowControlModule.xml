@@ -49,7 +49,7 @@
 			
 			
 		<monitorElement ID="HighVoltagePerLayer"
-			name="HighVoltageLayer_" path="/ByLayer/HV" type="user" ROOTClass="TGraph"
+			name="HighVoltageLayer_" path="/ByLayer/HV" type="user" ROOTClass="dqm4hep::TDynamicGraph"
 			title="High voltage (V set)" drawOption="ap"/>
 			
 
