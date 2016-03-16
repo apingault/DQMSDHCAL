@@ -69,10 +69,6 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"GlobalTemperature", m_pGlobalTemperatureElement));
 
-	m_pGlobalTemperatureGraphElement = NULL;
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"GlobalTemperatureGraph", m_pGlobalTemperatureGraphElement));
-
 	m_pGlobalPressureElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"GlobalPressure", m_pGlobalPressureElement));
@@ -105,9 +101,14 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"LowVoltage", m_pLowVoltageElement));
 
-	this->configureGraph( m_pGlobalTemperatureGraphElement->get<TGraph>() );
-	m_pGlobalTemperatureGraphElement->get<dqm4hep::TDynamicGraph>()->SetRangeLength(60);
-	m_pGlobalTemperatureGraphElement->setDescription("Global temperature graph from a device near (outside probe) the SDHCAL detector. \n"
+	this->configureGraph( m_pGlobalTemperatureElement->get<TGraph>() );
+	m_pGlobalTemperatureElement->get<dqm4hep::TDynamicGraph>()->SetRangeLength(60);
+	m_pGlobalTemperatureElement->setDescription("Global temperature graph from a device near (outside probe) the SDHCAL detector. \n"
+			"X axis is time in seconds from the module start time ( t0 = " + dqm4hep::DQM4HEP::typeToString(m_startTime) + ")");
+
+	this->configureGraph( m_pGlobalPressureElement->get<TGraph>() );
+	m_pGlobalPressureElement->get<dqm4hep::TDynamicGraph>()->SetRangeLength(60);
+	m_pGlobalPressureElement->setDescription("Global pressure graph from a device near (outside probe) the SDHCAL detector. \n"
 			"X axis is time in seconds from the module start time ( t0 = " + dqm4hep::DQM4HEP::typeToString(m_startTime) + ")");
 
 	this->configureGraph( m_pHighVoltageVSetElement->get<TGraph>() );
@@ -130,6 +131,53 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"PressureInfo", m_pressureInfoName));
+
+
+	// book HV plot per chamber using current dim info
+	DimBrowser browser;
+	int nServices = browser.getServices( (char *) m_hvInfoName.c_str() );
+
+	if( 0 != nServices )
+	{
+		char *pServiceName, *pFormat;
+		int serviceType;
+
+		while(1)
+		{
+			serviceType = browser.getNextService(pServiceName, pFormat);
+
+			if( 0 == serviceType )
+				break;
+
+			// looking for service. No command, no rpc
+			if( DimSERVICE != serviceType )
+				continue;
+
+			DimCurrentInfo hvDimInfo( pServiceName , (void *) NULL , 0 );
+			HVInfo *pDimHVInfo = (HVInfo *) hvDimInfo.getData();
+			int dimDataSize = hvDimInfo.getSize();
+
+			if( 0 == pDimHVInfo || 0 == dimDataSize )
+				continue;
+
+			if( pDimHVInfo->m_chamberID < 0 )
+				continue;
+
+			unsigned int chamberID = pDimHVInfo->m_chamberID;
+
+			if( m_chamberHVElementMap.find( chamberID ) != m_chamberHVElementMap.end() )
+				continue;
+
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Booking HV graph for chamber id = " << chamberID );
+
+			dqm4hep::DQMMonitorElement *pMonitorElement = NULL;
+			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+					"HighVoltagePerLayer", chamberID, pMonitorElement));
+
+			m_chamberHVElementMap[ chamberID ] = pMonitorElement;
+		}
+	}
+
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -184,19 +232,17 @@ dqm4hep::StatusCode SlowControlModule::startOfCycle()
 dqm4hep::StatusCode SlowControlModule::process()
 {
 	std::string currentTimeStr;
-	dqm4hep::DQMCoreTool::timeToHMS(time(0), currentTimeStr);
+	time_t currentTime = time(0);
+	dqm4hep::DQMCoreTool::timeToHMS(currentTime, currentTimeStr);
 
 	// get and fill temperature and pressure
 	float temperature = this->getGlobalTemperature();
-	m_pGlobalTemperatureElement->get< dqm4hep::TScalarFloat >()->Set( temperature );
 	m_pGlobalTemperatureElement->setTitle( "Global temperature (" + currentTimeStr + ")" );
-
-	m_pGlobalTemperatureGraphElement->get<dqm4hep::TDynamicGraph>()->AddPoint( time(0) - m_startTime , temperature );
+	m_pGlobalTemperatureElement->get<dqm4hep::TDynamicGraph>()->AddPoint( currentTime - m_startTime , temperature );
 
 	float pressure = this->getGlobalPressure();
-	m_pGlobalPressureElement->get< dqm4hep::TScalarFloat >()->Set( pressure );
 	m_pGlobalPressureElement->setTitle( "Global pressure (" + currentTimeStr + ")" );
-
+	m_pGlobalPressureElement->get<dqm4hep::TDynamicGraph>()->AddPoint( currentTime - m_startTime , pressure );
 
 	// get lv info
 	LVInfo lvInfo;
@@ -205,7 +251,7 @@ dqm4hep::StatusCode SlowControlModule::process()
 	std::stringstream lvText;
 	lvText << "Low voltage : "
 			<< lvInfo.m_vSet << " V (set) / "
-			<< lvInfo.m_vRead << " V (read) /"
+			<< lvInfo.m_vRead << " V (read) / "
 			<< lvInfo.m_iRead << " A (read)";
 
 	m_pLowVoltageElement->get<dqm4hep::TScalarString>()->Set( lvText.str() );
@@ -249,6 +295,14 @@ dqm4hep::StatusCode SlowControlModule::process()
 
 			m_pHighVoltageISetReadDiffElement->get<TGraph>()->SetPoint( pointID , iter->first , iter->second.m_iSet - iter->second.m_iRead );
 			m_pHighVoltageISetReadDiffElement->setTitle( "High voltage (ISet - IRead) [" + currentTimeStr + "]" );
+
+			DQMMonitorElementIDMap::iterator hvChIter = m_chamberHVElementMap.find( iter->first );
+
+			if( hvChIter != m_chamberHVElementMap.end() )
+			{
+				hvChIter->second->get<dqm4hep::TDynamicGraph>()->AddPoint( currentTime - m_startTime , iter->second.m_vRead );
+				hvChIter->second->setTitle( "High voltage (VSet). Chamber id " + dqm4hep::DQM4HEP::typeToString(iter->first) + ". [" + currentTimeStr + "]" );
+			}
 
 			pointID++;
 		}

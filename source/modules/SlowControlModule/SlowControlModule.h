@@ -106,6 +106,8 @@ private:
 	void configureGraph( TGraph *pGraph );
 
 private:
+	typedef std::map<unsigned int, dqm4hep::DQMMonitorElement *> DQMMonitorElementIDMap;
+
 	// parameters
 	std::string                         m_lvInfoName;
 	std::string                         m_temperatureInfoName;
@@ -115,16 +117,18 @@ private:
 
 	// monitor elements
 	dqm4hep::DQMMonitorElement         *m_pGlobalTemperatureElement;
-	dqm4hep::DQMMonitorElement         *m_pGlobalTemperatureGraphElement;
-
 	dqm4hep::DQMMonitorElement         *m_pGlobalPressureElement;
+
 	dqm4hep::DQMMonitorElement         *m_pHighVoltageVSetElement;
 	dqm4hep::DQMMonitorElement         *m_pHighVoltageVReadElement;
 	dqm4hep::DQMMonitorElement         *m_pHighVoltageVSetReadDiffElement;
 	dqm4hep::DQMMonitorElement         *m_pHighVoltageISetElement;
 	dqm4hep::DQMMonitorElement         *m_pHighVoltageIReadElement;
 	dqm4hep::DQMMonitorElement         *m_pHighVoltageISetReadDiffElement;
+
 	dqm4hep::DQMMonitorElement         *m_pLowVoltageElement;
+
+	DQMMonitorElementIDMap              m_chamberHVElementMap;
 
 	time_t                              m_startTime;
 }; 

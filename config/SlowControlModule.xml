@@ -7,49 +7,50 @@
     <module type="SlowControlModule" name="SlowControl">
         
 		<monitorElement ID="GlobalTemperature"
-			name="GlobalTemperature" path="/" type="float" 
-			title="Global temperature (Celsius)" value="0"/>
-			
-		<monitorElement ID="GlobalTemperatureGraph"
-			name="GlobalTemperatureGraph" path="/" type="user" ROOTClass="dqm4hep::TDynamicGraph"
+			name="GlobalTemperature" path="/Global" type="user" ROOTClass="dqm4hep::TDynamicGraph"
 			title="Global temperature (Celsius)" drawOption="ap"/>
 			
 		<monitorElement ID="GlobalPressure"
-			name="GlobalPressure" path="/" type="float" 
-			title="Global pressure" value="0"/>
+			name="GlobalPressure" path="/Global" type="user" ROOTClass="dqm4hep::TDynamicGraph"
+			title="Global pressure (hPa)" drawOption="ap"/>
 			
 			
 		
 		<monitorElement ID="HighVoltageVSet"
-			name="HighVoltageVSet" path="/" type="user" ROOTClass="TGraph"
+			name="HighVoltageVSet" path="/Global" type="user" ROOTClass="TGraph"
 			title="High voltage (V set)" drawOption="ap"/>
 			
 		<monitorElement ID="HighVoltageVRead"
-			name="HighVoltageVRead" path="/" type="user" ROOTClass="TGraph"
+			name="HighVoltageVRead" path="/Global" type="user" ROOTClass="TGraph"
 			title="High voltage (V read)" drawOption="ap"/>
 			
 		<monitorElement ID="HighVoltageVSetReadDiff"
-			name="HighVoltageVSetReadDiff" path="/" type="user" ROOTClass="TGraph"
+			name="HighVoltageVSetReadDiff" path="/Global" type="user" ROOTClass="TGraph"
 			title="High voltage (V set - V read)" drawOption="ap"/>
 			
 			
 		<monitorElement ID="HighVoltageISet"
-			name="HighVoltageISet" path="/" type="user" ROOTClass="TGraph"
+			name="HighVoltageISet" path="/Global" type="user" ROOTClass="TGraph"
 			title="High voltage (I set)" drawOption="ap"/>
 			
 		<monitorElement ID="HighVoltageIRead"
-			name="HighVoltageIRead" path="/" type="user" ROOTClass="TGraph"
+			name="HighVoltageIRead" path="/Global" type="user" ROOTClass="TGraph"
 			title="High voltage (I read)" drawOption="ap"/>
 			
 		<monitorElement ID="HighVoltageISetReadDiff"
-			name="HighVoltageISetReadDiff" path="/" type="user" ROOTClass="TGraph"
+			name="HighVoltageISetReadDiff" path="/Global" type="user" ROOTClass="TGraph"
 			title="High voltage (I set - I read)" drawOption="ap"/>
 			
 			
 			
 		<monitorElement ID="LowVoltage"
-			name="LowVoltage" path="/" type="string" title="Low voltage info"
+			name="LowVoltage" path="/Global" type="string" title="Low voltage info"
 			nBins="50" min="0" max="49" value="LV = 0 V (Vset) / 0 V (Vread) / 0 A (Iread)"/>
+			
+			
+		<monitorElement ID="HighVoltagePerLayer"
+			name="HighVoltageLayer_" path="/ByLayer/HV" type="user" ROOTClass="TGraph"
+			title="High voltage (V set)" drawOption="ap"/>
 			
 
 		<!-- LVInfo status expects 3 floats -->
