@@ -191,7 +191,7 @@ dqm4hep::StatusCode SlowControlModule::process()
 	m_pGlobalTemperatureElement->get< dqm4hep::TScalarFloat >()->Set( temperature );
 	m_pGlobalTemperatureElement->setTitle( "Global temperature (" + currentTimeStr + ")" );
 
-	m_pGlobalTemperatureGraphElement->get<dqm4hep::TDynamicGraph>()->AddPoint( time(0) , temperature );
+	m_pGlobalTemperatureGraphElement->get<dqm4hep::TDynamicGraph>()->AddPoint( time(0) - m_startTime , temperature );
 
 	float pressure = this->getGlobalPressure();
 	m_pGlobalPressureElement->get< dqm4hep::TScalarFloat >()->Set( pressure );
