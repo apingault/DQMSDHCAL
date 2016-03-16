@@ -99,6 +99,12 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"LowVoltage", m_pLowVoltageElement));
 
+	this->configureGraph( m_pHighVoltageVSetElement->get<TGraph>() );
+	this->configureGraph( m_pHighVoltageVReadElement->get<TGraph>() );
+	this->configureGraph( m_pHighVoltageVSetReadDiffElement->get<TGraph>() );
+	this->configureGraph( m_pHighVoltageISetElement->get<TGraph>() );
+	this->configureGraph( m_pHighVoltageIReadElement->get<TGraph>() );
+	this->configureGraph( m_pHighVoltageISetReadDiffElement->get<TGraph>() );
 
 	// settings
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
@@ -311,6 +317,18 @@ void SlowControlModule::getLowVoltageInfo( LVInfo &lvInfo )
 
 	// get copy
 	lvInfo = *pDimLVInfo;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void SlowControlModule::configureGraph( TGraph *pGraph )
+{
+	if( ! pGraph )
+		return;
+
+	pGraph->SetMarkerStyle(23);
+	pGraph->SetMarkerSize(1);
+	pGraph->SetMarkerColor(kBlack);
 }
 
 } 

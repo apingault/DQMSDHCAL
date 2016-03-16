@@ -99,6 +99,10 @@ private:
 	 */
 	void getLowVoltageInfo( LVInfo &lvInfo );
 
+	/** Configure graph
+	 */
+	void configureGraph( TGraph *pGraph );
+
 private:
 	// parameters
 	std::string                         m_lvInfoName;
