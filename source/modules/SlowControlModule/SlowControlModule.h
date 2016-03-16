@@ -114,6 +114,7 @@ private:
 	std::string                         m_pressureInfoName;
 	std::string                         m_hvInfoName;
 	dqm4hep::StringVector               m_hvInfoServiceNames;
+	unsigned int                        m_globalDynamicGraphRange;
 
 	// monitor elements
 	dqm4hep::DQMMonitorElement         *m_pGlobalTemperatureElement;

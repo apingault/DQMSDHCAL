@@ -68,6 +68,9 @@
 		<!-- Each HVInfo expects 1 integer and 4 floats -->
 		<!-- 1I : chID ; 4F : Vset, Iset, Vout, Iout-->
 		<parameter name="HVInfo"> /WIENER/MODULE*-CHANNEL*/* </parameter>
+		
+		<!-- The dynamic graph range  -->
+		<parameter name="GlobalDynamicGraphRange"> 3600 </parameter>
 
     </module>
 
