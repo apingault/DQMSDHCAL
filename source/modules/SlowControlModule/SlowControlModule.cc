@@ -174,6 +174,8 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 					"HighVoltagePerLayer", chamberID, pMonitorElement));
 
+			this->configureGraph( pMonitorElement->get<TGraph>() );
+
 			m_chamberHVElementMap[ chamberID ] = pMonitorElement;
 		}
 	}
