@@ -8,23 +8,61 @@
         
 		<monitorElement ID="GlobalTemperature"
 			name="GlobalTemperature" path="/" type="float" 
-			title="Global temperature" value="0"/>
+			title="Global temperature (Celsius)" value="0"/>
 			
 		<monitorElement ID="GlobalPressure"
 			name="GlobalPressure" path="/" type="float" 
 			title="Global pressure" value="0"/>
+			
+			
 		
-		<monitorElement ID="HighVoltage"
-			name="HighVoltage" path="/" type="TH1I" title="High voltage" 
-			nBins="50" min="0" max="49" 
-			drawOption="E"/>
+		<monitorElement ID="HighVoltageVSet"
+			name="HighVoltageVSet" path="/" type="user" ROOTClass="TGraph"
+			title="High voltage (V set)" drawOption="ap"/>
+			
+		<monitorElement ID="HighVoltageVRead"
+			name="HighVoltageVRead" path="/" type="user" ROOTClass="TGraph"
+			title="High voltage (V read)" drawOption="ap"/>
+			
+		<monitorElement ID="HighVoltageVSetReadDiff"
+			name="HighVoltageVSetReadDiff" path="/" type="user" ROOTClass="TGraph"
+			title="High voltage (V set - V read)" drawOption="ap"/>
+			
+			
+		<monitorElement ID="HighVoltageISet"
+			name="HighVoltageISet" path="/" type="user" ROOTClass="TGraph"
+			title="High voltage (I set)" drawOption="ap"/>
+			
+		<monitorElement ID="HighVoltageIRead"
+			name="HighVoltageIRead" path="/" type="user" ROOTClass="TGraph"
+			title="High voltage (I read)" drawOption="ap"/>
+			
+		<monitorElement ID="HighVoltageISetReadDiff"
+			name="HighVoltageISetReadDiff" path="/" type="user" ROOTClass="TGraph"
+			title="High voltage (I set - I read)" drawOption="ap"/>
+			
+			
 			
 		<monitorElement ID="LowVoltage"
-			name="LowVoltage" path="/" type="TH1I" title="Low voltage" 
-			nBins="50" min="0" max="49" 
-			drawOption="E"/>
-        	
-		<parameter name="NLayers"> 48 </parameter>
+			name="LowVoltage" path="/" type="string" title="Low voltage info"
+			nBins="50" min="0" max="49" value="LV = 0 V (Vset) / 0 V (Vread) / 0 A (Iread)"/>
+			
+
+		<!-- LVInfo status expects 3 floats -->
+		<!-- Vset, Vread, IRead -->
+		<parameter name="LVInfo"> /DZUP/lyoilcrpi17/STATUS </parameter>
+		
+		<!-- TemperatureInfo expects 1 float -->
+		<parameter name="TemperatureInfo"> /BMP183/lyoilcrpi24/TEMPERATUREREADVALUES </parameter>
+
+		<!-- PressureInfo expects 1 float -->
+		<parameter name="PressureInfo"> /BMP183/lyoilcrpi24/PRESSIONREADVALUES </parameter>
+		
+		<!-- HVInfo expects a list of HV module/channel -->
+		<!-- We use wildcard to get a list of services -->
+		<!-- Each HVInfo expects 1 integer and 4 floats -->
+		<!-- 1I : chID ; 4F : Vset, Iset, Vout, Iout-->
+		<parameter name="HVInfo"> /WIENER/MODULE*-CHANNEL*/* </parameter>
 
     </module>
 

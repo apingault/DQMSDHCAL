@@ -27,10 +27,18 @@
 
 #include "SlowControlModule.h"
 
+// -- dqm4hep headers
 #include "dqm4hep/DQMModuleApi.h"
 #include "dqm4hep/DQMMonitorElement.h"
 #include "dqm4hep/DQMXmlHelper.h"
 #include "dqm4hep/DQMPlugin.h"
+#include "dqm4hep/DQMCoreTool.h"
+
+// -- dim headers
+#include "dic.hxx"
+
+// -- root headers
+#include "TGraph.h"
 
 namespace dqm_sdhcal
 {
@@ -54,6 +62,7 @@ SlowControlModule::~SlowControlModule()
 
 dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle xmlHandle )
 {
+	// monitor elements
 	m_pGlobalTemperatureElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"GlobalTemperature", m_pGlobalTemperatureElement));
@@ -62,17 +71,47 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"GlobalPressure", m_pGlobalPressureElement));
 
-	m_pHighVoltageElement = NULL;
+	m_pHighVoltageVSetElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"HighVoltage", m_pHighVoltageElement));
+			"HighVoltageVSet", m_pHighVoltageVSetElement));
+
+	m_pHighVoltageVReadElement = NULL;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"HighVoltageVRead", m_pHighVoltageVReadElement));
+
+	m_pHighVoltageVSetReadDiffElement = NULL;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"HighVoltageVSetReadDiff", m_pHighVoltageVSetReadDiffElement));
+
+	m_pHighVoltageISetElement = NULL;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"HighVoltageISet", m_pHighVoltageISetElement));
+
+	m_pHighVoltageIReadElement = NULL;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"HighVoltageIRead", m_pHighVoltageIReadElement));
+
+	m_pHighVoltageISetReadDiffElement = NULL;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"HighVoltageISetReadDiff", m_pHighVoltageISetReadDiffElement));
 
 	m_pLowVoltageElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"LowVoltage", m_pLowVoltageElement));
 
-	m_nLayers = 48;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"NLayers", m_nLayers));
+
+	// settings
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"LVInfo", m_lvInfoName));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"HVInfo", m_hvInfoName));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"TemperatureInfo", m_temperatureInfoName));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"PressureInfo", m_pressureInfoName));
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -81,10 +120,35 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 
 dqm4hep::StatusCode SlowControlModule::initModule()
 {
-	for(unsigned int l=0 ; l<m_nLayers ; l++)
+	// scan dns and find hv service list
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "Scanning Dns for HV services" );
+
+	DimBrowser browser;
+	int nServices = browser.getServices( (char *) m_hvInfoName.c_str() );
+
+	if( 0 == nServices )
 	{
-		m_lowVoltageMap[l] = 0.f;
-		m_highVoltageMap[l] = 0.f;
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "No HV service found for input service name '" << m_hvInfoName << "'" );
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
+
+	char *pServiceName, *pFormat;
+	int serviceType;
+
+	while(1)
+	{
+		serviceType = browser.getNextService(pServiceName, pFormat);
+
+		if( 0 == serviceType )
+			break;
+
+		// looking for service. No command, no rpc
+		if( DimSERVICE != serviceType )
+			continue;
+
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Found HV service : " << pServiceName << " , format : " << pFormat );
+
+		m_hvInfoServiceNames.push_back( pServiceName );
 	}
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
@@ -101,19 +165,73 @@ dqm4hep::StatusCode SlowControlModule::startOfCycle()
 
 dqm4hep::StatusCode SlowControlModule::process()
 {
+	std::string currentTimeStr;
+	dqm4hep::DQMCoreTool::timeToHMS(time(0), currentTimeStr);
+
+	// get and fill temperature and pressure
 	float temperature = this->getGlobalTemperature();
-	m_pGlobalTemperatureElement->get< dqm4hep::TScalarObject<float> >()->Set( temperature );
+	m_pGlobalTemperatureElement->get< dqm4hep::TScalarFloat >()->Set( temperature );
+	m_pGlobalTemperatureElement->setTitle( "Global temperature (" + currentTimeStr + ")" );
 
 	float pressure = this->getGlobalPressure();
-	m_pGlobalPressureElement->get< dqm4hep::TScalarObject<float> >()->Set( pressure );
+	m_pGlobalPressureElement->get< dqm4hep::TScalarFloat >()->Set( pressure );
+	m_pGlobalPressureElement->setTitle( "Global pressure (" + currentTimeStr + ")" );
 
-	this->getLowVoltageMap(m_lowVoltageMap);
-	this->getHighVoltageMap(m_highVoltageMap);
 
-	for(unsigned int l=0 ; l<m_nLayers ; l++)
+	// get lv info
+	LVInfo lvInfo;
+	this->getLowVoltageInfo( lvInfo );
+
+	std::stringstream lvText;
+	lvText << "Low voltage : "
+			<< lvInfo.m_vSet << " V (set) / "
+			<< lvInfo.m_vRead << " V (read) /"
+			<< lvInfo.m_iRead << " A (read)";
+
+	m_pLowVoltageElement->get<dqm4hep::TScalarString>()->Set( lvText.str() );
+	m_pLowVoltageElement->setTitle( "Low voltage (" + currentTimeStr + ")" );
+
+
+	// get hv info for each chamber
+	HVInfoMap hvInfoMap;
+	this->getHighVoltageInfos( hvInfoMap );
+
+	if( ! hvInfoMap.empty() )
 	{
-		m_pLowVoltageElement->get<TH1I>()->SetBinContent( l , static_cast<int>( m_lowVoltageMap[l] ) );
-		m_pHighVoltageElement->get<TH1I>()->SetBinContent( l , static_cast<int>( m_highVoltageMap[l] ) );
+		// reset TGraphs
+		m_pHighVoltageVSetElement->get<TGraph>()->Set(0);
+		m_pHighVoltageVReadElement->get<TGraph>()->Set(0);
+		m_pHighVoltageVSetReadDiffElement->get<TGraph>()->Set(0);
+		m_pHighVoltageISetElement->get<TGraph>()->Set(0);
+		m_pHighVoltageIReadElement->get<TGraph>()->Set(0);
+		m_pHighVoltageISetReadDiffElement->get<TGraph>()->Set(0);
+
+		int pointID = 0;
+
+		for(HVInfoMap::iterator iter = hvInfoMap.begin(), endIter = hvInfoMap.end() ;
+				endIter != iter ; ++iter)
+		{
+			m_pHighVoltageVSetElement->get<TGraph>()->SetPoint( pointID , iter->first , iter->second.m_vSet );
+			m_pHighVoltageVSetElement->setTitle( "High voltage (VSet) [" + currentTimeStr + "]" );
+
+			m_pHighVoltageVReadElement->get<TGraph>()->SetPoint( pointID , iter->first , iter->second.m_vRead );
+			m_pHighVoltageVReadElement->setTitle( "High voltage (VRead) [" + currentTimeStr + "]" );
+
+			m_pHighVoltageVSetReadDiffElement->get<TGraph>()->SetPoint( pointID , iter->first , iter->second.m_vSet - iter->second.m_vRead );
+			m_pHighVoltageVSetReadDiffElement->setTitle( "High voltage (VSet - VRead) [" + currentTimeStr + "]" );
+
+
+			m_pHighVoltageISetElement->get<TGraph>()->SetPoint( pointID , iter->first , iter->second.m_iSet );
+			m_pHighVoltageISetElement->setTitle( "High voltage (ISet) [" + currentTimeStr + "]" );
+
+			m_pHighVoltageIReadElement->get<TGraph>()->SetPoint( pointID , iter->first , iter->second.m_iRead );
+			m_pHighVoltageIReadElement->setTitle( "High voltage (IRead) [" + currentTimeStr + "]" );
+
+			m_pHighVoltageISetReadDiffElement->get<TGraph>()->SetPoint( pointID , iter->first , iter->second.m_iSet - iter->second.m_iRead );
+			m_pHighVoltageISetReadDiffElement->setTitle( "High voltage (ISet - IRead) [" + currentTimeStr + "]" );
+
+			pointID++;
+		}
 	}
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
@@ -137,30 +255,62 @@ dqm4hep::StatusCode SlowControlModule::endModule()
 
 float SlowControlModule::getGlobalTemperature()
 {
-	// TODO implements this
-	return 0.f;
+	DimCurrentInfo temperatureInfo( (char *) m_temperatureInfoName.c_str() , 0.f );
+	return temperatureInfo.getFloat();
 }
 
 //-------------------------------------------------------------------------------------------------
 
 float SlowControlModule::getGlobalPressure()
 {
-	// TODO implements this
-	return 0.f;
+	DimCurrentInfo pressureInfo( (char *) m_pressureInfoName.c_str() , 0.f );
+	return pressureInfo.getFloat();
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void SlowControlModule::getHighVoltageMap( std::map<unsigned int, float> &highVoltageMap )
+void SlowControlModule::getHighVoltageInfos( HVInfoMap &hvInfoMap )
 {
-	// TODO implements this
+	hvInfoMap.clear();
+
+	for(dqm4hep::StringVector::const_iterator iter = m_hvInfoServiceNames.begin(), endIter = m_hvInfoServiceNames.end() ;
+			endIter != iter ; ++iter)
+	{
+		std::string serviceName = *iter;
+
+		// get chamber hv info
+		DimCurrentInfo hvDimInfo( (char *) serviceName.c_str() , (void *) NULL , 0 );
+		HVInfo *pDimHVInfo = (HVInfo *) hvDimInfo.getData();
+		int dimDataSize = hvDimInfo.getSize();
+
+		if( 0 == pDimHVInfo || 0 == dimDataSize )
+			continue;
+
+		if( pDimHVInfo->m_chamberID < 0 )
+			continue;
+
+		hvInfoMap[ pDimHVInfo->m_chamberID ] = *pDimHVInfo;
+	}
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void SlowControlModule::getLowVoltageMap( std::map<unsigned int, float> &lowVoltageMap )
+void SlowControlModule::getLowVoltageInfo( LVInfo &lvInfo )
 {
-	// TODO implements this
+	// initialize to zero for security
+	lvInfo.m_vSet = 0.f;
+	lvInfo.m_vRead = 0.f;
+	lvInfo.m_iRead = 0.f;
+
+	DimCurrentInfo lvDimInfo( (char *) m_pressureInfoName.c_str() , (void *) NULL , 0 );
+	LVInfo *pDimLVInfo = (LVInfo *) lvDimInfo.getData();
+	int dimDataSize = lvDimInfo.getSize();
+
+	if( 0 == pDimLVInfo || 0 == dimDataSize )
+		return;
+
+	// get copy
+	lvInfo = *pDimLVInfo;
 }
 
 } 

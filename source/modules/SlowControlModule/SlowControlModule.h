@@ -34,6 +34,34 @@
 namespace dqm_sdhcal
 {
 
+/** LVInfo structure
+ */
+struct LVInfo
+{
+	float    m_vSet;     ///< The voltage as supplied by shifters
+	float    m_vRead;    ///< The read voltage by the device
+	float    m_iRead;    ///< The read current by the device
+};
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+
+/** HVInfo structure
+ */
+struct HVInfo
+{
+	int      m_chamberID;   ///< The chamber ID
+	float    m_vSet;        ///< The voltage as supplied by shifters
+	float    m_vRead;       ///< The read voltage by the device
+	float    m_iSet;        ///< The current as supplied by shifters
+	float    m_iRead;       ///< The read current by the device
+};
+
+typedef std::map<unsigned int, HVInfo>  HVInfoMap;
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+
 /** SlowControlModule class
  */ 
 class SlowControlModule : public dqm4hep::DQMStandaloneModule
@@ -63,24 +91,31 @@ private:
 	 */
 	float getGlobalPressure();
 
-	/** Fill the map with the high voltage
+	/** Get the high voltage infos for all chambers
 	 */
-	void getHighVoltageMap( std::map<unsigned int, float> &highVoltageMap );
+	void getHighVoltageInfos( HVInfoMap &hvInfoMap );
 
-	/** Fill the map with the low voltage
+	/** Get the low voltage info
 	 */
-	void getLowVoltageMap( std::map<unsigned int, float> &lowVoltageMap );
-
-	// TODO Add functions to query values to the slow control
+	void getLowVoltageInfo( LVInfo &lvInfo );
 
 private:
-	unsigned int                        m_nLayers;
-	std::map<unsigned int, float>       m_lowVoltageMap;
-	std::map<unsigned int, float>       m_highVoltageMap;
+	// parameters
+	std::string                         m_lvInfoName;
+	std::string                         m_temperatureInfoName;
+	std::string                         m_pressureInfoName;
+	std::string                         m_hvInfoName;
+	dqm4hep::StringVector               m_hvInfoServiceNames;
 
+	// monitor elements
 	dqm4hep::DQMMonitorElement         *m_pGlobalTemperatureElement;
 	dqm4hep::DQMMonitorElement         *m_pGlobalPressureElement;
-	dqm4hep::DQMMonitorElement         *m_pHighVoltageElement;
+	dqm4hep::DQMMonitorElement         *m_pHighVoltageVSetElement;
+	dqm4hep::DQMMonitorElement         *m_pHighVoltageVReadElement;
+	dqm4hep::DQMMonitorElement         *m_pHighVoltageVSetReadDiffElement;
+	dqm4hep::DQMMonitorElement         *m_pHighVoltageISetElement;
+	dqm4hep::DQMMonitorElement         *m_pHighVoltageIReadElement;
+	dqm4hep::DQMMonitorElement         *m_pHighVoltageISetReadDiffElement;
 	dqm4hep::DQMMonitorElement         *m_pLowVoltageElement;
 }; 
 
