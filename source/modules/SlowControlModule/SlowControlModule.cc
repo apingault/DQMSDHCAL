@@ -62,10 +62,16 @@ SlowControlModule::~SlowControlModule()
 
 dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle xmlHandle )
 {
+	m_startTime = time(0);
+
 	// monitor elements
 	m_pGlobalTemperatureElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"GlobalTemperature", m_pGlobalTemperatureElement));
+
+	m_pGlobalTemperatureGraphElement = NULL;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"GlobalTemperatureGraph", m_pGlobalTemperatureGraphElement));
 
 	m_pGlobalPressureElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
@@ -99,6 +105,11 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"LowVoltage", m_pLowVoltageElement));
 
+	this->configureGraph( m_pGlobalTemperatureGraphElement->get<TGraph>() );
+	m_pGlobalTemperatureGraphElement->get<dqm4hep::TDynamicGraph>()->SetRangeLength(60);
+	m_pGlobalTemperatureGraphElement->setDescription("Global temperature graph from a device near (outside probe) the SDHCAL detector. \n"
+			"X axis is time in seconds from the module start time ( t0 = " + dqm4hep::DQM4HEP::typeToString(m_startTime) + ")");
+
 	this->configureGraph( m_pHighVoltageVSetElement->get<TGraph>() );
 	this->configureGraph( m_pHighVoltageVReadElement->get<TGraph>() );
 	this->configureGraph( m_pHighVoltageVSetReadDiffElement->get<TGraph>() );
@@ -115,6 +126,7 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"TemperatureInfo", m_temperatureInfoName));
+
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"PressureInfo", m_pressureInfoName));
@@ -178,6 +190,8 @@ dqm4hep::StatusCode SlowControlModule::process()
 	float temperature = this->getGlobalTemperature();
 	m_pGlobalTemperatureElement->get< dqm4hep::TScalarFloat >()->Set( temperature );
 	m_pGlobalTemperatureElement->setTitle( "Global temperature (" + currentTimeStr + ")" );
+
+	m_pGlobalTemperatureGraphElement->get<dqm4hep::TDynamicGraph>()->AddPoint( time(0) , temperature );
 
 	float pressure = this->getGlobalPressure();
 	m_pGlobalPressureElement->get< dqm4hep::TScalarFloat >()->Set( pressure );

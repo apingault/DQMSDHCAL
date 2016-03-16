@@ -115,6 +115,8 @@ private:
 
 	// monitor elements
 	dqm4hep::DQMMonitorElement         *m_pGlobalTemperatureElement;
+	dqm4hep::DQMMonitorElement         *m_pGlobalTemperatureGraphElement;
+
 	dqm4hep::DQMMonitorElement         *m_pGlobalPressureElement;
 	dqm4hep::DQMMonitorElement         *m_pHighVoltageVSetElement;
 	dqm4hep::DQMMonitorElement         *m_pHighVoltageVReadElement;
@@ -123,6 +125,8 @@ private:
 	dqm4hep::DQMMonitorElement         *m_pHighVoltageIReadElement;
 	dqm4hep::DQMMonitorElement         *m_pHighVoltageISetReadDiffElement;
 	dqm4hep::DQMMonitorElement         *m_pLowVoltageElement;
+
+	time_t                              m_startTime;
 }; 
 
 } 

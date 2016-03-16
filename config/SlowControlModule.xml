@@ -10,6 +10,10 @@
 			name="GlobalTemperature" path="/" type="float" 
 			title="Global temperature (Celsius)" value="0"/>
 			
+		<monitorElement ID="GlobalTemperatureGraph"
+			name="GlobalTemperatureGraph" path="/" type="user" ROOTClass="dqm4hep::TDynamicGraph"
+			title="Global temperature (Celsius)" drawOption="ap"/>
+			
 		<monitorElement ID="GlobalPressure"
 			name="GlobalPressure" path="/" type="float" 
 			title="Global pressure" value="0"/>
