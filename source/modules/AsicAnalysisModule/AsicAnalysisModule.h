@@ -90,8 +90,8 @@ public:
 private:
 	struct LayerElements
 	{
-		dqm4hep::DQMMonitorElement *m_pEfficiencyMap;
-		dqm4hep::DQMMonitorElement *m_pMultiplicityMap;
+		dqm4hep::DQMMonitorElementPtr     m_pEfficiencyMap;
+		dqm4hep::DQMMonitorElementPtr     m_pMultiplicityMap;
 	};
 
 	unsigned int                    m_nActiveLayers;
@@ -106,15 +106,15 @@ private:
 
 	std::map<unsigned int, LayerElements>     m_layerElementMap;
 
-	dqm4hep::DQMMonitorElement               *m_pLayerEfficiency;
-	dqm4hep::DQMMonitorElement               *m_pLayerMultiplicity;
-	dqm4hep::DQMMonitorElement               *m_pAsicEfficiency;
-	dqm4hep::DQMMonitorElement               *m_pAsicMultiplicity;
-	dqm4hep::DQMMonitorElement               *m_pStackedEfficiencyMap;
-	dqm4hep::DQMMonitorElement               *m_pStackedMultiplicityMap;
-	dqm4hep::DQMMonitorElement               *m_pGlobalEfficiency;
-	dqm4hep::DQMMonitorElement               *m_pGlobalMultiplicity;
-	dqm4hep::DQMMonitorElement               *m_pNTracksPerAsic;
+	dqm4hep::DQMMonitorElementPtr               m_pLayerEfficiency;
+	dqm4hep::DQMMonitorElementPtr               m_pLayerMultiplicity;
+	dqm4hep::DQMMonitorElementPtr               m_pAsicEfficiency;
+	dqm4hep::DQMMonitorElementPtr               m_pAsicMultiplicity;
+	dqm4hep::DQMMonitorElementPtr               m_pStackedEfficiencyMap;
+	dqm4hep::DQMMonitorElementPtr               m_pStackedMultiplicityMap;
+	dqm4hep::DQMMonitorElementPtr               m_pGlobalEfficiency;
+	dqm4hep::DQMMonitorElementPtr               m_pGlobalMultiplicity;
+	dqm4hep::DQMMonitorElementPtr               m_pNTracksPerAsic;
 }; 
 
 } 

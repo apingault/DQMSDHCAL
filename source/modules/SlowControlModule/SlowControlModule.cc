@@ -174,14 +174,14 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 
 			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Booking HV graph for chamber id = " << chamberID );
 
-			dqm4hep::DQMMonitorElement *pMonitorElement = NULL;
+			dqm4hep::DQMMonitorElementPtr monitorElement;
 			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-					"HighVoltagePerLayer", chamberID, pMonitorElement));
+					"HighVoltagePerLayer", chamberID, monitorElement));
 
-			this->configureGraph( pMonitorElement->get<TGraph>() );
-			pMonitorElement->get<dqm4hep::TDynamicGraph>()->SetRangeLength(m_globalDynamicGraphRange);
+			this->configureGraph( monitorElement->get<TGraph>() );
+			monitorElement->get<dqm4hep::TDynamicGraph>()->SetRangeLength(m_globalDynamicGraphRange);
 
-			m_chamberHVElementMap[ chamberID ] = pMonitorElement;
+			m_chamberHVElementMap[ chamberID ] = monitorElement;
 		}
 	}
 

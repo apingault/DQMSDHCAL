@@ -44,7 +44,7 @@ namespace dqm_sdhcal
 
 /** EventDisplayModule class
  */ 
-class EventDisplayModule : public DQMTriventModule 
+class EventDisplayModule : public DQMTriventModule
 {
 public:
 	/** Constructor
@@ -67,17 +67,17 @@ public:
 	dqm4hep::StatusCode endModule();
 
 private:
-	std::string                         m_inputCollectionName;
+	std::string                           m_inputCollectionName;
 
-	dqm4hep::DQMMonitorElement         *m_pEventDisplay3D;
+	dqm4hep::DQMMonitorElementPtr         m_pEventDisplay3D;
 
-	dqm4hep::DQMMonitorElement         *m_pLastProfileZX;
-	dqm4hep::DQMMonitorElement         *m_pLastProfileZY;
-	dqm4hep::DQMMonitorElement         *m_pLastProfileXY;
+	dqm4hep::DQMMonitorElementPtr         m_pLastProfileZX;
+	dqm4hep::DQMMonitorElementPtr         m_pLastProfileZY;
+	dqm4hep::DQMMonitorElementPtr         m_pLastProfileXY;
 
-	dqm4hep::DQMMonitorElement         *m_pCycleStackedProfileZX;
-	dqm4hep::DQMMonitorElement         *m_pCycleStackedProfileZY;
-	dqm4hep::DQMMonitorElement         *m_pCycleStackedProfileXY;
+	dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileZX;
+	dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileZY;
+	dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileXY;
 }; 
 
 } 

@@ -106,7 +106,7 @@ private:
 	void configureGraph( TGraph *pGraph );
 
 private:
-	typedef std::map<unsigned int, dqm4hep::DQMMonitorElement *> DQMMonitorElementIDMap;
+	typedef std::map<unsigned int, dqm4hep::DQMMonitorElementPtr> DQMMonitorElementIDMap;
 
 	// parameters
 	std::string                         m_lvInfoName;
@@ -117,21 +117,20 @@ private:
 	unsigned int                        m_globalDynamicGraphRange;
 
 	// monitor elements
-	dqm4hep::DQMMonitorElement         *m_pGlobalTemperatureElement;
-	dqm4hep::DQMMonitorElement         *m_pGlobalPressureElement;
+	dqm4hep::DQMMonitorElementPtr         m_pGlobalTemperatureElement;
+	dqm4hep::DQMMonitorElementPtr         m_pGlobalPressureElement;
 
-	dqm4hep::DQMMonitorElement         *m_pHighVoltageVSetElement;
-	dqm4hep::DQMMonitorElement         *m_pHighVoltageVReadElement;
-	dqm4hep::DQMMonitorElement         *m_pHighVoltageVSetReadDiffElement;
-	dqm4hep::DQMMonitorElement         *m_pHighVoltageISetElement;
-	dqm4hep::DQMMonitorElement         *m_pHighVoltageIReadElement;
-	dqm4hep::DQMMonitorElement         *m_pHighVoltageISetReadDiffElement;
+	dqm4hep::DQMMonitorElementPtr         m_pHighVoltageVSetElement;
+	dqm4hep::DQMMonitorElementPtr         m_pHighVoltageVReadElement;
+	dqm4hep::DQMMonitorElementPtr         m_pHighVoltageVSetReadDiffElement;
+	dqm4hep::DQMMonitorElementPtr         m_pHighVoltageISetElement;
+	dqm4hep::DQMMonitorElementPtr         m_pHighVoltageIReadElement;
+	dqm4hep::DQMMonitorElementPtr         m_pHighVoltageISetReadDiffElement;
 
-	dqm4hep::DQMMonitorElement         *m_pLowVoltageElement;
+	dqm4hep::DQMMonitorElementPtr         m_pLowVoltageElement;
 
-	DQMMonitorElementIDMap              m_chamberHVElementMap;
-
-	time_t                              m_startTime;
+	DQMMonitorElementIDMap                m_chamberHVElementMap;
+	time_t                                m_startTime;
 }; 
 
 } 

@@ -27,12 +27,6 @@
 
 #include "EventDisplayModule.h"
 
-#include "dqm4hep/DQMMonitorElement.h"
-#include "dqm4hep/DQMEvent.h"
-#include "dqm4hep/DQMXmlHelper.h"
-#include "dqm4hep/DQMModuleApi.h"
-#include "dqm4hep/DQMPlugin.h"
-
 //-- lcio headers
 #include <EVENT/LCCollection.h>
 #include <EVENT/MCParticle.h>
@@ -42,6 +36,13 @@
 #include <IMPL/LCRelationImpl.h>
 #include <EVENT/LCParameters.h>
 #include <UTIL/CellIDDecoder.h>
+
+// -- dqm4hep headers
+#include "dqm4hep/DQMMonitorElement.h"
+#include "dqm4hep/DQMEvent.h"
+#include "dqm4hep/DQMXmlHelper.h"
+#include "dqm4hep/DQMModuleApi.h"
+#include "dqm4hep/DQMPlugin.h"
 
 namespace dqm_sdhcal
 {
