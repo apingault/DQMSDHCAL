@@ -12,6 +12,18 @@ SET( ${PROJECT_NAME}_VERSION_MAJOR 1 )
 SET( ${PROJECT_NAME}_VERSION_MINOR 0 )
 SET( ${PROJECT_NAME}_VERSION_PATCH 0 )
 
+###############################
+# Require C++11
+INCLUDE( CheckCXXCompilerFlag )
+
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+
+IF( COMPILER_SUPPORTS_CXX11 )
+	LIST( APPEND CMAKE_CXX_FLAGS "-std=c++11" )
+ELSE()
+	MESSAGE( SEND_ERROR "DQMCore requires C++11 support. Please upgrade your compiler !" )
+ENDIF()
+
 #-- dependencies --
 LIST( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 
