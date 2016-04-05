@@ -2,3 +2,6 @@
 /lib
 /bin
 /DHCAL_728223_I0_0.slcio
+/data
+.gitignore
+/TODO.txt
