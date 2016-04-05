@@ -1,0 +1,88 @@
+<dqm4hep>
+
+    <archiver open="false" directory="/tmp" />
+    
+    <network>
+        <runcontrol type="DimRunControlClient" name="SDHCALRunControl" />
+        
+        <eventcollector type="DimEventClient">
+        	<parameter name="collectorName"> sdhcal_event_collector </parameter>
+        	<parameter name="maxQueueSize"> 100 </parameter>
+        	<parameter name="streamerName"> LCIOStreamer </parameter>
+        </eventcollector>
+        
+        <monitorelementcollector name="sdhcal_me_collector"/>
+    </network>
+    
+    <cycle type="TimerCycle" value="10" timeout="5" />
+
+    <module type="HoughTransformModule" name="SDHCALTracking">
+        
+        <parameter name="ShouldProcessStreamout"> false </parameter>
+        
+        <Streamout>
+        	<parameter name="InputCollectionName">  RU_XDAQ </parameter>
+        	<parameter name="OutputCollectionName">  DHCALRawHits </parameter>
+        	<parameter name="XDaqShift">  92 </parameter>
+        </Streamout>
+        
+        <Trivent>
+        	<parameter name="InputCollectionName">  DHCALRawHits </parameter>
+        	<parameter name="OutputCollectionName">  SDHCAL_HIT </parameter>
+        	
+        	<!-- To adjust ! -->
+        	<parameter name="GeometryFile">  /home/rete/soft/DQMSDHCAL/config/setup_geometry_nov.xml </parameter> 
+        	
+        	<parameter name="LayerCut">  3 </parameter>
+        	<parameter name="NoiseCut">  10 </parameter>
+        	<parameter name="TimeWindow">  2 </parameter>
+        	<parameter name="LayerGap">  0.9 </parameter>
+        	<parameter name="ElecNoiseCut">  100000 </parameter>
+        	<parameter name="Time2PreviousEventCut">  0 </parameter>
+        	<parameter name="GainCorrectionMode">  false </parameter>
+        	<parameter name="CherenkovWindow">  20 </parameter>
+        	<parameter name="CherenkovLenght">  1 </parameter>
+        	<parameter name="CherenkovDifId">  0 </parameter>
+        	<parameter name="TreatCherenkov">  false </parameter>
+        	<parameter name="CellSizeU">  10.408 </parameter>
+        	<parameter name="CellSizeV">  10.408 </parameter>
+        	
+        	<!-- 26.131 for SDHCAL ; 55 at GIF++ -->
+        	<parameter name="LayerThickness">  26.131 </parameter>
+        </Trivent>
+        
+        <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
+        
+		<monitorElement ID="NRecTracks"
+			name="NRecTracks" path="/" type="TH1I" title="N reconstructed tracks" 
+			nBins="20" min="0" max="19" drawOption=""
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="TrackChi2"
+			name="TrackChi2" path="/" type="TH1F" title="Chi2 track distribution" 
+			nBins="100" min="0" max="100" drawOption=""
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="TrackLength"
+			name="TrackLength" path="/" type="TH1F" title="Track length (n layers)" 
+			nBins="50" min="0" max="49"
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="ClusterSize"
+			name="ClusterSize" path="/" type="TH1F" title="Mean cluster size per tracks" 
+			nBins="10" min="0" max="9"
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="ThetaTrack"
+			name="ThetaTrack" path="/" type="TH1F" title="Track theta angle distribution" 
+			nBins="170" min="0" max="1.7"
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="PhiTrack"
+			name="PhiTrack" path="/" type="TH1F" title="Track phi angle distribution" 
+			nBins="170" min="0" max=".7"
+			resetPolicy="EndOfRun"/>
+        
+    </module>
+
+</dqm4hep>

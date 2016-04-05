@@ -37,6 +37,18 @@ INSTALL(
 )
 
 # -------------------------------------------------
+# build HoughTransformModule library
+
+INCLUDE_DIRECTORIES( HoughTransformModule )
+ADD_SHARED_LIBRARY( HoughTransformModule HoughTransformModule/HoughTransformModule.cc )
+TARGET_LINK_LIBRARIES( HoughTransformModule ${PROJECT_NAME}Common )
+
+INSTALL(
+    TARGETS HoughTransformModule
+    LIBRARY DESTINATION lib
+)
+
+# -------------------------------------------------
 # build EventDisplayModule library
 
 INCLUDE_DIRECTORIES( EventDisplayModule )
@@ -47,6 +59,4 @@ INSTALL(
     TARGETS EventDisplayModule
     LIBRARY DESTINATION lib
 )
-
-
 
