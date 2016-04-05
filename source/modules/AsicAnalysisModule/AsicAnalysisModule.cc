@@ -27,6 +27,8 @@
 
 
 #include "AsicAnalysisModule.h"
+
+// -- dqm4hep headers
 #include "dqm4hep/DQMMonitorElement.h"
 #include "dqm4hep/DQMEvent.h"
 #include "dqm4hep/DQMXmlHelper.h"
@@ -67,12 +69,6 @@ AsicAnalysisModule::AsicAnalysisModule() :
 AsicAnalysisModule::~AsicAnalysisModule() 
 {
 }
-//-------------------------------------------------------------------------------------------------
-
-dqm4hep::StatusCode AsicAnalysisModule::userInitModule()
-{
-	return STATUS_CODE_SUCCESS;
-}
 
 //-------------------------------------------------------------------------------------------------
 
@@ -82,6 +78,152 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"NActiveLayers", m_nActiveLayers));
 
+	m_nAsicX = 12;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NAsicX", m_nAsicX));
+
+	m_nAsicY = 12;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NAsicY", m_nAsicY));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
+			"AsicTable", m_asicTable, [&] (const IntVector &vec) { return vec.size() == m_nActiveLayers; }));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
+			"DifList", m_difList, [] (const IntVector &vec) { return ! vec.empty(); }));
+
+	m_cellIDDecoderString = "M:3,S-1:3,I:9,J:9,K-1:6";
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"CellIDDecoderString", m_cellIDDecoderString));
+
+	/*-----------------------------------------------------*/
+	m_clusteringSettings.maxTransversal = 1;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Clustering.MaxTranverseCellID", m_clusteringSettings.maxTransversal));
+
+	m_clusteringSettings.maxLongitudinal = 0;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Clustering.MaxLongitudinalCellID", m_clusteringSettings.maxLongitudinal));
+
+	m_clusteringSettings.useDistanceInsteadCellID = false;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Clustering.UseDistanceInsteadCellID", m_clusteringSettings.useDistanceInsteadCellID));
+
+	m_clusteringSettings.maxTransversalDistance = 11.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Clustering.MaxTranverseDistance", m_clusteringSettings.maxTransversalDistance));
+
+	m_clusteringSettings.maxLongitudinalDistance = 11.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Clustering.MaxLongitudinalDistance", m_clusteringSettings.maxLongitudinalDistance));
+
+	/*-----------------------------------------------------*/
+	m_clusteringHelperSettings.longitudinalDistance = 100.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"ClusteringHelper.LongitudinalDistanceForIsolation", m_clusteringHelperSettings.longitudinalDistance));
+
+	m_clusteringHelperSettings.transversalDistance = 200.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"ClusteringHelper.TransverseDistanceForIsolation", m_clusteringHelperSettings.transversalDistance));
+
+	/*-----------------------------------------------------*/
+	m_trackingSettings.chiSquareLimit = 100.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Tracking.ChiSquareLimit", m_trackingSettings.chiSquareLimit));
+
+	m_trackingSettings.maxTransverseRatio = 0.05f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Tracking.MaxTransverseRatio", m_trackingSettings.maxTransverseRatio));
+
+	m_trackingSettings.cosThetaLimit = 0.9f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Tracking.CosThetaLimit", m_trackingSettings.cosThetaLimit));
+
+	m_trackingSettings.printDebug = false;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Tracking.PrintDebug", m_trackingSettings.printDebug));
+
+	/*-----------------------------------------------------*/
+	m_efficiencySettings.maxRadius = 25.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Efficiency.MaxRadius", m_efficiencySettings.maxRadius));
+
+	m_efficiencySettings.semiDigitalReadout = true;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Efficiency.SDHCALReadout", m_efficiencySettings.semiDigitalReadout));
+
+	m_efficiencySettings.printDebug = false;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Efficiency.PrintDebug", m_efficiencySettings.printDebug));
+
+	/*-----------------------------------------------------*/
+	m_interactionFinderSettings.minSize = 4;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"InteractionFinder.MinSize", m_interactionFinderSettings.minSize));
+
+	m_interactionFinderSettings.maxRadius = 50.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"InteractionFinder.MaxRadius", m_interactionFinderSettings.maxRadius));
+
+	m_interactionFinderSettings.maxDepth = 4;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"InteractionFinder.MaxDepth", m_interactionFinderSettings.maxDepth));
+
+	m_interactionFinderSettings.minNumberOfCluster = 3;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"InteractionFinder.MinNumberOfCluster", m_interactionFinderSettings.minNumberOfCluster));
+
+	/*-----------------------------------------------------*/
+	m_layerSettings.edgeX_min = 0.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Layer.EdgeX_Min", m_layerSettings.edgeX_min));
+
+	m_layerSettings.edgeX_max = 1000.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Layer.EdgeX_Max", m_layerSettings.edgeX_max));
+
+	m_layerSettings.edgeY_min = 0.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Layer.EdgeY_Min", m_layerSettings.edgeY_min));
+
+	m_layerSettings.edgeY_max = 1000.f;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"Layer.EdgeY_Max", m_layerSettings.edgeY_max));
+
+	/*-----------------------------------------------------*/
+	const StatusCode statusCode = dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
+			"AsicKeyFinder.KeyFactor", m_asicKeyFinderSettings.keyFactors);
+
+	if(dqm4hep::STATUS_CODE_NOT_FOUND == statusCode)
+		m_asicKeyFinderSettings.keyFactors = { 1, 12, 1000 };
+	else if(dqm4hep::STATUS_CODE_SUCCESS != statusCode)
+		return statusCode;
+
+	m_asicKeyFinderSettings.nPadX = 96;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"AsicKeyFinder.NPadX", m_asicKeyFinderSettings.nPadX));
+
+	m_asicKeyFinderSettings.nPadY = 96;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"AsicKeyFinder.NPadY", m_asicKeyFinderSettings.nPadY));
+
+	m_asicKeyFinderSettings.asicNPad = 8;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"AsicKeyFinder.AsicNPad", m_asicKeyFinderSettings.asicNPad));
+
+	m_asicKeyFinderSettings.layerGap = 26.131;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"AsicKeyFinder.LayerGap", m_asicKeyFinderSettings.layerGap));
+
+	m_asicKeyFinderSettings.padSize = 10.408;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"AsicKeyFinder.PadSize", m_asicKeyFinderSettings.padSize));
+
+	m_asicKeyFinderSettings.printDebug = false;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"AsicKeyFinder.PrintDebug", m_asicKeyFinderSettings.printDebug));
+
+	/*-----------------------------------------------------*/
 	for(unsigned int l=0 ; l<m_nActiveLayers ; l++)
 	{
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
@@ -125,14 +267,41 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode AsicAnalysisModule::userInitModule()
+{
+	// initialize algorithms
+	m_clusteringAlgorithm.SetClusterParameterSetting(m_clusteringSettings);
+	m_clusteringHelper.SetClusteringHelperParameterSetting(m_clusteringHelperSettings);
+	m_trackingAlgorithm.SetTrackingParameterSetting(m_trackingSettings);
+	m_interactionFinderAlgorithm.SetInteractionFinderParameterSetting(m_interactionFinderSettings);
+	m_efficiencyAlgorithm.SetEfficiencyParameterSetting(m_efficiencySettings);
+	m_asicKeyFinderAlgorithm.SetAsicKeyFinderParameterSetting(m_asicKeyFinderSettings);
+
+	return STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
 dqm4hep::StatusCode AsicAnalysisModule::processNoisyEvent(EVENT::LCEvent *pLCEvent)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
+//-------------------------------------------------------------------------------------------------
+
 dqm4hep::StatusCode AsicAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLCEvent)
 {
 	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "Processing physics event no " << pLCEvent->getEventNumber() );
+
+	// content management
+	caloobject::CaloHitMap caloHitMap;
+	std::vector< caloobject::CaloHit *> hits;
+	std::vector< caloobject::CaloCluster *> clusters;
+	std::vector< caloobject::CaloTrack *>   tracks;
+
+	CLHEP::Hep3Vector globalHitShift(0, 0, 0);
 
 	try
 	{
@@ -141,7 +310,9 @@ dqm4hep::StatusCode AsicAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLC
 		if(NULL == pCalorimeterHitCollection)
 			return dqm4hep::STATUS_CODE_SUCCESS;
 
-		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(pCalorimeterHitCollection);
+		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(m_cellIDDecoderString);
+
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating wrapper hits");
 
 		// loop over hits in this event
 		for(unsigned int h=0 ; h<pCalorimeterHitCollection->getNumberOfElements() ; h++)
@@ -151,151 +322,109 @@ dqm4hep::StatusCode AsicAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLC
 			if(NULL == pCaloHit)
 				continue;
 
-			m_calorimeterHitCollection.push_back(pCaloHit);
+			int cellID[3];
+			cellID[0] = cellIDDecoder(pCaloHit)["I"];
+			cellID[1] = cellIDDecoder(pCaloHit)["J"];
+			cellID[2] = cellIDDecoder(pCaloHit)["K-1"];
+
+			CLHEP::Hep3Vector positionVector(
+					pCaloHit->getPosition()[0],
+					pCaloHit->getPosition()[1],
+					pCaloHit->getPosition()[2] );
+
+			caloobject::CaloHit *pWrapperHit = new caloobject::CaloHit(
+					cellID,
+					positionVector,
+					pCaloHit->getEnergy(),
+					pCaloHit->getTime(),
+					globalHitShift);
+
+			caloHitMap[ cellID[2] ].push_back(pWrapperHit);
 		}
 
-		this->doTrackStudy();
-		m_calorimeterHitCollection.clear();
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating intra layer clusters");
+
+		for(caloobject::CaloHitMap::iterator iter = caloHitMap.begin(), endIter = caloHitMap.end() ;
+				iter != endIter ; ++iter)
+			m_clusteringAlgorithm.Run(iter->second, clusters);
+
+		std::sort(clusters.begin(), clusters.end(), algorithm::ClusteringHelper::SortClusterByLayer);
+
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Filter non - isolated clusters");
+
+		caloobject::CaloClusterList trackingClusters;
+
+		for(std::vector<caloobject::CaloCluster*>::iterator iter = clusters.begin(), endIter = clusters.end() ;
+				endIter != iter ; ++iter)
+			if( ! m_clusteringHelper.IsIsolatedCluster(*iter, clusters) )
+				trackingClusters.push_back(*iter);
+
+		caloobject::CaloTrack *pTrack = NULL;
+
+		m_trackingAlgorithm.Run(clusters, pTrack);
+
+		// stop processing if no reconstructed track
+		if( NULL == pTrack )
+			throw dqm4hep::StatusCodeException(dqm4hep::STATUS_CODE_SUCCESS);
+
+		tracks.push_back(pTrack);
+
+		bool isInteraction = m_interactionFinderAlgorithm.Run(clusters, pTrack->getTrackParameters());
+
+		// tracking on muons only
+		// stop processing if event is an interaction
+		if( isInteraction )
+			throw dqm4hep::StatusCodeException(dqm4hep::STATUS_CODE_SUCCESS);
+
+		// update analysis contents : asics and layers
+
+		int trackBegin = (*clusters.begin())->getLayerID();
+		int trackEnd = (*(clusters.rbegin()))->getLayerID();
+
+		if(1 == trackBegin)
+			trackBegin = 0;
+
+		if(m_nActiveLayers-2 == trackEnd)
+			trackEnd = m_nActiveLayers-1;
+
+		for(unsigned int l = trackBegin ; l<=trackEnd ; l++)
+		{
+			// reset layer properties
+			m_caloLayerList.at(l)->Reset();
+
+			// and re-evaluate efficiency of layer
+			m_efficiencyAlgorithm.Run(m_caloLayerList.at(l), clusters);
+
+			if( 0 == m_caloLayerList.at(l)->getNTracks() )
+				continue;
+
+			int key = m_asicKeyFinderAlgorithm.FindAsicKey( m_efficiencyAlgorithm.getExpectedPosition() );
+
+			caloobject::SDHCALAsicMap::iterator findIter = m_asicMap.find(key);
+
+			if( findIter == m_asicMap.end() )
+				continue;
+
+			findIter->second->Update( m_caloLayerList.at(l) );
+		}
+
+		this->clearEventContents(hits, clusters, tracks);
 	}
 	catch(EVENT::DataNotAvailableException &exception)
 	{
 		streamlog_out(ERROR) << "Caught EVENT::DataNotAvailableException : " << exception.what() << std::endl;
 		streamlog_out(ERROR) << "Skipping event" << std::endl;
-		this->clearContents();
+		this->clearEventContents(hits, clusters, tracks);
+		return STATUS_CODE_SUCCESS;
+	}
+	catch(...)
+	{
+		streamlog_out(ERROR) << "Caught unknown exception !" << std::endl;
+		this->clearEventContents(hits, clusters, tracks);
 		return STATUS_CODE_SUCCESS;
 	}
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void AsicAnalysisModule::doTrackStudy()
-{
-	UTIL::CellIDDecoder<EVENT::CalorimeterHit> IDdecoder("M:3,S-1:3,I:9,J:9,K-1:6");
-	clusters.clear();
-
-	std::vector<EVENT::CalorimeterHit*> _temp;
-	int ID = 0;
-	int nclusters = 0;
-	Cluster* cluster = NULL;
-
-	for(std::vector<EVENT::CalorimeterHit*>::iterator it=m_calorimeterHitCollection.begin(); it!=m_calorimeterHitCollection.end(); ++it)
-	{
-		if(std::find(_temp.begin(),_temp.end(), (*it) )!=_temp.end())
-			continue;
-
-		cluster = new Cluster(IDdecoder(*it)["K-1"]);
-		cluster->AddHits(*it);
-		nclusters++;
-		ID++;
-		_temp.push_back(*it);
-
-		cluster->BuildCluster(_temp, m_calorimeterHitCollection, (*it));
-		cluster->buildClusterPosition();
-		cluster->setClusterID(ID);
-
-		clusters.push_back(cluster);
-	}
-
-	for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
-		(*it)->IsolatedCluster(clusters);
-
-	for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
-	{
-		if( (*it)->isIsolated() )
-		{
-			streamlog_out( DEBUG ) << "cluster at " << (*it)->getClusterPosition().x() << " " << (*it)->getClusterPosition().y() << " " << (*it)->getClusterPosition().z()
-					<< " is isolated and rejected" << std::endl;
-			delete *it;
-			clusters.erase(it);
-			it--;
-		}
-	}
-
-	std::sort(clusters.begin(), clusters.end(), ClusterClassFunction::sortDigitalClusterByLayer);
-
-	if(clusters.size() > 5)
-		if(TrackSelection(clusters))
-			LayerProperties(clusters);
-
-	for(std::vector<Cluster*>::iterator it=clusters.begin(); it!=clusters.end(); ++it)
-		delete *it;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-bool AsicAnalysisModule::TrackSelection(std::vector<Cluster*> &clVec)
-{
-	TrackingAlgo* aTrackingAlgo = new TrackingAlgo();
-
-	aTrackingAlgo->Init(clVec);
-	aTrackingAlgo->DoTracking();
-	bool success = aTrackingAlgo->TrackFinderSuccess();
-
-	delete aTrackingAlgo;
-
-	return success;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void AsicAnalysisModule::LayerProperties(std::vector<Cluster*> &clVec)
-{
-	int trackBegin= (*clVec.begin())->getLayerID();
-	int trackEnd=(*(clVec.end()-1))->getLayerID();
-
-	if(trackBegin == 1)
-		trackBegin = 0;
-
-	if(trackEnd == 46)
-		trackEnd = 47;
-
-	for(int K=trackBegin; K<=trackEnd; K++)
-	{
-		Layer* aLayer = new Layer(K);
-		aLayer->Init(clVec);
-		aLayer->ComputeLayerProperties();
-
-		int asicKey = findAsicKey(K,aLayer->getxExpected(),aLayer->getyExpected());
-
-		if(asicKey<0)
-		{
-			delete aLayer;
-			continue;
-		}
-
-		if(asicMap.find(asicKey)==asicMap.end())
-		{
-			Asic* asic = new Asic(asicKey);
-			asicMap[asicKey] = asic;
-		}
-
-		if(aLayer->getLayerTag()==fUnefficientLayer)
-			asicMap[asicKey]->Update(0);
-
-		if(aLayer->getLayerTag()==fEfficientLayer)
-			asicMap[asicKey]->Update(aLayer->getMultiplicity());
-
-		delete aLayer;
-	}
-}
-
-//-------------------------------------------------------------------------------------------------
-
-int AsicAnalysisModule::findAsicKey(int layer,float x, float y)
-{
-	float I=round( x/10.408 );
-	float J=round( y/10.408 );
-
-	if(I>96||I<0||J>96||J<0)
-		return -1;
-
-	int jnum=(J-1)/8;
-	int inum=(I-1)/8;
-	int num=jnum*12+inum;
-
-	return layer*1000+num;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -317,76 +446,126 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 	float totalMultiplicity = 0.f;
 	unsigned int nMultiplicityAsics = 0;
 
+	struct LayerInfo
+	{
+		float           m_efficiency;
+		float           m_multiplicity;
+		unsigned int    m_count;
+		unsigned int    m_efficientCount;
+	};
+
+	std::map<unsigned int, LayerInfo> layerInfoMap;
+
 	this->resetElements();
 
-	for(unsigned int i=0; i<m_nActiveLayers; i++)
+	for(caloobject::SDHCALAsicMap::iterator iter = m_asicMap.begin(), endIter = m_asicMap.end() ;
+			endIter != iter ; ++iter)
 	{
-		std::map<unsigned int, LayerElements>::iterator iter = m_layerElementMap.find(i);
-
-		if(iter == m_layerElementMap.end())
+		if( ! (iter->second->getAsicNtrack() > 0) )
 			continue;
 
-		float layerEfficiency = 0.f;
-		unsigned int nLayerEfficientAsics = 0;
+		const unsigned int nTracks = iter->second->getAsicNtrack();
+		const unsigned int layerID = iter->second->getAsicKey()/1000;
 
-		float layerMultiplicity = 0.f;
-		unsigned int nLayerMultiplicityAsics = 0;
+		const float efficiency1 = iter->second->getAsicEfficiency();
+		const float efficiency2 = iter->second->getAsicEfficiency2();
+		const float efficiency3 = iter->second->getAsicEfficiency3();
 
-		for( std::map<int,Asic*>::iterator it = asicMap.begin() ; it != asicMap.end() ; it++ )
+		const float x = iter->second->getPosition()[0];
+		const float y = iter->second->getPosition()[1];
+
+
+		const bool isEfficient = efficiency1 > 0.f;
+
+		const float efficiencyError1 = std::sqrt(efficiency1 * (1 - efficiency1) / nTracks);
+		const float efficiencyError2 = std::sqrt(efficiency2 * (1 - efficiency2) / nTracks);
+		const float efficiencyError3 = std::sqrt(efficiency3 * (1 - efficiency3) / nTracks);
+
+		std::map<unsigned int, LayerInfo>::iterator infoIter = layerInfoMap.find(layerID);
+
+		if( layerInfoMap.end() == infoIter )
 		{
-			if( it->first/1000 != i )
-				continue;
-
-			if( it->second->getAsicCounter() > 0 )
-			{
-				nLayerEfficientAsics++;
-				nEfficientAsics++;
-
-				float asicEfficiency = it->second->getAsicEfficiency()*1.f/it->second->getAsicCounter();
-				std::cout << "asicEfficiency : " << asicEfficiency << std::endl;
-				layerEfficiency += asicEfficiency;
-				totalEfficiency += asicEfficiency;
-
-				// fill elements
-				iter->second.m_pEfficiencyMap->get<TH2F>()->Fill( it->second->getAsicPosition()[0], it->second->getAsicPosition()[1], asicEfficiency );
-				m_pAsicEfficiency->get<TH1F>()->Fill( asicEfficiency );
-				m_pStackedEfficiencyMap->get<TH2F>()->Fill( it->second->getAsicPosition()[0], it->second->getAsicPosition()[1], asicEfficiency / m_nActiveLayers );
-			}
-
-			if( it->second->getAsicEfficiency() > 0 )
-			{
-				nMultiplicityAsics++;
-				nLayerMultiplicityAsics++;
-
-				float asicMultiplicity = it->second->getAsicMultiplicity()*1.f/it->second->getAsicEfficiency();
-				layerMultiplicity += asicMultiplicity;
-				totalMultiplicity += asicMultiplicity;
-
-				// fill elements with multiplicity
-				iter->second.m_pMultiplicityMap->get<TH2F>()->Fill( it->second->getAsicPosition()[0], it->second->getAsicPosition()[1], asicMultiplicity );
-				m_pAsicMultiplicity->get<TH1F>()->Fill( asicMultiplicity );
-				m_pStackedEfficiencyMap->get<TH2F>()->Fill( it->second->getAsicPosition()[0], it->second->getAsicPosition()[1] , asicMultiplicity / m_nActiveLayers );
-			}
-
-			m_pNTracksPerAsic->get<TH1F>()->Fill( it->second->getAsicCounter() );
+			infoIter = layerInfoMap.insert(std::map<unsigned int, LayerInfo>::value_type(layerID, LayerInfo())).first;
+			infoIter->second.m_efficiency = 0.f;
+			infoIter->second.m_multiplicity = 0.f;
+			infoIter->second.m_count = 0;
+			infoIter->second.m_efficientCount = 0;
 		}
 
-		if( nLayerEfficientAsics != 0 )
-		{
-			std::cout << "m_pLayerEfficiency = " << m_pLayerEfficiency << std::endl;
-			std::cout << "m_pLayerEfficiency->get<TH1I>() = " << m_pLayerEfficiency->get<TH1I>() << std::endl;
-			m_pLayerEfficiency->get<TH1I>()->Fill( i , layerEfficiency/nLayerEfficientAsics );
-		}
+		infoIter->second.m_efficiency += efficiency1;
+		infoIter->second.m_count ++;
 
-		if( nLayerMultiplicityAsics != 0 )
-			m_pLayerMultiplicity->get<TH1I>()->Fill( i , layerMultiplicity/nLayerMultiplicityAsics );
+		std::map<unsigned int, LayerElements>::iterator layerIter = m_layerElementMap.find(layerID);
+
+		// global fill
+		m_pNTracksPerAsic->get<TH1>()->Fill( nTracks );
+
+		// fill efficiency
+		// TODO should do it for threshold 2 and 3
+		m_pAsicEfficiency->get<TH1F>()->Fill( efficiency1 );
+		m_pStackedEfficiencyMap->get<TH2F>()->Fill(x, y, efficiency1 / m_nActiveLayers);
+
+		if( m_layerElementMap.end() != layerIter )
+			layerIter->second.m_pEfficiencyMap->get<TH2>()->Fill(x, y, efficiency1);
+
+		// fill multiplicity
+		if( isEfficient )
+		{
+			const float multiplicity = iter->second->getAsicMultiplicity();
+			m_pAsicMultiplicity->get<TH1F>()->Fill( multiplicity );
+			m_pStackedMultiplicityMap->get<TH2F>()->Fill(x, y, multiplicity / m_nActiveLayers);
+
+			if( m_layerElementMap.end() != layerIter )
+				layerIter->second.m_pMultiplicityMap->get<TH2>()->Fill(x, y, multiplicity);
+
+			infoIter->second.m_multiplicity += multiplicity;
+			infoIter->second.m_efficientCount ++;
+		}
 	}
 
-	if( nEfficientAsics != 0 )
-		m_pGlobalEfficiency->get< TScalarObject<float> >()->Set( totalEfficiency / nEfficientAsics );
+	LayerInfo globalInfo;
+	globalInfo.m_efficiency = 0.f;
+	globalInfo.m_multiplicity = 0.f;
+	globalInfo.m_count = 0;
+	globalInfo.m_efficientCount = 0;
 
-	if( nMultiplicityAsics != 0 )
-		m_pGlobalMultiplicity->get< TScalarObject<float> >()->Set( totalMultiplicity / nMultiplicityAsics );
+	// fill efficiency and multiplicity per layer
+	// compute the global efficiency and multiplicity for all layers
+	for(std::map<unsigned int, LayerInfo>::iterator iter = layerInfoMap.begin(), endIter = layerInfoMap.end() ;
+			endIter != iter ; ++iter)
+	{
+		const unsigned int layerID = iter->first;
+
+		if(iter->second.m_count > 0)
+		{
+			const float layerEfficiency = ( iter->second.m_efficiency / iter->second.m_count );
+
+			m_pLayerEfficiency->get<TH1>()->Fill( layerID , layerEfficiency * 100 );
+
+			globalInfo.m_efficiency += layerEfficiency;
+			globalInfo.m_count ++;
+		}
+
+		if(iter->second.m_efficientCount > 0)
+		{
+			const float layerMultiplicity = ( iter->second.m_multiplicity / iter->second.m_efficientCount );
+
+			m_pLayerMultiplicity->get<TH1>()->Fill( layerID , layerMultiplicity );
+
+			globalInfo.m_multiplicity += layerMultiplicity;
+			globalInfo.m_efficientCount ++;
+		}
+	}
+
+	// set global detector efficiency and multiplicity
+	m_pGlobalEfficiency->get< TScalarObject<float> >()->Clear();
+	m_pGlobalMultiplicity->get< TScalarObject<float> >()->Clear();
+
+	if( globalInfo.m_count > 0 )
+		m_pGlobalEfficiency->get< TScalarObject<float> >()->Set( ( globalInfo.m_efficiency / globalInfo.m_count) * 100 );
+
+	if( globalInfo.m_efficientCount > 0 )
+		m_pGlobalMultiplicity->get< TScalarObject<float> >()->Set( globalInfo.m_multiplicity / globalInfo.m_efficientCount );
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -395,6 +574,8 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 
 dqm4hep::StatusCode AsicAnalysisModule::startOfRun(DQMRun *pRun)
 {
+	this->createAsicAndLayerContents();
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -415,25 +596,72 @@ dqm4hep::StatusCode AsicAnalysisModule::endModule()
 
 //-------------------------------------------------------------------------------------------------
 
+void AsicAnalysisModule::clearEventContents(caloobject::CaloHitList &hits, caloobject::CaloClusterList &clusters, caloobject::CaloTrackList &tracks)
+{
+	for_each(hits.begin(), hits.end(), [] (caloobject::CaloHit *pCaloHit) { delete pCaloHit; });
+	for_each(clusters.begin(), clusters.end(), [] (caloobject::CaloCluster *pCluster) { delete pCluster; });
+	for_each(tracks.begin(), tracks.end(), [] (caloobject::CaloTrack *pTrack) { delete pTrack; });
+
+	hits.clear();
+	clusters.clear();
+	tracks.clear();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void AsicAnalysisModule::createAsicAndLayerContents()
+{
+	// build layers and asics
+	for(unsigned int l=0 ; l<m_nActiveLayers ; ++l)
+	{
+		caloobject::CaloLayer *pLayer = new caloobject::CaloLayer(l);
+
+		pLayer->setLayerParameterSetting(m_layerSettings);
+		m_caloLayerList.push_back(pLayer);
+
+		for(unsigned int ax=0 ; ax<m_nAsicX ; ax++)
+		{
+			for(unsigned int ay=0 ; ay<m_nAsicY ; ay++)
+			{
+				int key = m_asicKeyFinderAlgorithm.BuildAsicKey(ax, ay, l);
+
+				caloobject::SDHCAL_Asic *pAsic = new caloobject::SDHCAL_Asic(key);
+				pAsic->setASIC_ID( this->findDifID(key) , this->findAsicID(key) );
+
+				m_asicMap.insert(caloobject::SDHCALAsicMap::value_type( key, pAsic ));
+			}
+		}
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void AsicAnalysisModule::clearContents()
 {
-	m_calorimeterHitCollection.clear();
-
-	for(std::vector<Cluster*>::iterator iter = clusters.begin(), endIter = clusters.end() ;
+	for(caloobject::CaloLayerList::iterator iter = m_caloLayerList.begin(), endIter = m_caloLayerList.end() ;
 			endIter != iter ; ++iter)
-	{
 		delete *iter;
-	}
 
-	clusters.clear();
-
-	for(std::map<int,Asic*>::iterator iter = asicMap.begin(), endIter = asicMap.end() ;
+	for(caloobject::SDHCALAsicMap::iterator iter = m_asicMap.begin(), endIter = m_asicMap.end() ;
 			endIter != iter ; ++iter)
-	{
 		delete iter->second;
-	}
 
-	asicMap.clear();
+	m_caloLayerList.clear();
+	m_asicMap.clear();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+int AsicAnalysisModule::findDifID(int key)
+{
+	return m_difList.at( key/1000*3 + 2 - key%1000%12/4 );
+}
+
+//-------------------------------------------------------------------------------------------------
+
+int AsicAnalysisModule::findAsicID(int key)
+{
+	return m_asicTable.at( 4*(key%1000/12) + key%1000%12%4 );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -457,7 +685,6 @@ void AsicAnalysisModule::resetElements()
 	m_pGlobalMultiplicity->reset();
 	m_pNTracksPerAsic->reset();
 }
-
 
 }
 

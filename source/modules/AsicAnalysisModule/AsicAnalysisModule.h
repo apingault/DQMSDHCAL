@@ -36,20 +36,33 @@
 #include "lcio.h"
 #include "EVENT/CalorimeterHit.h"
 
-// -- specific module header
-#include "Asic.h"
-#include "Cluster.h"
-#include "PCA.hh"
-#include "Linear3DFit.hh"
-#include "ThreeVector.hh"
-#include "Layer.h"
+// -- calo software headers
+#include "CaloObject/Asic.h"
+#include "Algorithm/Cluster.h"
+#include "CaloObject/CaloHit.h"
+#include "Algorithm/Tracking.h"
+#include "Algorithm/ClusteringHelper.h"
+#include "Algorithm/InteractionFinder.h"
+#include "Algorithm/Efficiency.h"
+#include "Algorithm/AsicKeyFinder.h"
 
 // -- std headers
 #include <string>
 #include <cstring>
 #include <vector>
 
+// -- dqmsdhcal headers
 #include "DQMTriventModule.h"
+
+namespace caloobject
+{
+	typedef std::map<unsigned int, std::vector<CaloHit *> > CaloHitMap;
+	typedef std::vector<CaloHit *> CaloHitList;
+	typedef std::vector<CaloLayer *> CaloLayerList;
+	typedef std::vector<CaloCluster *> CaloClusterList;
+	typedef std::vector<CaloTrack *> CaloTrackList;
+	typedef std::map<unsigned int, SDHCAL_Asic*> SDHCALAsicMap;
+}
 
 namespace dqm_sdhcal
 {
@@ -78,33 +91,75 @@ public:
 	dqm4hep::StatusCode endOfRun(dqm4hep::DQMRun *const pRun);
 	dqm4hep::StatusCode endModule();
 
-	dqm4hep::StatusCode doTrackStudy(const std::vector<EVENT::LCEvent*> &eventList);
-	void doTrackStudy();
-	void clearContents();
-	bool TrackSelection(std::vector<Cluster*> &clVec);
-	void LayerProperties(std::vector<Cluster*> &clVec);
-	int findAsicKey(int layer,float x, float y);
+private:
+	/** Find the dif id for the given key
+	 */
+	int findDifID(int key);
 
+	/** Find the asic id for the given key
+	 */
+	int findAsicID(int key);
+
+	/** Clear the contents related to one event
+	 */
+	void clearEventContents(caloobject::CaloHitList &hits,
+			caloobject::CaloClusterList &clusters, caloobject::CaloTrackList &tracks);
+
+	/** Clear the contents related
+	 */
+	void clearContents();
+
+	/** Create the asic and layer contents needed
+	 *  to extract the asic efficiency and multiplicity
+	 */
+	void createAsicAndLayerContents();
+
+	/** Reset the monitor element tuned on cycle
+	 *  Called at end of cycle before filling again
+	 *  efficiencies and multiplicities
+	 */
 	void resetElements();
 
 private:
+
+	// algorithm contents
+	caloobject::CaloLayerList                m_caloLayerList;
+	caloobject::SDHCALAsicMap                m_asicMap;
+
+	// algorithms
+	algorithm::Cluster                       m_clusteringAlgorithm;
+	algorithm::ClusteringHelper              m_clusteringHelper;
+	algorithm::Tracking                      m_trackingAlgorithm;
+	algorithm::InteractionFinder             m_interactionFinderAlgorithm;
+	algorithm::Efficiency                    m_efficiencyAlgorithm;
+	algorithm::AsicKeyFinder                 m_asicKeyFinderAlgorithm;
+
+	// algorithm parameters
+	algorithm::clusterParameterSetting           m_clusteringSettings;
+	algorithm::ClusteringHelperParameterSetting  m_clusteringHelperSettings;
+	algorithm::TrackingParameterSetting          m_trackingSettings;
+	algorithm::InteractionFinderParameterSetting m_interactionFinderSettings;
+	algorithm::EfficiencyParameterSetting        m_efficiencySettings;
+	algorithm::AsicKeyFinderParameterSetting     m_asicKeyFinderSettings;
+	caloobject::LayerParameterSetting            m_layerSettings;
+
+	// module parameters
+	std::string                              m_inputCollectionName;
+	std::string                              m_cellIDDecoderString;
+	dqm4hep::IntVector                       m_asicTable;
+	dqm4hep::IntVector                       m_difList;
+	unsigned int                             m_nAsicX;
+	unsigned int                             m_nAsicY;
+	unsigned int                             m_nActiveLayers;
+
+private:
+	// monitor elements
+
 	struct LayerElements
 	{
-		dqm4hep::DQMMonitorElementPtr     m_pEfficiencyMap;
-		dqm4hep::DQMMonitorElementPtr     m_pMultiplicityMap;
+		dqm4hep::DQMMonitorElementPtr           m_pEfficiencyMap;
+		dqm4hep::DQMMonitorElementPtr           m_pMultiplicityMap;
 	};
-
-	unsigned int                    m_nActiveLayers;
-	std::string                     m_inputCollectionName;
-
-	std::vector<EVENT::CalorimeterHit*> m_calorimeterHitCollection;
-
-	std::vector<Cluster*> clusters;
-	std::map<int,Asic*> asicMap;
-
-
-
-	std::map<unsigned int, LayerElements>     m_layerElementMap;
 
 	dqm4hep::DQMMonitorElementPtr               m_pLayerEfficiency;
 	dqm4hep::DQMMonitorElementPtr               m_pLayerMultiplicity;
@@ -115,6 +170,8 @@ private:
 	dqm4hep::DQMMonitorElementPtr               m_pGlobalEfficiency;
 	dqm4hep::DQMMonitorElementPtr               m_pGlobalMultiplicity;
 	dqm4hep::DQMMonitorElementPtr               m_pNTracksPerAsic;
+
+	std::map<unsigned int, LayerElements>       m_layerElementMap;
 }; 
 
 } 
