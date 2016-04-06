@@ -75,13 +75,17 @@ dqm4hep::StatusCode EventDisplayModule::userInitModule()
 
 dqm4hep::StatusCode EventDisplayModule::userReadSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
-	m_inputCollectionName = "SDHCAL_HIT";
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"InputCollectionName", m_inputCollectionName));
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
+			"InputCaloHitCollections", m_inputCaloHitCollections, [] (const dqm4hep::StringVector &vec) { return ! vec.empty(); }));
+
+	const unsigned int nCollections = m_inputCaloHitCollections.size();
 
 	m_pEventDisplay3D = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"EventDisplay3D", m_pEventDisplay3D));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
+			"ColorWeightList", m_colorWeightList, [&] (const dqm4hep::IntVector &vec) { return vec.size() == nCollections; }));
 
 	int markerColor3D = kBlack;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
@@ -145,38 +149,54 @@ dqm4hep::StatusCode EventDisplayModule::processPhysicalEvent(EVENT::LCEvent *pLC
 
 	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "Processing physics event no " << pLCEvent->getEventNumber() );
 
+	const unsigned int nCollections = m_inputCaloHitCollections.size();
+
 	try
 	{
-		EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(m_inputCollectionName);
-		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(pCalorimeterHitCollection);
-
-		// loop over hits in this event
-		for(unsigned int h=0 ; h<pCalorimeterHitCollection->getNumberOfElements() ; h++)
+		for(unsigned int c=0 ; c<nCollections ; c++)
 		{
-			EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit*>(pCalorimeterHitCollection->getElementAt(h));
+			const std::string collectionName(m_inputCaloHitCollections.at(c));
+			const int colorWeight(m_colorWeightList.at(c));
 
-			if(NULL == pCaloHit)
+			try
+			{
+				EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(collectionName);
+
+				// loop over hits in this event
+				for(unsigned int h=0 ; h<pCalorimeterHitCollection->getNumberOfElements() ; h++)
+				{
+					EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit*>(pCalorimeterHitCollection->getElementAt(h));
+
+					if(NULL == pCaloHit)
+						continue;
+
+					const float x(pCaloHit->getPosition()[0]);
+					const float y(pCaloHit->getPosition()[1]);
+					const float z(pCaloHit->getPosition()[2]);
+
+					m_pEventDisplay3D->get<TH3>()->Fill(z, x, y, colorWeight);
+
+					m_pLastProfileZX->get<TH2>()->Fill(z, x);
+					m_pLastProfileZY->get<TH2>()->Fill(z, y);
+					m_pLastProfileXY->get<TH2>()->Fill(x, y);
+
+					m_pCycleStackedProfileZX->get<TH2>()->Fill(z, x);
+					m_pCycleStackedProfileZY->get<TH2>()->Fill(z, y);
+					m_pCycleStackedProfileXY->get<TH2>()->Fill(x, y);
+				}
+
+			}
+			catch(EVENT::DataNotAvailableException &exception)
+			{
+				LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught EVENT::DataNotAvailableException : " << exception.what() );
 				continue;
-
-			unsigned int i = cellIDDecoder(pCaloHit)["I"];
-			unsigned int j = cellIDDecoder(pCaloHit)["J"];
-			unsigned int k = cellIDDecoder(pCaloHit)["K-1"];
-
-			m_pEventDisplay3D->get<TH3>()->Fill(k, i, j);
-
-			m_pLastProfileZX->get<TH2>()->Fill(k, i);
-			m_pLastProfileZY->get<TH2>()->Fill(k, j);
-			m_pLastProfileXY->get<TH2>()->Fill(i, j);
-
-			m_pCycleStackedProfileZX->get<TH2>()->Fill(k, i);
-			m_pCycleStackedProfileZY->get<TH2>()->Fill(k, j);
-			m_pCycleStackedProfileXY->get<TH2>()->Fill(i, j);
+			}
 		}
 	}
-	catch(EVENT::DataNotAvailableException &exception)
+	catch(...)
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught EVENT::DataNotAvailableException : " << exception.what() );
-		return dqm4hep::STATUS_CODE_SUCCESS;
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught unknown exception !" );
+		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
