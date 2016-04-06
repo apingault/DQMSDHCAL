@@ -150,6 +150,7 @@ private:
 	dqm4hep::IntVector                       m_difList;
 	unsigned int                             m_nAsicX;
 	unsigned int                             m_nAsicY;
+	int                                      m_nStartLayerShift;
 	unsigned int                             m_nActiveLayers;
 
 private:
