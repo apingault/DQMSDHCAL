@@ -760,6 +760,7 @@ dqm4hep::StatusCode Trivent::processEvent(EVENT::LCEvent *pLCEvent)
 
             if(statusCode != dqm4hep::STATUS_CODE_SUCCESS)
             {
+            	delete pEvt;
             	delete pCalorimeterHitCollection;
                 previousBin = iBin;
                 iBin = iBin + m_timeWindow;
