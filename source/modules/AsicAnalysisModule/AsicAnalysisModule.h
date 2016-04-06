@@ -158,16 +158,26 @@ private:
 	struct LayerElements
 	{
 		dqm4hep::DQMMonitorElementPtr           m_pEfficiencyMap;
+		dqm4hep::DQMMonitorElementPtr           m_pEfficiency2Map;
+		dqm4hep::DQMMonitorElementPtr           m_pEfficiency3Map;
 		dqm4hep::DQMMonitorElementPtr           m_pMultiplicityMap;
 	};
 
 	dqm4hep::DQMMonitorElementPtr               m_pLayerEfficiency;
+	dqm4hep::DQMMonitorElementPtr               m_pLayerEfficiency2;
+	dqm4hep::DQMMonitorElementPtr               m_pLayerEfficiency3;
 	dqm4hep::DQMMonitorElementPtr               m_pLayerMultiplicity;
 	dqm4hep::DQMMonitorElementPtr               m_pAsicEfficiency;
+	dqm4hep::DQMMonitorElementPtr               m_pAsicEfficiency2;
+	dqm4hep::DQMMonitorElementPtr               m_pAsicEfficiency3;
 	dqm4hep::DQMMonitorElementPtr               m_pAsicMultiplicity;
 	dqm4hep::DQMMonitorElementPtr               m_pStackedEfficiencyMap;
+	dqm4hep::DQMMonitorElementPtr               m_pStackedEfficiency2Map;
+	dqm4hep::DQMMonitorElementPtr               m_pStackedEfficiency3Map;
 	dqm4hep::DQMMonitorElementPtr               m_pStackedMultiplicityMap;
 	dqm4hep::DQMMonitorElementPtr               m_pGlobalEfficiency;
+	dqm4hep::DQMMonitorElementPtr               m_pGlobalEfficiency2;
+	dqm4hep::DQMMonitorElementPtr               m_pGlobalEfficiency3;
 	dqm4hep::DQMMonitorElementPtr               m_pGlobalMultiplicity;
 	dqm4hep::DQMMonitorElementPtr               m_pNTracksPerAsic;
 

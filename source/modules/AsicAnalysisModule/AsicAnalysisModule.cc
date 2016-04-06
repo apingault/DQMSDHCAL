@@ -230,17 +230,51 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 				"EfficiencyMap", l, m_layerElementMap[l].m_pEfficiencyMap));
 
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"Efficiency2Map", l, m_layerElementMap[l].m_pEfficiency2Map));
+
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"Efficiency3Map", l, m_layerElementMap[l].m_pEfficiency3Map));
+
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 				"MultiplicityMap", l, m_layerElementMap[l].m_pMultiplicityMap));
 	}
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"LayerEfficiency", m_pLayerEfficiency));
 
+	m_pLayerEfficiency->get<TGraph>()->SetMarkerSize(1);
+	m_pLayerEfficiency->get<TGraph>()->SetMarkerColor(kBlack);
+	m_pLayerEfficiency->get<TGraph>()->SetMarkerStyle(23);
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"LayerEfficiency2", m_pLayerEfficiency2));
+
+	m_pLayerEfficiency2->get<TGraph>()->SetMarkerSize(1);
+	m_pLayerEfficiency2->get<TGraph>()->SetMarkerColor(kBlack);
+	m_pLayerEfficiency2->get<TGraph>()->SetMarkerStyle(23);
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"LayerEfficiency3", m_pLayerEfficiency3));
+
+	m_pLayerEfficiency3->get<TGraph>()->SetMarkerSize(1);
+	m_pLayerEfficiency3->get<TGraph>()->SetMarkerColor(kBlack);
+	m_pLayerEfficiency3->get<TGraph>()->SetMarkerStyle(23);
+
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"LayerMultiplicity", m_pLayerMultiplicity));
 
+	m_pLayerMultiplicity->get<TGraph>()->SetMarkerSize(1);
+	m_pLayerMultiplicity->get<TGraph>()->SetMarkerColor(kBlack);
+	m_pLayerMultiplicity->get<TGraph>()->SetMarkerStyle(23);
+
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"AsicEfficiency", m_pAsicEfficiency));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"AsicEfficiency2", m_pAsicEfficiency2));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"AsicEfficiency3", m_pAsicEfficiency3));
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"AsicMultiplicity", m_pAsicMultiplicity));
@@ -249,10 +283,22 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 			"StackedEfficiencyMap", m_pStackedEfficiencyMap));
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"StackedEfficiency2Map", m_pStackedEfficiency2Map));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"StackedEfficiency3Map", m_pStackedEfficiency3Map));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"StackedMultiplicityMap", m_pStackedMultiplicityMap));
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"GlobalEfficiency", m_pGlobalEfficiency));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"GlobalEfficiency2", m_pGlobalEfficiency2));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			"GlobalEfficiency3", m_pGlobalEfficiency3));
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"GlobalMultiplicity", m_pGlobalMultiplicity));
@@ -340,6 +386,7 @@ dqm4hep::StatusCode AsicAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLC
 					globalHitShift);
 
 			caloHitMap[ cellID[2] ].push_back(pWrapperHit);
+			hits.push_back(pWrapperHit);
 		}
 
 		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating intra layer clusters");
@@ -421,7 +468,7 @@ dqm4hep::StatusCode AsicAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLC
 	{
 		streamlog_out(ERROR) << "Caught unknown exception !" << std::endl;
 		this->clearEventContents(hits, clusters, tracks);
-		return STATUS_CODE_SUCCESS;
+		return STATUS_CODE_FAILURE;
 	}
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
@@ -438,17 +485,11 @@ dqm4hep::StatusCode AsicAnalysisModule::startOfCycle()
 
 dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 {
-	DQMMonitorElement *pMonitorElement = NULL;
-
-	float totalEfficiency = 0.f;
-	unsigned int nEfficientAsics = 0;
-
-	float totalMultiplicity = 0.f;
-	unsigned int nMultiplicityAsics = 0;
-
 	struct LayerInfo
 	{
 		float           m_efficiency;
+		float           m_efficiency2;
+		float           m_efficiency3;
 		float           m_multiplicity;
 		unsigned int    m_count;
 		unsigned int    m_efficientCount;
@@ -487,12 +528,16 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 		{
 			infoIter = layerInfoMap.insert(std::map<unsigned int, LayerInfo>::value_type(layerID, LayerInfo())).first;
 			infoIter->second.m_efficiency = 0.f;
+			infoIter->second.m_efficiency2 = 0.f;
+			infoIter->second.m_efficiency3 = 0.f;
 			infoIter->second.m_multiplicity = 0.f;
 			infoIter->second.m_count = 0;
 			infoIter->second.m_efficientCount = 0;
 		}
 
 		infoIter->second.m_efficiency += efficiency1;
+		infoIter->second.m_efficiency2 += efficiency2;
+		infoIter->second.m_efficiency3 += efficiency3;
 		infoIter->second.m_count ++;
 
 		std::map<unsigned int, LayerElements>::iterator layerIter = m_layerElementMap.find(layerID);
@@ -501,12 +546,17 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 		m_pNTracksPerAsic->get<TH1>()->Fill( nTracks );
 
 		// fill efficiency
-		// TODO should do it for threshold 2 and 3
 		m_pAsicEfficiency->get<TH1F>()->Fill( efficiency1 );
+		m_pAsicEfficiency2->get<TH1F>()->Fill( efficiency2 );
+		m_pAsicEfficiency3->get<TH1F>()->Fill( efficiency3 );
 		m_pStackedEfficiencyMap->get<TH2F>()->Fill(x, y, efficiency1 / m_nActiveLayers);
 
 		if( m_layerElementMap.end() != layerIter )
+		{
 			layerIter->second.m_pEfficiencyMap->get<TH2>()->Fill(x, y, efficiency1);
+			layerIter->second.m_pEfficiency2Map->get<TH2>()->Fill(x, y, efficiency2);
+			layerIter->second.m_pEfficiency3Map->get<TH2>()->Fill(x, y, efficiency3);
+		}
 
 		// fill multiplicity
 		if( isEfficient )
@@ -525,6 +575,8 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 
 	LayerInfo globalInfo;
 	globalInfo.m_efficiency = 0.f;
+	globalInfo.m_efficiency2 = 0.f;
+	globalInfo.m_efficiency3 = 0.f;
 	globalInfo.m_multiplicity = 0.f;
 	globalInfo.m_count = 0;
 	globalInfo.m_efficientCount = 0;
@@ -539,10 +591,17 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 		if(iter->second.m_count > 0)
 		{
 			const float layerEfficiency = ( iter->second.m_efficiency / iter->second.m_count );
+			const float layerEfficiency2 = ( iter->second.m_efficiency2 / iter->second.m_count );
+			const float layerEfficiency3 = ( iter->second.m_efficiency3 / iter->second.m_count );
 
-			m_pLayerEfficiency->get<TH1>()->Fill( layerID , layerEfficiency * 100 );
+			Int_t pointID = m_pLayerEfficiency->get<TGraph>()->GetN();
+			m_pLayerEfficiency->get<TGraph>()->SetPoint(pointID, layerID , layerEfficiency * 100 );
+			m_pLayerEfficiency2->get<TGraph>()->SetPoint(pointID, layerID , layerEfficiency2 * 100 );
+			m_pLayerEfficiency3->get<TGraph>()->SetPoint(pointID, layerID , layerEfficiency3 * 100 );
 
 			globalInfo.m_efficiency += layerEfficiency;
+			globalInfo.m_efficiency2 += layerEfficiency2;
+			globalInfo.m_efficiency3 += layerEfficiency3;
 			globalInfo.m_count ++;
 		}
 
@@ -550,7 +609,8 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 		{
 			const float layerMultiplicity = ( iter->second.m_multiplicity / iter->second.m_efficientCount );
 
-			m_pLayerMultiplicity->get<TH1>()->Fill( layerID , layerMultiplicity );
+			Int_t pointID = m_pLayerMultiplicity->get<TGraph>()->GetN();
+			m_pLayerMultiplicity->get<TGraph>()->SetPoint( pointID , layerID , layerMultiplicity );
 
 			globalInfo.m_multiplicity += layerMultiplicity;
 			globalInfo.m_efficientCount ++;
@@ -559,10 +619,16 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 
 	// set global detector efficiency and multiplicity
 	m_pGlobalEfficiency->get< TScalarObject<float> >()->Clear();
+	m_pGlobalEfficiency2->get< TScalarObject<float> >()->Clear();
+	m_pGlobalEfficiency3->get< TScalarObject<float> >()->Clear();
 	m_pGlobalMultiplicity->get< TScalarObject<float> >()->Clear();
 
 	if( globalInfo.m_count > 0 )
+	{
 		m_pGlobalEfficiency->get< TScalarObject<float> >()->Set( ( globalInfo.m_efficiency / globalInfo.m_count) * 100 );
+		m_pGlobalEfficiency2->get< TScalarObject<float> >()->Set( ( globalInfo.m_efficiency2 / globalInfo.m_count) * 100 );
+		m_pGlobalEfficiency3->get< TScalarObject<float> >()->Set( ( globalInfo.m_efficiency3 / globalInfo.m_count) * 100 );
+	}
 
 	if( globalInfo.m_efficientCount > 0 )
 		m_pGlobalMultiplicity->get< TScalarObject<float> >()->Set( globalInfo.m_multiplicity / globalInfo.m_efficientCount );
@@ -672,17 +738,31 @@ void AsicAnalysisModule::resetElements()
 			endIter != iter ; ++iter)
 	{
 		iter->second.m_pEfficiencyMap->reset();
+		iter->second.m_pEfficiency2Map->reset();
+		iter->second.m_pEfficiency3Map->reset();
 		iter->second.m_pMultiplicityMap->reset();
 	}
 
-	m_pLayerEfficiency->reset();
-	m_pLayerMultiplicity->reset();
+	m_pLayerEfficiency->get<TGraph>()->Set(0);
+	m_pLayerEfficiency2->get<TGraph>()->Set(0);
+	m_pLayerEfficiency3->get<TGraph>()->Set(0);
+	m_pLayerMultiplicity->get<TGraph>()->Set(0);
+
 	m_pAsicEfficiency->reset();
+	m_pAsicEfficiency2->reset();
+	m_pAsicEfficiency3->reset();
 	m_pAsicMultiplicity->reset();
+
 	m_pStackedEfficiencyMap->reset();
+	m_pStackedEfficiency2Map->reset();
+	m_pStackedEfficiency3Map->reset();
 	m_pStackedMultiplicityMap->reset();
+
 	m_pGlobalEfficiency->reset();
+	m_pGlobalEfficiency2->reset();
+	m_pGlobalEfficiency3->reset();
 	m_pGlobalMultiplicity->reset();
+
 	m_pNTracksPerAsic->reset();
 }
 

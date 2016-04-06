@@ -82,7 +82,17 @@
         
         
 		<monitorElement ID="EfficiencyMap"
-			name="EfficiencyMap" path="/Layers/EfficiencyMaps" type="TH2F" title="Efficiency map" 
+			name="EfficiencyMap" path="/Layers/EfficiencyMaps/Thr1" type="TH2F" title="Efficiency map (thr 1)" 
+			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"
+			drawOption="colz" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="Efficiency2Map"
+			name="EfficiencyMap" path="/Layers/EfficiencyMaps/Thr2" type="TH2F" title="Efficiency map (thr 2)" 
+			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"
+			drawOption="colz" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="Efficiency3Map"
+			name="EfficiencyMap" path="/Layers/EfficiencyMaps/Thr3" type="TH2F" title="Efficiency map (thr 3)" 
 			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"
 			drawOption="colz" resetPolicy="EndOfRun"/>
 			
@@ -91,43 +101,87 @@
 			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"
 			drawOption="colz" resetPolicy="EndOfRun"/>
 			
+			
+			
 		<monitorElement ID="LayerEfficiency"
-			name="LayerEfficiency" path="/Global" type="TH1I" title="Layer efficiencies" 
-			nBins="49" min="0" max="48" drawOption="E"
-			resetPolicy="EndOfRun"/>
+			name="LayerEfficiency" path="/Global/Thr1" type="user" ROOTClass="TGraph" 
+			title="Layer efficiencies" drawOption="ap" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="LayerEfficiency2"
+			name="LayerEfficiency" path="/Global/Thr2" type="user" ROOTClass="TGraph" 
+			title="Layer efficiencies (thr 2)" drawOption="ap" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="LayerEfficiency3"
+			name="LayerEfficiency" path="/Global/Thr3" type="user" ROOTClass="TGraph" 
+			title="Layer efficiencies (thr 3)" drawOption="ap" resetPolicy="EndOfRun"/>
 			
 		<monitorElement ID="LayerMultiplicity"
-			name="LayerMultiplicity" path="/Global" type="TH1I" title="Layer multiplicities" 
-			nBins="49" min="0" max="48" drawOption="E"
-			resetPolicy="EndOfRun"/>
+			name="LayerMultiplicity" path="/Global/Multiplicity" type="user" ROOTClass="TGraph" 
+			title="Layer multiplicities" drawOption="ap" resetPolicy="EndOfRun"/>
+			
+			
 			
 		<monitorElement ID="AsicEfficiency"
-			name="AsicEfficiency" path="/Global" type="TH1F" title="Asic efficiencies" 
+			name="AsicEfficiency" path="/Global/Thr1" type="TH1F" title="Asic efficiencies" 
+			nBins="101" min="0" max="1"
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="AsicEfficiency2"
+			name="AsicEfficiency" path="/Global/Thr2" type="TH1F" title="Asic efficiencies (thr 2)" 
+			nBins="101" min="0" max="1"
+			resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="AsicEfficiency3"
+			name="AsicEfficiency" path="/Global/Thr3" type="TH1F" title="Asic efficiencies (thr 3)" 
 			nBins="101" min="0" max="1"
 			resetPolicy="EndOfRun"/>
 			
 		<monitorElement ID="AsicMultiplicity"
-			name="AsicMultiplicity" path="/Global" type="TH1F" title="Asic multiplicities" 
+			name="AsicMultiplicity" path="/Global/Multiplicity" type="TH1F" title="Asic multiplicities" 
 			nBins="101" min="0" max="10"
 			resetPolicy="EndOfRun"/>
 			
+			
+			
 		<monitorElement ID="StackedEfficiencyMap"
-			name="StackedEfficiencyMap" path="/Global" type="TH2F" title="Stacked efficiency map" 
+			name="StackedEfficiencyMap" path="/Global/Thr1" type="TH2F" title="Stacked efficiency map" 
+			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"  
+			drawOption="colz" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="StackedEfficiency2Map"
+			name="StackedEfficiencyMap" path="/Global/Thr2" type="TH2F" title="Stacked efficiency map (thr 2)" 
+			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"  
+			drawOption="colz" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="StackedEfficiency3Map"
+			name="StackedEfficiencyMap" path="/Global/Thr3" type="TH2F" title="Stacked efficiency map (thr 3)" 
 			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"  
 			drawOption="colz" resetPolicy="EndOfRun"/>
 			
 		<monitorElement ID="StackedMultiplicityMap"
-			name="StackedMultiplicityMap" path="/Global" type="TH2F" title="Stacked multiplicity map" 
+			name="StackedMultiplicityMap" path="/Global/Multiplicity" type="TH2F" title="Stacked multiplicity map" 
 			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"
 			drawOption="colz" resetPolicy="EndOfRun"/>
 			
+			
+			
 		<monitorElement ID="GlobalEfficiency"
-			name="GlobalEfficiency" path="/Global" type="float" title="Global efficiency" 
+			name="GlobalEfficiency" path="/Global/Thr1" type="float" title="Global efficiency" 
+			value="0" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="GlobalEfficiency2"
+			name="GlobalEfficiency" path="/Global/Thr2" type="float" title="Global efficiency (thr 2)" 
+			value="0" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="GlobalEfficiency3"
+			name="GlobalEfficiency" path="/Global/Thr3" type="float" title="Global efficiency (thr 3)" 
 			value="0" resetPolicy="EndOfRun"/>
 			
 		<monitorElement ID="GlobalMultiplicity"
-			name="GlobalMultiplicity" path="/Global" type="float" title="Global multiplicities" 
+			name="GlobalMultiplicity" path="/Global/Multiplicity" type="float" title="Global multiplicities" 
 			value="0" resetPolicy="EndOfRun"/>
+			
+			
 			
 		<monitorElement ID="NTracksPerAsic"
 			name="NTracksPerAsic" path="/Global" type="TH1F" title="Number of rec tracks per asic" 
