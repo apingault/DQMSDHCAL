@@ -314,6 +314,9 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"InputCollectionName", m_inputCollectionName));
 
+	DQMModuleApi::cd(this);
+	DQMModuleApi::ls(this, true); // true for recursive
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
