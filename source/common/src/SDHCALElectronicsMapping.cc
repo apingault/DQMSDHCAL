@@ -294,6 +294,9 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::readSettings(const dqm4hep::TiXmlH
 		unsigned int difId = difList.at(d);
 		unsigned int difShiftY = m_globalDifShiftY * d%3;
 
+		if( difId == 0 )
+			continue;
+
 		DifGeo difGeo;
 		difGeo.m_layer = layer;
 		difGeo.m_difId = difId;
