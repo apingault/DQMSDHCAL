@@ -11,6 +11,31 @@ INCLUDE_DIRECTORIES( ../common/include )
 ADD_DEFINITIONS( "-pedantic -Wunused-value -O2" )
 ADD_DEFINITIONS("-Wno-long-long -Wreturn-type")
 
+
+# -------------------------------------------------
+# build NoiseAnalysisModule library
+
+INCLUDE_DIRECTORIES( NoiseAnalysisModule )
+ADD_SHARED_LIBRARY( NoiseAnalysisModule NoiseAnalysisModule/NoiseAnalysisModule.cc )
+TARGET_LINK_LIBRARIES( NoiseAnalysisModule ${PROJECT_NAME}Common )
+
+INSTALL(
+    TARGETS NoiseAnalysisModule
+    LIBRARY DESTINATION lib
+)
+
+# -------------------------------------------------
+# build HitAnalysisModule library
+
+INCLUDE_DIRECTORIES( HitAnalysisModule )
+ADD_SHARED_LIBRARY( HitAnalysisModule HitAnalysisModule/HitAnalysisModule.cc )
+TARGET_LINK_LIBRARIES( HitAnalysisModule ${PROJECT_NAME}Common )
+
+INSTALL(
+    TARGETS HitAnalysisModule
+    LIBRARY DESTINATION lib
+)
+
 # -------------------------------------------------
 # build AsicAnalysisModule library
 
