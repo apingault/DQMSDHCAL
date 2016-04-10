@@ -51,49 +51,54 @@
         	<parameter name="LayerThickness">  26.131 </parameter>
         </Trivent>
         
-        <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
+        <parameter name="InputCaloHitCollections"> SDHCAL_HIT </parameter>
+        <parameter name="ColorWeightList"> 1 </parameter>
+        
+        <parameter name="MarkerColor3D"> 2 </parameter>
+        <parameter name="MarkerSize3D"> 1 </parameter>
+        <parameter name="MarkerStyle3D"> 21 </parameter>
         
 		<monitorElement ID="EventDisplay3D"
-			name="EventDisplay3D" path="/3D" type="TH3I"
-			nBinsX="50" minX="0" maxX="49"
-			nBinsY="96" minY="1" maxY="96"
-			nBinsZ="96" minZ="1" maxZ="96"
+			name="EventDisplay3D" path="/3D" type="TH3F"
+			nBinsX="100" minX="0" maxX="1000"
+			nBinsY="100" minY="0" maxY="1000"
+			nBinsZ="100" minZ="0" maxZ="1000"
 			title="SDHCAL 3D display" drawOption="gl" resetPolicy="EndOfRun"/>
 			
 		<monitorElement ID="LastProfileZX"
-			name="LastProfileZX" path="/2D" type="TH2I"
-			nBinsX="50" minX="0" maxX="49"
-			nBinsY="96" minY="1" maxY="96"
+			name="LastProfileZX" path="/2D" type="TH2F"
+			nBinsX="27" minX="0" maxX="1000"
+			nBinsY="100" minY="0" maxY="1000"
 			title="Last recorded Z-X profile" drawOption="colz" resetPolicy="EndOfRun"/>
 			
 		<monitorElement ID="LastProfileZY"
-			name="LastProfileZY" path="/2D" type="TH2I"
-			nBinsX="50" minX="0" maxX="49"
-			nBinsY="96" minY="1" maxY="96"
+			name="LastProfileZY" path="/2D" type="TH2F"
+			nBinsX="27" minX="0" maxX="1000"
+			nBinsY="100" minY="0" maxY="1000"
 			title="Last recorded Z-Y profile" drawOption="colz" resetPolicy="EndOfRun"/>
 		
 		<monitorElement ID="LastProfileXY"
-			name="LastProfileXY" path="/2D" type="TH2I"
-			nBinsX="96" minX="1" maxX="96"
-			nBinsY="96" minY="1" maxY="96"
+			name="LastProfileXY" path="/2D" type="TH2F"
+			nBinsX="100" minX="0" maxX="1000"
+			nBinsY="100" minY="0" maxY="1000"
 			title="Last recorded X-Y profile" drawOption="colz" resetPolicy="EndOfRun"/>
 			
 		<monitorElement ID="CycleStackedProfileZX"
-			name="CycleStackedProfileZX" path="/2D" type="TH2I"
-			nBinsX="50" minX="0" maxX="49"
-			nBinsY="96" minY="1" maxY="96"
+			name="CycleStackedProfileZX" path="/2D" type="TH2F"
+			nBinsX="27" minX="0" maxX="1000"
+			nBinsY="100" minY="0" maxY="1000"
 			title="Stacked Z-X profile over a cycle" drawOption="colz" resetPolicy="EndOfCycle"/>
 			
 		<monitorElement ID="CycleStackedProfileZY"
-			name="CycleStackedProfileZY" path="/2D" type="TH2I"
-			nBinsX="50" minX="0" maxX="49"
-			nBinsY="96" minY="1" maxY="96"
+			name="CycleStackedProfileZY" path="/2D" type="TH2F"
+			nBinsX="27" minX="0" maxX="1000"
+			nBinsY="100" minY="0" maxY="1000"
 			title="Stacked Z-Y profile over a cycle" drawOption="colz" resetPolicy="EndOfCycle"/>
 			
 		<monitorElement ID="CycleStackedProfileXY"
-			name="CycleStackedProfileXY" path="/2D" type="TH2I"
-			nBinsX="96" minX="1" maxX="96"
-			nBinsY="96" minY="1" maxY="96"
+			name="CycleStackedProfileXY" path="/2D" type="TH2F"
+			nBinsX="100" minX="0" maxX="1000"
+			nBinsY="100" minY="0" maxY="1000"
 			title="Stacked X-Y profile over a cycle" drawOption="colz" resetPolicy="EndOfCycle"/>
         
     </module>

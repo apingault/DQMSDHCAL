@@ -52,6 +52,7 @@
         </Trivent>
         
         <parameter name="NActiveLayers">  48 </parameter>
+        <parameter name="NStartLayerShift"> -1 </parameter>
         <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
         
         <parameter name="AsicTable"> 

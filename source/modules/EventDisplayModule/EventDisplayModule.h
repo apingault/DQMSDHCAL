@@ -67,7 +67,8 @@ public:
 	dqm4hep::StatusCode endModule();
 
 private:
-	std::string                           m_inputCollectionName;
+	dqm4hep::StringVector                 m_inputCaloHitCollections;
+	dqm4hep::IntVector                    m_colorWeightList;
 
 	dqm4hep::DQMMonitorElementPtr         m_pEventDisplay3D;
 
