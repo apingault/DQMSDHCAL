@@ -32,6 +32,8 @@
 // -- dqm4hep headers
 #include "dqm4hep/DQMElectronicsMapping.h"
 
+#include "Geometry.h"
+
 namespace dqm_sdhcal
 {
 
@@ -69,26 +71,15 @@ public:
 	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
 
 private:
-	/// DifGeo structure helper that stores a dif within a layer
-	struct DifGeo
-	{
-		unsigned int  m_layer;   ///< The dif layer
-		unsigned int  m_difId;   ///< The dif id
-		unsigned int  m_yShift;  ///< The shift in the y direction within the layer
-	};
-
-	typedef std::map<unsigned int, DifGeo>     DifGeoMap;
-	typedef std::map<unsigned int, DifGeoMap>  LayerDifGeoMap;
-
-	DifGeoMap                   m_difGeoMap;                 ///< Maps dif id to dif geo
-	LayerDifGeoMap              m_layerDifGeoMap;            ///< Maps layer id to map of difs
-
 	static const unsigned short m_channelTable[];
 	static const unsigned short m_asicTable[];
 	static const unsigned short m_channelToIMapping[];
 	static const unsigned short m_channelToJMapping[];
 	static const unsigned short m_asicToChannelShiftI[];
 	static const unsigned short m_asicToChannelShiftJ[];
+
+	Geometry                    m_geometry;
+	DifMapping                  m_difMapping;
 
 	dqm4hep::DQMCartesianVector m_cellReferencePosition;
 	float                       m_cellSize0;
