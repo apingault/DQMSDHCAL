@@ -31,18 +31,21 @@
 
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMAnalysisModule.h"
+#include "dqm4hep/DQMDataConverter.h"
 
+// -- trivent headers
 #include "Trivent.h"
+#include "LCTrivent.h"
+#include "TriventListener.h"
+
+namespace EVENT { class LCCollection; }
 
 namespace dqm_sdhcal
 {
 
-class Trivent;
-class Streamout;
-
 /** DQMTriventModule class
  */ 
-class DQMTriventModule : public dqm4hep::DQMAnalysisModule, public TriventListener
+class DQMTriventModule : public dqm4hep::DQMAnalysisModule, public trivent::LCTriventListener
 {
 public:
 	/** Constructor
@@ -56,19 +59,26 @@ public:
 protected:
 	virtual dqm4hep::StatusCode userInitModule() = 0;
 	virtual dqm4hep::StatusCode userReadSettings(const dqm4hep::TiXmlHandle xmlHandle) = 0;
-	virtual dqm4hep::StatusCode processNoisyEvent(EVENT::LCEvent *pLCEvent) = 0;
-	virtual dqm4hep::StatusCode processPhysicalEvent(EVENT::LCEvent *pLCEvent) = 0;
+	virtual dqm4hep::StatusCode processEvent(EVENT::LCEvent *pLCEvent) = 0;
 
 private:
 	// from analysis module
 	dqm4hep::StatusCode initModule();
 	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
 	dqm4hep::StatusCode processEvent(dqm4hep::DQMEvent *const pEvent);
+	void processReconstructedEvent(EVENT::LCEvent *pLCEvent);    // from trivent
+	dqm4hep::StatusCode convertEvent(EVENT::LCEvent *pLCEvent, trivent::Event &event);
+	dqm4hep::StatusCode performOutputDataConversion(EVENT::LCEvent *pLCEvent);
 
 private:
-	bool                              m_shouldProcessStreamout;
-	Streamout                        *m_pStreamout;
-	Trivent                          *m_pTrivent;
+	typedef dqm4hep::DQMDataConverter<EVENT::LCCollection, EVENT::LCCollection> CaloHitCollectionConverter;
+
+	trivent::Trivent                          *m_pTrivent;
+	trivent::Trivent::Parameters               m_triventParameters;
+	dqm4hep::StringVector                      m_rawCollectionNames;
+	dqm4hep::StringVector                      m_recCollectionNames;
+	dqm4hep::StringVector                      m_rawDataConverterNames;
+	std::vector< CaloHitCollectionConverter *> m_dataConverters;
 }; 
 
 } 

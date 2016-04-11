@@ -27,65 +27,50 @@
 
 
 #include "DQMTriventModule.h"
-#include "Streamout.h"
 #include "Trivent.h"
 
+// -- dqm4hep headers
 #include "dqm4hep/DQMLogging.h"
 #include "dqm4hep/DQMXmlHelper.h"
 #include "dqm4hep/DQMEvent.h"
+#include "dqm4hep/DQMPluginManager.h"
 
+// -- lcio headers
+#include "EVENT/LCIO.h"
 #include "Exceptions.h"
+#include "EVENT/LCEvent.h"
+#include "EVENT/RawCalorimeterHit.h"
+#include "IMPL/CalorimeterHitImpl.h"
+#include "IMPL/LCCollectionVec.h"
 
 namespace dqm_sdhcal
 {
 
 DQMTriventModule::DQMTriventModule() :
-		DQMAnalysisModule()
+		DQMAnalysisModule(),
+		LCTriventListener()
 {
-	m_pStreamout = new Streamout();
-	m_pTrivent = new Trivent();
-
+	m_pTrivent = new trivent::Trivent();
 	m_pTrivent->addListener(this);
 }
 
+//-------------------------------------------------------------------------------------------------
+
 DQMTriventModule::~DQMTriventModule() 
 {
-	delete 	m_pStreamout;
-	delete 	m_pTrivent;
+	delete m_pTrivent;
+
+	for(std::vector< CaloHitCollectionConverter *>::iterator iter = m_dataConverters.begin(), endIter = m_dataConverters.end() ;
+			endIter != iter ; ++iter)
+		delete *iter;
+
+	m_dataConverters.clear();
 }
+
+//-------------------------------------------------------------------------------------------------
 
 dqm4hep::StatusCode DQMTriventModule::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
-	m_shouldProcessStreamout = true;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"ShouldProcessStreamout", m_shouldProcessStreamout));
-
-	if(m_shouldProcessStreamout)
-	{
-		dqm4hep::TiXmlElement *pXmlElement = xmlHandle.FirstChild("Streamout").Element();
-
-		if( ! pXmlElement )
-			return dqm4hep::STATUS_CODE_NOT_FOUND;
-
-		dqm4hep::TiXmlHandle streamoutHandle(pXmlElement);
-
-		std::string inputCollectionName = "RU_XDAQ";
-		RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(streamoutHandle,
-				"InputCollectionName", inputCollectionName));
-
-		std::string outputCollectionName = "DHCALRawHits";
-		RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(streamoutHandle,
-				"OutputCollectionName", outputCollectionName));
-
-		unsigned int xdaqShift = 24;
-		RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(streamoutHandle,
-				"XDaqShift", xdaqShift));
-
-		m_pStreamout->setInputCollectionName(inputCollectionName);
-		m_pStreamout->setOutputCollectionName(outputCollectionName);
-		m_pStreamout->setXDaqShift(xdaqShift);
-	}
-
 	dqm4hep::TiXmlElement *pXmlElement = xmlHandle.FirstChild("Trivent").Element();
 
 	if( ! pXmlElement )
@@ -93,20 +78,86 @@ dqm4hep::StatusCode DQMTriventModule::readSettings(const dqm4hep::TiXmlHandle xm
 
 	dqm4hep::TiXmlHandle triventHandle(pXmlElement);
 
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(triventHandle,
+			"RawCollectionNames", m_rawCollectionNames, [] (const dqm4hep::StringVector &vec) { return ! vec.empty(); }));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(triventHandle,
+			"RecCollectionNames", m_recCollectionNames, [&] (const dqm4hep::StringVector &vec) { return vec.size() == m_rawCollectionNames.size(); }));
+
+	/*------------- Read converter settings ------------*/
+	dqm4hep::TiXmlElement *pConvXmlElement = triventHandle.FirstChild("RawDataConverters").Element();
+
+	if( ! pConvXmlElement )
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+
+	dqm4hep::TiXmlHandle convertersHandle(pConvXmlElement);
+
+    for (dqm4hep::TiXmlElement *pXmlElement = convertersHandle.FirstChild("converter").Element(); NULL != pXmlElement;
+        pXmlElement = pXmlElement->NextSiblingElement("converter"))
+    {
+		if( m_dataConverters.size() == m_rawCollectionNames.size() )
+		{
+			LOG4CXX_WARN( dqm4hep::dqmMainLogger, "Warning additional raw data converter plugin loading will be skipped !" );
+			break;
+		}
+
+    	std::string plugin;
+    	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::getAttribute(pXmlElement, "plugin", plugin));
+
+    	CaloHitCollectionConverter *pConverter = dqm4hep::DQMPluginManager::instance()->createPluginClass<CaloHitCollectionConverter>(plugin);
+
+		if( NULL == pConverter )
+			return dqm4hep::STATUS_CODE_NOT_FOUND;
+
+		dqm4hep::TiXmlHandle converterHandle(pXmlElement);
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, pConverter->readSettings(converterHandle));
+
+		m_dataConverters.push_back( pConverter );
+    }
+
+    if( m_dataConverters.size() != m_rawCollectionNames.size() )
+    	return dqm4hep::STATUS_CODE_INVALID_PARAMETER;
+    /*---------------------------------------------------*/
+
+	m_triventParameters.m_timeWindow = 2;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(triventHandle,
+			"TimeWindow", m_triventParameters.m_timeWindow));
+
+	m_triventParameters.m_minPeakSize = 10;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(triventHandle,
+			"MinPeakSize", m_triventParameters.m_minPeakSize));
+
+	m_triventParameters.m_minElements = 10;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(triventHandle,
+			"MinElements", m_triventParameters.m_minElements));
+
+	m_triventParameters.m_maxElements = std::numeric_limits<uint32_t>::max();
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(triventHandle,
+			"MaxElements", m_triventParameters.m_maxElements));
+
+	dqm4hep::StringVector maskCollectionNames;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValues(triventHandle,
+			"MaskCollectionNames", maskCollectionNames));
+
+	m_triventParameters.m_maskCollectionNames.insert(maskCollectionNames.begin(), maskCollectionNames.end());
+
 	// forward parsing to Trivent
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pTrivent->readSettings(triventHandle));
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->userReadSettings(xmlHandle));
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
+//-------------------------------------------------------------------------------------------------
+
 dqm4hep::StatusCode DQMTriventModule::initModule()
 {
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pTrivent->init());
+	m_pTrivent->init(m_triventParameters);
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->userInitModule());
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
+
+//-------------------------------------------------------------------------------------------------
 
 dqm4hep::StatusCode DQMTriventModule::processEvent(dqm4hep::DQMEvent *const pEvent)
 {
@@ -117,11 +168,9 @@ dqm4hep::StatusCode DQMTriventModule::processEvent(dqm4hep::DQMEvent *const pEve
 
 	try
 	{
-		// process Streamout if needed
-		if(m_shouldProcessStreamout)
-			THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pStreamout->processEvent(pLCEvent));
-
-		THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pTrivent->processEvent(pLCEvent));
+		trivent::Event triventEvent;
+		THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->convertEvent(pLCEvent, triventEvent));
+		m_pTrivent->processEvent(triventEvent);
 	}
 	catch(dqm4hep::StatusCodeException &exception)
 	{
@@ -137,6 +186,68 @@ dqm4hep::StatusCode DQMTriventModule::processEvent(dqm4hep::DQMEvent *const pEve
 	{
 		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught unknown exception !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
+	}
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode DQMTriventModule::convertEvent(EVENT::LCEvent *pLCEvent, trivent::Event &event)
+{
+	for(dqm4hep::StringVector::iterator iter = m_rawCollectionNames.begin(), endIter = m_rawCollectionNames.end() ;
+			endIter != iter ; ++iter)
+	{
+		try
+		{
+			const std::string collectionName(*iter);
+			trivent::LCTrivent::addCollection<EVENT::RawCalorimeterHit>(pLCEvent,
+					collectionName, event, &EVENT::RawCalorimeterHit::getTimeStamp);
+		}
+		catch(EVENT::DataNotAvailableException &exception)
+		{
+			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught EVENT::DataNotAvailableException : " << exception.what() );
+			continue;
+		}
+	}
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void DQMTriventModule::processReconstructedEvent(EVENT::LCEvent *pLCEvent)
+{
+	THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->performOutputDataConversion(pLCEvent));
+	THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->processEvent(pLCEvent));
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode DQMTriventModule::performOutputDataConversion(EVENT::LCEvent *pLCEvent)
+{
+	const unsigned int nCollections(m_rawCollectionNames.size());
+
+	for(unsigned int c=0 ; c<nCollections ; c++)
+	{
+		const std::string rawCollectionName( m_rawCollectionNames.at(c) );
+		const std::string recCollectionName( m_recCollectionNames.at(c) );
+		CaloHitCollectionConverter *pDataConverter( m_dataConverters.at(c) );
+
+		try
+		{
+			EVENT::LCCollection *pLCCollection = pLCEvent->getCollection( rawCollectionName );
+			IMPL::LCCollectionVec *pRecCollection = new IMPL::LCCollectionVec(EVENT::LCIO::CALORIMETERHIT);
+
+			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, pDataConverter->convert(pLCCollection, pRecCollection));
+
+			pLCEvent->addCollection( pRecCollection , recCollectionName );
+		}
+		catch(EVENT::DataNotAvailableException &exception)
+		{
+			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught EVENT::DataNotAvailableException : " << exception.what() );
+			continue;
+		}
 	}
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
