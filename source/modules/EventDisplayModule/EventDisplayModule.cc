@@ -132,15 +132,7 @@ dqm4hep::StatusCode EventDisplayModule::userReadSettings(const dqm4hep::TiXmlHan
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode EventDisplayModule::processNoisyEvent(EVENT::LCEvent *pLCEvent)
-{
-	/* nop */
-	return dqm4hep::STATUS_CODE_SUCCESS;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-dqm4hep::StatusCode EventDisplayModule::processPhysicalEvent(EVENT::LCEvent *pLCEvent)
+dqm4hep::StatusCode EventDisplayModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
 	m_pEventDisplay3D->reset();
 	m_pLastProfileZX->reset();
@@ -161,6 +153,7 @@ dqm4hep::StatusCode EventDisplayModule::processPhysicalEvent(EVENT::LCEvent *pLC
 			try
 			{
 				EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(collectionName);
+				UTIL::CellIDDecoder<EVENT::CalorimeterHit> decoder(pCalorimeterHitCollection);
 
 				// loop over hits in this event
 				for(unsigned int h=0 ; h<pCalorimeterHitCollection->getNumberOfElements() ; h++)

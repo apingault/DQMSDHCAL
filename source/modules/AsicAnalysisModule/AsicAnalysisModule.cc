@@ -337,16 +337,15 @@ dqm4hep::StatusCode AsicAnalysisModule::userInitModule()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode AsicAnalysisModule::processNoisyEvent(EVENT::LCEvent *pLCEvent)
-{
-	return dqm4hep::STATUS_CODE_SUCCESS;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-dqm4hep::StatusCode AsicAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLCEvent)
+dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
 	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "Processing physics event no " << pLCEvent->getEventNumber() );
+
+	// check for event rejection : noise ?
+	bool rejectEvent = this->shouldRejectEvent(pLCEvent);
+
+	if( rejectEvent )
+		return dqm4hep::STATUS_CODE_SUCCESS;
 
 	// content management
 	caloobject::CaloHitMap caloHitMap;
@@ -466,16 +465,15 @@ dqm4hep::StatusCode AsicAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLC
 	}
 	catch(EVENT::DataNotAvailableException &exception)
 	{
-		streamlog_out(ERROR) << "Caught EVENT::DataNotAvailableException : " << exception.what() << std::endl;
-		streamlog_out(ERROR) << "Skipping event" << std::endl;
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  "Caught EVENT::DataNotAvailableException : " << exception.what() << ". Skipping event ..." );
 		this->clearEventContents(hits, clusters, tracks);
-		return STATUS_CODE_SUCCESS;
+		return dqm4hep::STATUS_CODE_SUCCESS;
 	}
 	catch(...)
 	{
-		streamlog_out(ERROR) << "Caught unknown exception !" << std::endl;
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  "Caught unknown exception !" );
 		this->clearEventContents(hits, clusters, tracks);
-		return STATUS_CODE_FAILURE;
+		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
@@ -771,6 +769,12 @@ void AsicAnalysisModule::resetElements()
 	m_pGlobalMultiplicity->reset();
 
 	m_pNTracksPerAsic->reset();
+}
+
+
+bool AsicAnalysisModule::shouldRejectEvent(EVENT::LCEvent *pLCEvent)
+{
+	return false;
 }
 
 }

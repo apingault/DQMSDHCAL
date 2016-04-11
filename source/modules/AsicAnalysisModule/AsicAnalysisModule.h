@@ -82,8 +82,7 @@ public:
 
 	dqm4hep::StatusCode userInitModule();
 	dqm4hep::StatusCode userReadSettings(const dqm4hep::TiXmlHandle xmlHandle);
-	dqm4hep::StatusCode processNoisyEvent(EVENT::LCEvent *pLCEvent);
-	dqm4hep::StatusCode processPhysicalEvent(EVENT::LCEvent *pLCEvent);
+	dqm4hep::StatusCode processEvent(EVENT::LCEvent *pLCEvent);
 
 	dqm4hep::StatusCode startOfCycle();
 	dqm4hep::StatusCode endOfCycle();
@@ -119,6 +118,10 @@ private:
 	 *  efficiencies and multiplicities
 	 */
 	void resetElements();
+
+	/** Whether the vent has to be reject before any further processing
+	 */
+	bool shouldRejectEvent(EVENT::LCEvent *pLCEvent);
 
 private:
 

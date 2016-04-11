@@ -1,5 +1,18 @@
 <dqm4hep>
 
+	<!-- 
+	
+	ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+	ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+	
+	!!!!!!!!!!!!!!!!!!  PENSER A CHECKER LE MMAPING DE LELECTRONICS       !!!!!!!!!!!!!!!!!
+	 Aparement ca marche pas le mapping que j'ai fait !!
+	 VOIR AVEC ARNAUD POUR UN MAPPING COHERENT COMMUN !!!
+	
+	ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
+	ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp	
+	
+	 -->
     <archiver open="false" directory="/tmp" />
     
     <network>
@@ -17,45 +30,59 @@
     <cycle type="TimerCycle" value="10" timeout="5" />
 
     <module type="AsicAnalysisModule" name="MyAsicAnalysisModule">
-        
-        <parameter name="ShouldProcessStreamout"> false </parameter>
-        
-        <Streamout>
-        	<parameter name="InputCollectionName">  RU_XDAQ </parameter>
-        	<parameter name="OutputCollectionName">  DHCALRawHits </parameter>
-        	<parameter name="XDaqShift">  92 </parameter>
-        </Streamout>
-        
+
         <Trivent>
-        	<parameter name="InputCollectionName">  DHCALRawHits </parameter>
-        	<parameter name="OutputCollectionName">  SDHCAL_HIT </parameter>	
+        	<parameter name="RawCollectionNames"> DHCALRawHits </parameter>
+        	<parameter name="RecCollectionNames"> SDHCAL_HIT </parameter>
         	
-        	<!-- To adjust ! -->
-        	<parameter name="GeometryFile">  /home/rete/soft/DQMSDHCAL/config/setup_geometry_nov.xml </parameter> 
-        	
-        	<parameter name="LayerCut">  3 </parameter>
-        	<parameter name="NoiseCut">  10 </parameter>
-        	<parameter name="TimeWindow">  2 </parameter>
-        	<parameter name="LayerGap">  0.9 </parameter>
-        	<parameter name="ElecNoiseCut">  100000 </parameter>
-        	<parameter name="Time2PreviousEventCut">  0 </parameter>
-        	<parameter name="GainCorrectionMode">  false </parameter>
-        	<parameter name="CherenkovWindow">  20 </parameter>
-        	<parameter name="CherenkovLenght">  1 </parameter>
-        	<parameter name="CherenkovDifId">  0 </parameter>
-        	<parameter name="TreatCherenkov">  false </parameter>
-        	<parameter name="CellSizeU">  10.408 </parameter>
-        	<parameter name="CellSizeV">  10.408 </parameter>
-        	
-        	<!-- 26.131 for SDHCAL ; 55 at GIF++ -->
-        	<parameter name="LayerThickness">  26.131 </parameter>
+        	<!-- Lookup in the same order as RawCollectionNames and RecCollectionNames -->
+        	<RawDataConverters>
+        		<converter plugin="SDHCALCaloHitConverter">
+        			<electronicsMapping plugin="SDHCALElectronicsMapping">
+        				<parameter name="CellReferencePosition"> 0 0 0 </parameter>
+        				<parameter name="CellSize0"> 10.408f </parameter>
+        				<parameter name="CellSize1"> 10.408f </parameter>
+        				<parameter name="LayerThickness"> 26.73f </parameter>
+        				<parameter name="GlobalDifShiftY"> 32 </parameter>
+        				<parameter name="DifList">
+	        				30 94 181     115 149 117     130 123 122     119 118 129     151 152 164     75 61 74     110 111 156 
+							103 177 102     134 136 133     121 120 128     58 64 65     73 72 148     60 79 78 
+							113 43 44     68 69 66     154 127 186     71 70 147     140 139 47     76 77 143 
+							36 91 159     183 178 179     67 42 41     138 46 137     144 173 131     160 184 189 
+							171 167 172     145 135 146     180 170 185     190 188 187     166 165 169     50 57 155 
+							25 108 153     109 56 51     116 150 107     49 124 126     176 175 174     114 45 48 
+							40 93 98     100 97 92     132 106 62     99 35 101     141 142 158     162 161 163 
+							112 29 104     54 53 59     27 90 96     5 8 95     18 87 63 
+        				</parameter>
+        			</electronicsMapping>
+        			<parameter name="CellIDEncoderString"> M:3,S-1:3,I:9,J:9,K-1:6 </parameter>
+        		</converter>
+        	</RawDataConverters>
+        	<parameter name="TimeWindow"> 2 </parameter>
+        	<parameter name="MinPeakSize"> 10 </parameter>
+        	<parameter name="MinElements"> 10 </parameter>
+        	<parameter name="MaxElements"> 100000 </parameter>
         </Trivent>
         
+        <!-- 
+        Old mapping : 
+        		        			181 94 30  174 175 176  158 142 141  129 118 119  164 152 151   74 61 75 
+							156 111 110  102 177 103   133 136 134   128 120 121   65 64 58   148 72 73 
+							78 79 60   44 43 113   243 242 241    186 127 154   147 70 71    47 139 140 
+							143 77 76    159 91 36    179 178 183   41 42 67   137 46 138   131 173 144 
+							189 184 160   172 167 171   146 135 145   185 170 180   187 188 190   169 165 166 
+							155 57 50   153 108 25    51 56 109    107 150 116   126 124 49   117 149 115 
+							48 45 114    98 93 40    92 97 100   62 106 132   101 35 99   122 123 130 
+							163 161 162   104 29 112   59 53 54   96 90 27   95 8 5   63 87 18 
+        
+         -->
+                
         <parameter name="NActiveLayers">  48 </parameter>
         <parameter name="NStartLayerShift"> -1 </parameter>
         <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
         
-        <parameter name="AsicTable"> 
+        <!-- Needs to be duplicated unfortunately ... -->
+        <parameter name="AsicTable">
 			4 3 2 1 
 			5 6 7 8 
 			12 11 10 9 
@@ -69,9 +96,20 @@
 			44 43 42 41 
 			45 46 47 48
         </parameter>
-       
         <parameter name="DifList"> 
-			181 94 30  174 175 176  158 142 141  129 118 119  164 152 151   74 61 75 
+	        181 94 30     117 149 115     122 123 130     129 118 119     164 152 151     74 61 75     156 111 110 
+			102 177 103     133 136 134     128 120 121     65 64 58     148 72 73     78 79 60 
+			44 43 113     66 69 68     186 127 154     147 70 71     47 139 140     143 77 76 
+			159 91 36     179 178 183     41 42 67     137 46 138     131 173 144     189 184 160 
+			172 167 171     146 135 145     185 170 180     187 188 190     169 165 166     155 57 50 
+			153 108 25     51 56 109     107 150 116     126 124 49     174 175 176     48 45 114 
+			98 93 40     92 97 100     62 106 132     101 35 99     158 142 141     163 161 162 
+			104 29 112     59 53 54     96 90 27     95 8 5     63 87 18
+        </parameter>
+        
+        <!-- 
+        Mapping provided by Arnaud : 
+        			181 94 30  174 175 176  158 142 141  129 118 119  164 152 151   74 61 75 
 			156 111 110  102 177 103   133 136 134   128 120 121   65 64 58   148 72 73 
 			78 79 60   44 43 113   243 242 241    186 127 154   147 70 71    47 139 140 
 			143 77 76    159 91 36    179 178 183   41 42 67   137 46 138   131 173 144 
@@ -79,9 +117,9 @@
 			155 57 50   153 108 25    51 56 109    107 150 116   126 124 49   117 149 115 
 			48 45 114    98 93 40    92 97 100   62 106 132   101 35 99   122 123 130 
 			163 161 162   104 29 112   59 53 54   96 90 27   95 8 5   63 87 18 
-        </parameter>
+         -->
         
-        
+        <!-- ----------- Monitor elements ----------- -->
 		<monitorElement ID="EfficiencyMap"
 			name="EfficiencyMap" path="/Layers/EfficiencyMaps/Thr1" type="TH2F" title="Efficiency map (thr 1)" 
 			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"
@@ -103,7 +141,6 @@
 			drawOption="colz" resetPolicy="EndOfRun"/>
 			
 			
-			
 		<monitorElement ID="LayerEfficiency"
 			name="LayerEfficiency" path="/Global/Thr1" type="user" ROOTClass="TGraph" 
 			title="Layer efficiencies" drawOption="ap" resetPolicy="EndOfRun"/>
@@ -119,7 +156,6 @@
 		<monitorElement ID="LayerMultiplicity"
 			name="LayerMultiplicity" path="/Global/Multiplicity" type="user" ROOTClass="TGraph" 
 			title="Layer multiplicities" drawOption="ap" resetPolicy="EndOfRun"/>
-			
 			
 			
 		<monitorElement ID="AsicEfficiency"
@@ -143,7 +179,6 @@
 			resetPolicy="EndOfRun"/>
 			
 			
-			
 		<monitorElement ID="StackedEfficiencyMap"
 			name="StackedEfficiencyMap" path="/Global/Thr1" type="TH2F" title="Stacked efficiency map" 
 			nBinsX="12" minX="0" maxX="12" nBinsY="12" minY="0" maxY="12"  
@@ -165,7 +200,6 @@
 			drawOption="colz" resetPolicy="EndOfRun"/>
 			
 			
-			
 		<monitorElement ID="GlobalEfficiency"
 			name="GlobalEfficiency" path="/Global/Thr1" type="float" title="Global efficiency" 
 			value="0" resetPolicy="EndOfRun"/>
@@ -183,12 +217,10 @@
 			value="0" resetPolicy="EndOfRun"/>
 			
 			
-			
 		<monitorElement ID="NTracksPerAsic"
 			name="NTracksPerAsic" path="/Global" type="TH1F" title="Number of rec tracks per asic" 
 			nBins="10001" min="0" max="10000"
 			resetPolicy="EndOfRun"/>
-        
     </module>
 
 </dqm4hep>

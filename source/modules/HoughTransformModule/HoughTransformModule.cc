@@ -118,15 +118,7 @@ dqm4hep::StatusCode HoughTransformModule::userReadSettings(const dqm4hep::TiXmlH
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode HoughTransformModule::processNoisyEvent(EVENT::LCEvent *pLCEvent)
-{
-	/* nop */
-	return dqm4hep::STATUS_CODE_SUCCESS;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-dqm4hep::StatusCode HoughTransformModule::processPhysicalEvent(EVENT::LCEvent *pLCEvent)
+dqm4hep::StatusCode HoughTransformModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
 	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Processing physics event no " << pLCEvent->getEventNumber() );
 
