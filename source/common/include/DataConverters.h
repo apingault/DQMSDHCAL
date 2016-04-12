@@ -75,7 +75,11 @@ public:
 private:
 	dqm4hep::DQMElectronicsMapping                  *m_pElectronicsMapping;
 	std::string                                      m_cellIDEncoderString;
+	unsigned short                                   m_amplitudeBitRotation;
 	bool                                             m_isInitialized;
+	bool                                             m_encodeDifAsicChannel;
+	dqm4hep::StringVector                            m_ijkEncoding;
+	dqm4hep::StringVector                            m_difAsicChannelEncoding;
 };
 
 } 

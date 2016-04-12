@@ -94,11 +94,17 @@ dqm4hep::StatusCode SDHCALCaloHitConverter::convert(const EVENT::LCCollection *c
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pElectronicsMapping->electronicstoCell(electronics, cell));
 
 	    // set the cell id
-		cellIDEncoder["I"] = cell.m_iCell;
-		cellIDEncoder["J"] = cell.m_jCell;
-	    cellIDEncoder["K-1"] = cell.m_layer;
-	    cellIDEncoder["M"] = 0;
-	    cellIDEncoder["S-1"] = 3;
+		cellIDEncoder[ m_ijkEncoding.at(0) ] = cell.m_iCell;
+		cellIDEncoder[ m_ijkEncoding.at(1) ] = cell.m_jCell;
+	    cellIDEncoder[ m_ijkEncoding.at(2) ] = cell.m_layer;
+
+	    if( m_encodeDifAsicChannel )
+	    {
+			cellIDEncoder[ m_difAsicChannelEncoding.at(0) ] = electronics.m_difId;
+			cellIDEncoder[ m_difAsicChannelEncoding.at(1) ] = electronics.m_asicId;
+		    cellIDEncoder[ m_difAsicChannelEncoding.at(2) ] = electronics.m_channelId;
+	    }
+
 	    float positionArray [3] = { position.getX() , position.getY() , position.getZ() };
 
 		// create hit and fill infos
@@ -121,7 +127,7 @@ dqm4hep::StatusCode SDHCALCaloHitConverter::convert(const EVENT::LCCollection *c
 unsigned int SDHCALCaloHitConverter::getThreshold( const EVENT::RawCalorimeterHit *const pInputCaloHit )
 {
 	int shift;
-	const float amplitude( static_cast<float>( pInputCaloHit->getAmplitude() & 3 ) );
+	const float amplitude( static_cast<float>( pInputCaloHit->getAmplitude() & m_amplitudeBitRotation ) );
 
     if( amplitude > 2.5 )
     	shift = 0;         // 3rd threshold
@@ -154,8 +160,32 @@ dqm4hep::StatusCode SDHCALCaloHitConverter::readSettings(const dqm4hep::TiXmlHan
 	dqm4hep::TiXmlHandle mappingHandle(pMappingXmlElement);
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pElectronicsMapping->readSettings(mappingHandle));
 
-	m_cellIDEncoderString = "M:3,S-1:3,I:9,J:9,K-1:6";
+	m_amplitudeBitRotation = 3;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(handle,
+			"AmplitudeBitRotation", m_amplitudeBitRotation));
+
+	m_encodeDifAsicChannel = true;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(handle,
+			"EncodeDifAsicChannel", m_encodeDifAsicChannel));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(handle,
+			"IJKEncoding", m_ijkEncoding, [&] (const dqm4hep::StringVector &vec) {
+		return vec.size() == 3;
+	}));
+
+	m_cellIDEncoderString = "M:3,S-1:3,I:9,J:9,K-1:6";
+
+	if( m_encodeDifAsicChannel )
+	{
+		m_cellIDEncoderString = "I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6";
+
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(handle,
+				"DifAsicChannelEncoding", m_difAsicChannelEncoding, [&] (const dqm4hep::StringVector &vec) {
+			return vec.size() == 3;
+		}));
+	}
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(handle,
 			"CellIDEncoderString", m_cellIDEncoderString));
 
 	m_isInitialized = true;
