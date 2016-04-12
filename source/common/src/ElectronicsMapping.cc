@@ -136,9 +136,7 @@ SDHCALElectronicsMapping::SDHCALElectronicsMapping() :
 		m_isInitialized(false),
 		m_cellReferencePosition(0.f, 0.f, 0.f),
 		m_cellSize0(10.408f),
-		m_cellSize1(10.408f),
-		m_layerThickness(26.73f),
-		m_globalDifShiftY(32)
+		m_cellSize1(10.408f)
 {
 	/* nop */
 }
@@ -171,7 +169,7 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToElectronics( const dqm4hep::
 
 	electronics.m_channelId = m_channelTable[ indexChannelI + 4*indexChannelJ ];
 
-	unsigned int difShiftY = (cell.m_jCell%3)*m_globalDifShiftY;
+	unsigned int difShiftY = (cell.m_jCell%3)*32;
 
 	Geometry::const_iterator iter = m_geometry.find(cell.m_layer);
 
@@ -231,16 +229,18 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::positionToCell(const dqm4hep::DQMC
 	if( ! m_isInitialized )
 		return dqm4hep::STATUS_CODE_NOT_INITIALIZED;
 
+	// find layer
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->findClosestLayer(position - m_cellReferencePosition, cell.m_layer));
+
+	// compute i and j expected values
 	const float iCellFloat = position.getX() - m_cellReferencePosition.getX() / m_cellSize0;
 	const float jCellFloat = position.getY() - m_cellReferencePosition.getY() / m_cellSize1;
-	const float layerFloat = position.getZ() - m_cellReferencePosition.getZ() / m_layerThickness;
 
-	if( iCellFloat < 0.f || jCellFloat < 0.f || layerFloat < 0.f )
+	if( iCellFloat < 0.f || jCellFloat < 0.f )
 		return dqm4hep::STATUS_CODE_FAILURE;
 
 	cell.m_iCell = round(iCellFloat);
 	cell.m_jCell = round(jCellFloat);
-	cell.m_layer = round(layerFloat);
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -252,11 +252,39 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToPosition(const dqm4hep::DQME
 	if( ! m_isInitialized )
 		return dqm4hep::STATUS_CODE_NOT_INITIALIZED;
 
+	Geometry::iterator iter = m_geometry.find(cell.m_layer);
+
+	if( m_geometry.end() == iter )
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+
 	const float x = cell.m_iCell * m_cellSize0 + m_cellReferencePosition.getX();
 	const float y = cell.m_jCell * m_cellSize1 + m_cellReferencePosition.getY();
-	const float z = cell.m_layer * m_layerThickness + m_cellReferencePosition.getZ();
+	const float z = iter->second.m_z0 + m_cellReferencePosition.getZ();
 
 	position.setValues(x, y, z);
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode SDHCALElectronicsMapping::findClosestLayer(const dqm4hep::DQMCartesianVector &position, unsigned int &layer)
+{
+	float closestZ(std::numeric_limits<float>::max());
+	layer = std::numeric_limits<unsigned int>::max();
+
+	for(Geometry::iterator iter = m_geometry.begin(), endIter = m_geometry.end() ;
+			endIter != iter ; ++iter)
+	{
+		if(closestZ > fabs(iter->second.m_z0-position.getZ()))
+		{
+			closestZ = fabs(iter->second.m_z0-position.getZ());
+			layer = iter->first;
+		}
+	}
+
+	if( std::numeric_limits<unsigned int>::max() == layer )
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }

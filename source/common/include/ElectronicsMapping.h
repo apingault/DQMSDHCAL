@@ -71,6 +71,11 @@ public:
 	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
 
 private:
+	/** Find closest layer to positon
+	 */
+	dqm4hep::StatusCode findClosestLayer(const dqm4hep::DQMCartesianVector &position, unsigned int &layer);
+
+private:
 	static const unsigned short m_channelTable[];
 	static const unsigned short m_asicTable[];
 	static const unsigned short m_channelToIMapping[];
@@ -85,7 +90,6 @@ private:
 	float                       m_cellSize0;
 	float                       m_cellSize1;
 	float                       m_layerThickness;
-	unsigned int                m_globalDifShiftY;
 
 	bool                        m_isInitialized;
 }; 
