@@ -53,17 +53,15 @@ DQM_PLUGIN_DECL(SDHCALElectronicsMapping, "SDHCALElectronicsMapping")
 //				 |DIF |
 //				 |____|
 
-/// table of channels within an asic
-/// channelID = channelTable[ i%96/12 + (j%96/12 )*4 ]
 const unsigned short SDHCALElectronicsMapping::m_channelTable[] =
-  {17,  1,  3,  5,  7,  8, 10, 12,
-   18,  0,  2,  4,  6,  9, 11, 13,
-   20, 19, 16, 15, 14, 21, 22, 23,
-   31, 30, 29, 28, 27, 26, 25, 24,
-   32, 33, 34, 35, 36, 37, 38, 39,
-   42, 44, 47, 48, 49, 50, 41, 40,
-   43, 45, 62, 60, 57, 55, 53, 51,
-   46, 63, 61, 59, 58, 56, 54, 52 };
+  { 12, 13, 23, 24, 39, 40, 51, 52,
+	10, 11, 22, 25, 38, 41, 53, 54,
+	8, 9, 21, 26, 37, 50, 55, 56,
+	7, 6, 14, 27, 36, 49, 57, 58,
+	5, 4, 15, 28, 35, 48, 60, 59,
+	3, 2, 16, 29, 34, 47, 62, 61,
+	1, 0, 19, 30, 33, 44, 45, 63,
+	17, 18, 20, 31, 32, 42, 43, 46 };
 
 //-------------------------------------------------------------------------------------------------
 
@@ -75,17 +73,11 @@ const unsigned short SDHCALElectronicsMapping::m_channelTable[] =
 //                     (I Axis)  ----->
 
 /// the asic table given a channel index in i and j cells direction
-/// asicID = asicTable[ i%32/8 + (j%32/8 )*4 ]
 const unsigned short SDHCALElectronicsMapping::m_asicTable[] =
-//{ 1,  8,  9,  16,
-//  2,  7,  10, 15,
-//  3,  6,  11, 14,
-//  4,  5,  12, 13 };
-
-  { 16, 9,  8, 1,
-	15, 10, 7, 2,
-	14, 11, 6, 3,
-	13, 12, 5, 4 };
+  { 4,  5,  12, 13, 20, 21, 28, 29, 36, 37, 44, 45,
+	3,  6,  11, 14, 19, 22, 27, 30, 35, 38, 43, 46,
+	2,  7,  10, 15, 18, 23, 26, 31, 34, 39, 42, 47,
+	1,  8,  9,  16, 17, 24, 25, 32, 33, 40, 41, 48 };
 
 //-------------------------------------------------------------------------------------------------
 
@@ -159,17 +151,8 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToElectronics( const dqm4hep::
 	electronics.m_asicId = 0;
 	electronics.m_channelId = 0;
 
-	unsigned int indexAsicI = (cell.m_iCell%32)/8;
-	unsigned int indexAsicJ = (cell.m_jCell%32)/8;
-
-	electronics.m_asicId = m_asicTable[ indexAsicI + 4*indexAsicJ ];
-
-	unsigned int indexChannelI = (cell.m_iCell%96/12);
-	unsigned int indexChannelJ = (cell.m_jCell%96/12);
-
-	electronics.m_channelId = m_channelTable[ indexChannelI + 4*indexChannelJ ];
-
-	unsigned int difShiftY = (cell.m_jCell%3)*32;
+	// first of all, find dif id
+	unsigned int difShiftY = ((cell.m_jCell-1)/32)*32;
 
 	Geometry::const_iterator iter = m_geometry.find(cell.m_layer);
 
@@ -191,6 +174,16 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToElectronics( const dqm4hep::
 	}
 
 	electronics.m_difId = iter2->first;
+
+	unsigned int indexAsicI = (cell.m_iCell-1)/8;
+	unsigned int indexAsicJ = ((cell.m_jCell-1)%32)/8;
+
+	electronics.m_asicId = m_asicTable[ indexAsicI + 12*indexAsicJ ];
+
+	unsigned int indexChannelI = ((cell.m_iCell-1)%8);
+	unsigned int indexChannelJ = ((cell.m_jCell-1)%8);
+
+	electronics.m_channelId = m_channelTable[ indexChannelI + 8*indexChannelJ ];
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
