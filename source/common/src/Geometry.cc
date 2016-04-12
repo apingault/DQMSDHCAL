@@ -83,17 +83,17 @@ dqm4hep::StatusCode GeometryDBInterface::queryGeometry(const std::string &testNa
 		{
 			ChamberGeometry chamber;
 
-			chamber.m_layerId = atoi( row[0] );
+			chamber.m_layerId = atoi( row[0] )-1;
 
 			if( std::find( layerMask.begin() , layerMask.end() , chamber.m_layerId ) != layerMask.end() )
 				continue;
 
-			chamber.m_x0 = atof( row[1] );
-			chamber.m_y0 = atof( row[2] );
-			chamber.m_z0 = atof( row[3] );
-			chamber.m_x1 = atof( row[4] );
-			chamber.m_y1 = atof( row[5] );
-			chamber.m_z1 = atof( row[6] );
+			chamber.m_x0 = atof( row[1] )*10;
+			chamber.m_y0 = atof( row[2] )*10;
+			chamber.m_z0 = atof( row[3] )*10;
+			chamber.m_x1 = atof( row[4] )*10;
+			chamber.m_y1 = atof( row[5] )*10;
+			chamber.m_z1 = atof( row[6] )*10;
 
 			geometry[chamber.m_layerId] = chamber;
 		}
@@ -116,7 +116,7 @@ dqm4hep::StatusCode GeometryDBInterface::queryGeometry(const std::string &testNa
 			if( std::find( difMask.begin() , difMask.end() , dif.m_difId ) != difMask.end() )
 				continue;
 
-			dif.m_layerId = atoi( row[1] );
+			dif.m_layerId = atoi( row[1] )-1;
 			dif.m_shiftX = atoi( row[2] );
 			dif.m_shiftY = atoi( row[3] );
 
@@ -167,12 +167,12 @@ dqm4hep::StatusCode GeometryXmlIO::saveAs(const std::string &fileName, const std
 		dqm4hep::TiXmlElement *pLayerElement = new dqm4hep::TiXmlElement("layer");
 
 		pLayerElement->SetAttribute("id", iter->second.m_layerId);
-		pLayerElement->SetAttribute("x0", iter->second.m_x0);
-		pLayerElement->SetAttribute("y0", iter->second.m_y0);
-		pLayerElement->SetAttribute("z0", iter->second.m_z0);
-		pLayerElement->SetAttribute("x1", iter->second.m_x1);
-		pLayerElement->SetAttribute("y1", iter->second.m_y1);
-		pLayerElement->SetAttribute("z1", iter->second.m_z1);
+		pLayerElement->SetDoubleAttribute("x0", iter->second.m_x0);
+		pLayerElement->SetDoubleAttribute("y0", iter->second.m_y0);
+		pLayerElement->SetDoubleAttribute("z0", iter->second.m_z0);
+		pLayerElement->SetDoubleAttribute("x1", iter->second.m_x1);
+		pLayerElement->SetDoubleAttribute("y1", iter->second.m_y1);
+		pLayerElement->SetDoubleAttribute("z1", iter->second.m_z1);
 
 		pRootElement->LinkEndChild(pLayerElement);
 
@@ -233,6 +233,8 @@ dqm4hep::StatusCode GeometryXmlIO::load(const std::string &fileName, std::map<un
             pDifXmlElement = pDifXmlElement->NextSiblingElement("dif"))
         {
         	DifGeometry dif;
+
+        	dif.m_layerId = chamber.m_layerId;
 
         	pDifXmlElement->QueryValueAttribute<unsigned int>("id", &dif.m_difId);
 
