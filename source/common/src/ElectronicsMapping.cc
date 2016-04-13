@@ -178,10 +178,22 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToElectronics( const dqm4hep::
 	unsigned int indexAsicI = (cell.m_iCell-1)/8;
 	unsigned int indexAsicJ = ((cell.m_jCell-1)%32)/8;
 
+	if(indexAsicI >= 12 || indexAsicJ >=4 )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Index asic index for cell to electronics conversion !" )
+		return dqm4hep::STATUS_CODE_FAILURE;
+	}
+
 	electronics.m_asicId = m_asicTable[ indexAsicI + 12*indexAsicJ ];
 
 	unsigned int indexChannelI = ((cell.m_iCell-1)%8);
 	unsigned int indexChannelJ = ((cell.m_jCell-1)%8);
+
+	if(indexChannelI >= 8 || indexChannelJ >=8 )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Index channel index for cell to electronics conversion !" )
+		return dqm4hep::STATUS_CODE_FAILURE;
+	}
 
 	electronics.m_channelId = m_channelTable[ indexChannelI + 8*indexChannelJ ];
 
@@ -226,14 +238,18 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::positionToCell(const dqm4hep::DQMC
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->findClosestLayer(position - m_cellReferencePosition, cell.m_layer));
 
 	// compute i and j expected values
-	const float iCellFloat = position.getX() - m_cellReferencePosition.getX() / m_cellSize0;
-	const float jCellFloat = position.getY() - m_cellReferencePosition.getY() / m_cellSize1;
+	const float iCellFloat = (position.getX() - m_cellReferencePosition.getX()) / m_cellSize0;
+	const float jCellFloat = (position.getY() - m_cellReferencePosition.getY()) / m_cellSize1;
 
 	if( iCellFloat < 0.f || jCellFloat < 0.f )
 		return dqm4hep::STATUS_CODE_FAILURE;
 
 	cell.m_iCell = round(iCellFloat);
 	cell.m_jCell = round(jCellFloat);
+
+	if(cell.m_iCell < 1 || cell.m_iCell > 96
+	|| cell.m_jCell < 1 || cell.m_jCell > 96)
+		return dqm4hep::STATUS_CODE_FAILURE;
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -293,7 +309,9 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::readSettings(const dqm4hep::TiXmlH
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"ReadFromDB", readFromDB));
 
-	std::string geometryFileName;
+	std::string geometryFileName = "sdhcalGeometry.xml";
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"GeometryFileName", geometryFileName));
 
 	if( readFromDB )
 	{
@@ -314,22 +332,9 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::readSettings(const dqm4hep::TiXmlH
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 				"BeamTest", beamTest));
 
-		// create temporary file to dump geo from db
-		char geometryFileNameStr[] = "sdhcalGeometryXXXXXX.xml";
-
-		if( ! mkstemp(geometryFileNameStr) )
-			return dqm4hep::STATUS_CODE_FAILURE;
-
-		geometryFileName = geometryFileNameStr;
-
 		GeometryDBInterface interface;
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, interface.connect( host , user , password , database ));
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, interface.dumpGeometry( geometryFileName , beamTest ));
-	}
-	else
-	{
-		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-				"GeometryFileName", geometryFileName));
 	}
 
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
