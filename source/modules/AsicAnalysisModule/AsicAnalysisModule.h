@@ -31,6 +31,7 @@
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
+#include "dqm4hep/DQMElectronicsMapping.h"
 
 // -- lcio headers
 #include "lcio.h"
@@ -57,11 +58,10 @@
 namespace caloobject
 {
 	typedef std::map<unsigned int, std::vector<CaloHit *> > CaloHitMap;
+	typedef std::map<unsigned int, CaloLayer *> CaloLayerMap;
 	typedef std::vector<CaloHit *> CaloHitList;
-	typedef std::vector<CaloLayer *> CaloLayerList;
 	typedef std::vector<CaloCluster *> CaloClusterList;
 	typedef std::vector<CaloTrack *> CaloTrackList;
-	typedef std::map<unsigned int, SDHCAL_Asic*> SDHCALAsicMap;
 }
 
 namespace dqm_sdhcal
@@ -71,6 +71,54 @@ namespace dqm_sdhcal
  */ 
 class AsicAnalysisModule : public DQMTriventModule
 {
+public:
+	/** Asic helper structure to compute
+	 *  efficiency and multiplicity
+	 */
+	struct Asic
+	{
+		Asic() :
+			m_difId(0),
+			m_asicId(0),
+			m_layerId(0),
+			m_nTracks(0),
+			m_efficiency(0.f),
+			m_efficiency2(0.f),
+			m_efficiency3(0.f),
+			m_multiplicity(0.f),
+			m_x(0.f),
+			m_y(0.f)
+		{
+			/* nop */
+		}
+
+		unsigned int      m_difId;
+		unsigned int      m_asicId;
+		unsigned int      m_layerId;
+		unsigned int      m_nTracks;
+		float             m_efficiency;
+		float             m_efficiency2;
+		float             m_efficiency3;
+		float             m_multiplicity;
+		float             m_x;
+		float             m_y;
+	};
+
+	typedef std::map<unsigned int, Asic *>      AsicMap;
+
+	/** LayerInfo helper structure to compute
+	 *  efficiency and multiplicity
+	 */
+	struct LayerInfo
+	{
+		float           m_efficiency;
+		float           m_efficiency2;
+		float           m_efficiency3;
+		float           m_multiplicity;
+		unsigned int    m_count;
+		unsigned int    m_efficientCount;
+	};
+
 public:
 	/** Constructor
 	 */
@@ -91,13 +139,35 @@ public:
 	dqm4hep::StatusCode endModule();
 
 private:
-	/** Find the dif id for the given key
-	 */
-	int findDifID(int key);
 
-	/** Find the asic id for the given key
+	//
+	// UTILITY FUNCTIONS
+	//
+
+	/**
 	 */
-	int findAsicID(int key);
+	void createAsicKey(unsigned int difId, unsigned int asicId, unsigned int &key);
+
+	/**
+	 */
+	void decodeAsicKey(unsigned int key, unsigned int &difId, unsigned int &asicId);
+
+	/**
+	 */
+	void updateAsic(unsigned int difId, unsigned int asicId, caloobject::CaloLayer *pLayer);
+
+	/**
+	 */
+	caloobject::CaloLayer *getOrCreateLayer(unsigned int layerId);
+
+	/**
+	 */
+	bool isValid(const dqm4hep::DQMCartesianVector &vector);
+
+
+	//
+	// Clear content function
+	//
 
 	/** Clear the contents related to one event
 	 */
@@ -119,6 +189,10 @@ private:
 	 */
 	void resetElements();
 
+	//
+	// ADDITIONAL ANALYSIS FUNCTIONS
+	//
+
 	/** Whether the vent has to be reject before any further processing
 	 */
 	bool shouldRejectEvent(EVENT::LCEvent *pLCEvent);
@@ -126,8 +200,8 @@ private:
 private:
 
 	// algorithm contents
-	caloobject::CaloLayerList                m_caloLayerList;
-	caloobject::SDHCALAsicMap                m_asicMap;
+	caloobject::CaloLayerMap                 m_caloLayerMap;
+	AsicMap                                  m_asicMap;
 
 	// algorithms
 	algorithm::Cluster                       m_clusteringAlgorithm;
@@ -135,7 +209,6 @@ private:
 	algorithm::Tracking                      m_trackingAlgorithm;
 	algorithm::InteractionFinder             m_interactionFinderAlgorithm;
 	algorithm::Efficiency                    m_efficiencyAlgorithm;
-	algorithm::AsicKeyFinder                 m_asicKeyFinderAlgorithm;
 
 	// algorithm parameters
 	algorithm::clusterParameterSetting           m_clusteringSettings;
@@ -143,7 +216,6 @@ private:
 	algorithm::TrackingParameterSetting          m_trackingSettings;
 	algorithm::InteractionFinderParameterSetting m_interactionFinderSettings;
 	algorithm::EfficiencyParameterSetting        m_efficiencySettings;
-	algorithm::AsicKeyFinderParameterSetting     m_asicKeyFinderSettings;
 	caloobject::LayerParameterSetting            m_layerSettings;
 
 	// module parameters
@@ -155,6 +227,7 @@ private:
 	unsigned int                             m_nAsicY;
 	int                                      m_nStartLayerShift;
 	unsigned int                             m_nActiveLayers;
+	dqm4hep::DQMElectronicsMapping          *m_pElectronicsMapping;
 
 private:
 	// monitor elements

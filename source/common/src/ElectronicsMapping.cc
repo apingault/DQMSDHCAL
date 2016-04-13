@@ -31,6 +31,8 @@
 #include "dqm4hep/DQMPlugin.h"
 #include "dqm4hep/DQMXmlHelper.h"
 
+#include <algorithm>
+
 namespace dqm_sdhcal
 {
 
@@ -51,17 +53,15 @@ DQM_PLUGIN_DECL(SDHCALElectronicsMapping, "SDHCALElectronicsMapping")
 //				 |DIF |
 //				 |____|
 
-/// table of channels within an asic
-/// channelID = channelTable[ i%96/12 + (j%96/12 )*4 ]
 const unsigned short SDHCALElectronicsMapping::m_channelTable[] =
-  {17,  1,  3,  5,  7,  8, 10, 12,
-   18,  0,  2,  4,  6,  9, 11, 13,
-   20, 19, 16, 15, 14, 21, 22, 23,
-   31, 30, 29, 28, 27, 26, 25, 24,
-   32, 33, 34, 35, 36, 37, 38, 39,
-   42, 44, 47, 48, 49, 50, 41, 40,
-   43, 45, 62, 60, 57, 55, 53, 51,
-   46, 63, 61, 59, 58, 56, 54, 52 };
+  { 12, 13, 23, 24, 39, 40, 51, 52,
+	10, 11, 22, 25, 38, 41, 53, 54,
+	8, 9, 21, 26, 37, 50, 55, 56,
+	7, 6, 14, 27, 36, 49, 57, 58,
+	5, 4, 15, 28, 35, 48, 60, 59,
+	3, 2, 16, 29, 34, 47, 62, 61,
+	1, 0, 19, 30, 33, 44, 45, 63,
+	17, 18, 20, 31, 32, 42, 43, 46 };
 
 //-------------------------------------------------------------------------------------------------
 
@@ -73,12 +73,11 @@ const unsigned short SDHCALElectronicsMapping::m_channelTable[] =
 //                     (I Axis)  ----->
 
 /// the asic table given a channel index in i and j cells direction
-/// asicID = asicTable[ i%32/8 + (j%32/8 )*4 ]
 const unsigned short SDHCALElectronicsMapping::m_asicTable[] =
-{ 1,  8,  9,  16,
-  2,  7,  10, 15,
-  3,  6,  11, 14,
-  4,  5,  12, 13 };
+  { 4,  5,  12, 13, 20, 21, 28, 29, 36, 37, 44, 45,
+	3,  6,  11, 14, 19, 22, 27, 30, 35, 38, 43, 46,
+	2,  7,  10, 15, 18, 23, 26, 31, 34, 39, 42, 47,
+	1,  8,  9,  16, 17, 24, 25, 32, 33, 40, 41, 48 };
 
 //-------------------------------------------------------------------------------------------------
 
@@ -129,9 +128,7 @@ SDHCALElectronicsMapping::SDHCALElectronicsMapping() :
 		m_isInitialized(false),
 		m_cellReferencePosition(0.f, 0.f, 0.f),
 		m_cellSize0(10.408f),
-		m_cellSize1(10.408f),
-		m_layerThickness(26.73f),
-		m_globalDifShiftY(32)
+		m_cellSize1(10.408f)
 {
 	/* nop */
 }
@@ -154,35 +151,51 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToElectronics( const dqm4hep::
 	electronics.m_asicId = 0;
 	electronics.m_channelId = 0;
 
-	unsigned int indexAsicI = (cell.m_iCell%32)/8;
-	unsigned int indexAsicJ = (cell.m_jCell%32)/8;
+	// first of all, find dif id
+	unsigned int difShiftY = ((cell.m_jCell-1)/32)*32;
 
-	electronics.m_asicId = m_asicTable[ indexAsicI + 4*indexAsicJ ];
+	Geometry::const_iterator iter = m_geometry.find(cell.m_layer);
 
-	unsigned int indexChannelI = (cell.m_iCell%96/12);
-	unsigned int indexChannelJ = (cell.m_jCell%96/12);
-
-	electronics.m_channelId = m_channelTable[ indexChannelI + 4*indexChannelJ ];
-
-	unsigned int difShiftY = cell.m_jCell/32;
-
-	LayerDifGeoMap::const_iterator iter = m_layerDifGeoMap.find(cell.m_layer);
-
-	if( m_layerDifGeoMap.end() == iter )
+	if( m_geometry.end() == iter )
 	{
 		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't find layer id " << cell.m_layer << " in SDHCALElectronicsMapping maps" );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 
-	DifGeoMap::const_iterator iter2 = iter->second.find(difShiftY);
+	DifMapping::const_iterator iter2 = std::find_if( iter->second.m_difList.begin() , iter->second.m_difList.end(),
+			[&] (const DifMapping::value_type &value) {
+		return value.second.m_shiftY == difShiftY;
+	});
 
-	if( iter->second.end() == iter2 )
+	if( iter->second.m_difList.end() == iter2 )
 	{
 		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't find dif with shift " << difShiftY << " in SDHCALElectronicsMapping maps" );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 
-	electronics.m_difId = iter2->second.m_difId;
+	electronics.m_difId = iter2->first;
+
+	unsigned int indexAsicI = (cell.m_iCell-1)/8;
+	unsigned int indexAsicJ = ((cell.m_jCell-1)%32)/8;
+
+	if(indexAsicI >= 12 || indexAsicJ >=4 )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Index asic index for cell to electronics conversion !" )
+		return dqm4hep::STATUS_CODE_FAILURE;
+	}
+
+	electronics.m_asicId = m_asicTable[ indexAsicI + 12*indexAsicJ ];
+
+	unsigned int indexChannelI = ((cell.m_iCell-1)%8);
+	unsigned int indexChannelJ = ((cell.m_jCell-1)%8);
+
+	if(indexChannelI >= 8 || indexChannelJ >=8 )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Index channel index for cell to electronics conversion !" )
+		return dqm4hep::STATUS_CODE_FAILURE;
+	}
+
+	electronics.m_channelId = m_channelTable[ indexChannelI + 8*indexChannelJ ];
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -198,9 +211,9 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::electronicstoCell( const dqm4hep::
 	cell.m_jCell = 0;
 	cell.m_layer = 0;
 
-	DifGeoMap::const_iterator iter = m_difGeoMap.find(electronics.m_difId);
+	DifMapping::const_iterator iter = m_difMapping.find(electronics.m_difId);
 
-	if( m_difGeoMap.end() == iter )
+	if( m_difMapping.end() == iter )
 	{
 		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't find dif id " << electronics.m_difId << " in SDHCALElectronicsMapping map" );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
@@ -208,8 +221,8 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::electronicstoCell( const dqm4hep::
 
 	// 1 because pad ids start from 1
 	cell.m_iCell = 1 + m_channelToIMapping[electronics.m_channelId] + m_asicToChannelShiftI[electronics.m_asicId];
-	cell.m_jCell = 32 - m_channelToJMapping[electronics.m_channelId] + m_asicToChannelShiftJ[electronics.m_asicId] + iter->second.m_yShift;
-	cell.m_layer = iter->second.m_layer;
+	cell.m_jCell = 32 - (m_channelToJMapping[electronics.m_channelId] + m_asicToChannelShiftJ[electronics.m_asicId]) + iter->second.m_shiftY;
+	cell.m_layer = iter->second.m_layerId;
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -221,16 +234,22 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::positionToCell(const dqm4hep::DQMC
 	if( ! m_isInitialized )
 		return dqm4hep::STATUS_CODE_NOT_INITIALIZED;
 
-	const float iCellFloat = position.getX() - m_cellReferencePosition.getX() / m_cellSize0;
-	const float jCellFloat = position.getY() - m_cellReferencePosition.getY() / m_cellSize1;
-	const float layerFloat = position.getZ() - m_cellReferencePosition.getZ() / m_layerThickness;
+	// find layer
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->findClosestLayer(position - m_cellReferencePosition, cell.m_layer));
 
-	if( iCellFloat < 0.f || jCellFloat < 0.f || layerFloat < 0.f )
+	// compute i and j expected values
+	const float iCellFloat = (position.getX() - m_cellReferencePosition.getX()) / m_cellSize0;
+	const float jCellFloat = (position.getY() - m_cellReferencePosition.getY()) / m_cellSize1;
+
+	if( iCellFloat < 0.f || jCellFloat < 0.f )
 		return dqm4hep::STATUS_CODE_FAILURE;
 
 	cell.m_iCell = round(iCellFloat);
 	cell.m_jCell = round(jCellFloat);
-	cell.m_layer = round(layerFloat);
+
+	if(cell.m_iCell < 1 || cell.m_iCell > 96
+	|| cell.m_jCell < 1 || cell.m_jCell > 96)
+		return dqm4hep::STATUS_CODE_FAILURE;
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -242,11 +261,39 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToPosition(const dqm4hep::DQME
 	if( ! m_isInitialized )
 		return dqm4hep::STATUS_CODE_NOT_INITIALIZED;
 
+	Geometry::iterator iter = m_geometry.find(cell.m_layer);
+
+	if( m_geometry.end() == iter )
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+
 	const float x = cell.m_iCell * m_cellSize0 + m_cellReferencePosition.getX();
 	const float y = cell.m_jCell * m_cellSize1 + m_cellReferencePosition.getY();
-	const float z = cell.m_layer * m_layerThickness + m_cellReferencePosition.getZ();
+	const float z = iter->second.m_z0 + m_cellReferencePosition.getZ();
 
 	position.setValues(x, y, z);
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode SDHCALElectronicsMapping::findClosestLayer(const dqm4hep::DQMCartesianVector &position, unsigned int &layer)
+{
+	float closestZ(std::numeric_limits<float>::max());
+	layer = std::numeric_limits<unsigned int>::max();
+
+	for(Geometry::iterator iter = m_geometry.begin(), endIter = m_geometry.end() ;
+			endIter != iter ; ++iter)
+	{
+		if(closestZ > fabs(iter->second.m_z0-position.getZ()))
+		{
+			closestZ = fabs(iter->second.m_z0-position.getZ());
+			layer = iter->first;
+		}
+	}
+
+	if( std::numeric_limits<unsigned int>::max() == layer )
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -262,10 +309,32 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::readSettings(const dqm4hep::TiXmlH
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"ReadFromDB", readFromDB));
 
+	std::string geometryFileName = "sdhcalGeometry.xml";
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"GeometryFileName", geometryFileName));
+
 	if( readFromDB )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Read DIF mapping from DB not yet implemented please set it to false !" );
-		return dqm4hep::STATUS_CODE_INVALID_PARAMETER;
+		std::string host, user, password, database, beamTest;
+
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+				"Host", host));
+
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+				"User", user));
+
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+				"Password", password));
+
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+				"Database", database));
+
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+				"BeamTest", beamTest));
+
+		GeometryDBInterface interface;
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, interface.connect( host , user , password , database ));
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, interface.dumpGeometry( geometryFileName , beamTest ));
 	}
 
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
@@ -277,33 +346,25 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::readSettings(const dqm4hep::TiXmlH
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"CellSize1", m_cellSize1));
 
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"LayerThickness", m_layerThickness));
-
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"GlobalDifShiftY", m_globalDifShiftY));
-
-	// require 3 difs per layer
-	dqm4hep::UIntVector difList;
+	dqm4hep::UIntVector layerMask;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
-			"DifList", difList, [] (const dqm4hep::UIntVector &vec) { return vec.size() % 3 == 0; }));
+			"LayerMask", layerMask));
 
-	for(unsigned int d=0 ; d<difList.size() ; d++)
+	dqm4hep::UIntVector difMask;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
+			"DifMask", difMask));
+
+	GeometryXmlIO reader;
+	RETURN_RESULT_IF( dqm4hep::STATUS_CODE_SUCCESS, !=, reader.load( geometryFileName , m_geometry, layerMask , difMask ) );
+
+	for(Geometry::iterator iter = m_geometry.begin(), endIter = m_geometry.end() ;
+			endIter != iter ; ++iter)
 	{
-		unsigned int layer = d/3;
-		unsigned int difId = difList.at(d);
-		unsigned int difShiftY = m_globalDifShiftY * d%3;
-
-		if( difId == 0 )
-			continue;
-
-		DifGeo difGeo;
-		difGeo.m_layer = layer;
-		difGeo.m_difId = difId;
-		difGeo.m_yShift = difShiftY;
-
-		m_difGeoMap[ difId ] = difGeo;
-		m_layerDifGeoMap[ layer ][ difShiftY ] = difGeo;
+		for(DifMapping::iterator difIter = iter->second.m_difList.begin(), difEndIter = iter->second.m_difList.end() ;
+				difEndIter != difIter ; ++difIter)
+		{
+			m_difMapping[ difIter->first ] = difIter->second;
+		}
 	}
 
 	m_isInitialized = true;

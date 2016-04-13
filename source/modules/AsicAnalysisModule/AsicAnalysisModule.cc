@@ -34,6 +34,7 @@
 #include "dqm4hep/DQMXmlHelper.h"
 #include "dqm4hep/DQMModuleApi.h"
 #include "dqm4hep/DQMPlugin.h"
+#include "dqm4hep/DQMPluginManager.h"
 
 // -- std headers
 #include <iostream>
@@ -48,8 +49,6 @@
 #include <IMPL/LCRelationImpl.h>
 #include <EVENT/LCParameters.h>
 #include <UTIL/CellIDDecoder.h>
-
-#include "streamlog/streamlog.h"
 
 using namespace dqm4hep;
 
@@ -90,15 +89,13 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"NAsicY", m_nAsicY));
 
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
-			"AsicTable", m_asicTable, [&] (const IntVector &vec) { return vec.size() == m_nActiveLayers; }));
-
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
-			"DifList", m_difList, [] (const IntVector &vec) { return ! vec.empty(); }));
-
 	m_cellIDDecoderString = "M:3,S-1:3,I:9,J:9,K-1:6";
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"CellIDDecoderString", m_cellIDDecoderString));
+
+	m_inputCollectionName = "SDHCAL_HIT";
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"InputCollectionName", m_inputCollectionName));
 
 	/*-----------------------------------------------------*/
 	m_clusteringSettings.maxTransversal = 1;
@@ -195,37 +192,27 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 			"Layer.EdgeY_Max", m_layerSettings.edgeY_max));
 
 	/*-----------------------------------------------------*/
-	const StatusCode statusCode = dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
-			"AsicKeyFinder.KeyFactor", m_asicKeyFinderSettings.keyFactors);
 
-	if(dqm4hep::STATUS_CODE_NOT_FOUND == statusCode)
-		m_asicKeyFinderSettings.keyFactors = { 1, 12, 1000 };
-	else if(dqm4hep::STATUS_CODE_SUCCESS != statusCode)
-		return statusCode;
+	TiXmlElement *pElecMapElement = xmlHandle.FirstChild("electronicsMapping").Element();
 
-	m_asicKeyFinderSettings.nPadX = 96;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"AsicKeyFinder.NPadX", m_asicKeyFinderSettings.nPadX));
+	if( ! pElecMapElement )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't found xml element electronicsMapping !" );
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
 
-	m_asicKeyFinderSettings.nPadY = 96;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"AsicKeyFinder.NPadY", m_asicKeyFinderSettings.nPadY));
+	std::string plugin;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::getAttribute(pElecMapElement, "plugin", plugin));
 
-	m_asicKeyFinderSettings.asicNPad = 8;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"AsicKeyFinder.AsicNPad", m_asicKeyFinderSettings.asicNPad));
+	m_pElectronicsMapping = dqm4hep::DQMPluginManager::instance()->createPluginClass<dqm4hep::DQMElectronicsMapping>(plugin);
 
-	m_asicKeyFinderSettings.layerGap = 26.131;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"AsicKeyFinder.LayerGap", m_asicKeyFinderSettings.layerGap));
+	if( ! m_pElectronicsMapping )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't found electronicsMapping plugin called : " << plugin );
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
 
-	m_asicKeyFinderSettings.padSize = 10.408;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"AsicKeyFinder.PadSize", m_asicKeyFinderSettings.padSize));
-
-	m_asicKeyFinderSettings.printDebug = false;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"AsicKeyFinder.PrintDebug", m_asicKeyFinderSettings.printDebug));
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pElectronicsMapping->readSettings(dqm4hep::TiXmlHandle(pElecMapElement)));
 
 	/*-----------------------------------------------------*/
 	for(unsigned int l=0 ; l<m_nActiveLayers ; l++)
@@ -310,9 +297,6 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"NTracksPerAsic", m_pNTracksPerAsic));
 
-	m_inputCollectionName = "SDHCAL_HIT";
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"InputCollectionName", m_inputCollectionName));
 
 	DQMModuleApi::cd(this);
 	DQMModuleApi::ls(this, true); // true for recursive
@@ -330,7 +314,6 @@ dqm4hep::StatusCode AsicAnalysisModule::userInitModule()
 	m_trackingAlgorithm.SetTrackingParameterSetting(m_trackingSettings);
 	m_interactionFinderAlgorithm.SetInteractionFinderParameterSetting(m_interactionFinderSettings);
 	m_efficiencyAlgorithm.SetEfficiencyParameterSetting(m_efficiencySettings);
-	m_asicKeyFinderAlgorithm.SetAsicKeyFinderParameterSetting(m_asicKeyFinderSettings);
 
 	return STATUS_CODE_SUCCESS;
 }
@@ -379,6 +362,9 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 			cellID[1] = cellIDDecoder(pCaloHit)["J"];
 			cellID[2] = cellIDDecoder(pCaloHit)["K-1"] + m_nStartLayerShift;
 
+			if( cellID[2] >= m_nActiveLayers )
+				continue;
+
 			CLHEP::Hep3Vector positionVector(
 					pCaloHit->getPosition()[0],
 					pCaloHit->getPosition()[1],
@@ -414,13 +400,20 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		caloobject::CaloTrack *pTrack = NULL;
 
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Run tracking algorithm");
+
 		m_trackingAlgorithm.Run(clusters, pTrack);
 
 		// stop processing if no reconstructed track
 		if( NULL == pTrack )
+		{
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "No track found !");
 			throw dqm4hep::StatusCodeException(dqm4hep::STATUS_CODE_SUCCESS);
+		}
 
 		tracks.push_back(pTrack);
+
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Run interaction finder");
 
 		bool isInteraction = m_interactionFinderAlgorithm.Run(clusters, pTrack->getTrackParameters());
 
@@ -440,26 +433,45 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		if(m_nActiveLayers-2 == trackEnd)
 			trackEnd = m_nActiveLayers-1;
 
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Analyzing track, layer per layer");
+
 		for(unsigned int l = trackBegin ; l<=trackEnd ; l++)
 		{
+			caloobject::CaloLayer *pLayer = this->getOrCreateLayer(l);
+
 			// reset layer properties
-			m_caloLayerList.at(l)->Reset();
+			pLayer->Reset();
 
 			// and re-evaluate efficiency of layer
-			m_efficiencyAlgorithm.Run(m_caloLayerList.at(l), clusters);
+			m_efficiencyAlgorithm.Run(pLayer, clusters);
 
-			if( 0 == m_caloLayerList.at(l)->getNTracks() )
+			if( 0 == pLayer->getNTracks() )
 				continue;
 
-			int key = m_asicKeyFinderAlgorithm.FindAsicKey( m_efficiencyAlgorithm.getExpectedPosition() );
+			dqm4hep::DQMCartesianVector position(
+					m_efficiencyAlgorithm.getExpectedPosition().x(),
+					m_efficiencyAlgorithm.getExpectedPosition().y(),
+					m_efficiencyAlgorithm.getExpectedPosition().z());
 
-			caloobject::SDHCALAsicMap::iterator findIter = m_asicMap.find(key);
-
-			if( findIter == m_asicMap.end() )
+			if( ! this->isValid( position ) )
 				continue;
 
-			findIter->second->Update( m_caloLayerList.at(l) );
+			dqm4hep::DQMElectronicsMapping::Electronics electronics;
+			dqm4hep::DQMElectronicsMapping::Cell cell;
+
+			if(dqm4hep::STATUS_CODE_SUCCESS != m_pElectronicsMapping->positionToCell(position, cell))
+				continue;
+
+			cell.m_layer = pLayer->getLayerID();
+
+			if(dqm4hep::STATUS_CODE_SUCCESS != m_pElectronicsMapping->cellToElectronics(cell, electronics))
+				continue;
+
+			unsigned int key(0);
+			this->updateAsic(electronics.m_difId, electronics.m_asicId, pLayer);
 		}
+
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "End of event, clearing content");
 
 		this->clearEventContents(hits, clusters, tracks);
 	}
@@ -469,10 +481,20 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		this->clearEventContents(hits, clusters, tracks);
 		return dqm4hep::STATUS_CODE_SUCCESS;
 	}
+	catch(dqm4hep::StatusCodeException &exception)
+	{
+		this->clearEventContents(hits, clusters, tracks);
+
+		if(dqm4hep::STATUS_CODE_SUCCESS == exception.getStatusCode() )
+			return dqm4hep::STATUS_CODE_SUCCESS;
+
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  "Caught StatusCodeException : " << exception.toString() << ". Skipping event ..." );
+		return dqm4hep::STATUS_CODE_SUCCESS;
+	}
 	catch(...)
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  "Caught unknown exception !" );
 		this->clearEventContents(hits, clusters, tracks);
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  "Caught unknown exception !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
@@ -490,36 +512,25 @@ dqm4hep::StatusCode AsicAnalysisModule::startOfCycle()
 
 dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 {
-	struct LayerInfo
-	{
-		float           m_efficiency;
-		float           m_efficiency2;
-		float           m_efficiency3;
-		float           m_multiplicity;
-		unsigned int    m_count;
-		unsigned int    m_efficientCount;
-	};
-
 	std::map<unsigned int, LayerInfo> layerInfoMap;
 
 	this->resetElements();
 
-	for(caloobject::SDHCALAsicMap::iterator iter = m_asicMap.begin(), endIter = m_asicMap.end() ;
+	for(AsicMap::iterator iter = m_asicMap.begin(), endIter = m_asicMap.end() ;
 			endIter != iter ; ++iter)
 	{
-		if( ! (iter->second->getAsicNtrack() > 0) )
+		if( ! (iter->second->m_nTracks > 0) )
 			continue;
 
-		const unsigned int nTracks = iter->second->getAsicNtrack();
-		const unsigned int layerID = iter->second->getAsicKey()/1000;
+		const unsigned int nTracks = iter->second->m_nTracks;
+		const unsigned int layerID = iter->second->m_layerId;
 
-		const float efficiency1 = iter->second->getAsicEfficiency();
-		const float efficiency2 = iter->second->getAsicEfficiency2();
-		const float efficiency3 = iter->second->getAsicEfficiency3();
+		const float efficiency1 = nTracks ? iter->second->m_efficiency/nTracks : 0.f;
+		const float efficiency2 = nTracks ? iter->second->m_efficiency2/nTracks : 0.f;
+		const float efficiency3 = nTracks ? iter->second->m_efficiency3/nTracks : 0.f;
 
-		const float x = iter->second->getPosition()[0];
-		const float y = iter->second->getPosition()[1];
-
+		const float x = iter->second->m_x;
+		const float y = iter->second->m_y;
 
 		const bool isEfficient = efficiency1 > 0.f;
 
@@ -554,6 +565,8 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 		m_pAsicEfficiency->get<TH1F>()->Fill( efficiency1 );
 		m_pAsicEfficiency2->get<TH1F>()->Fill( efficiency2 );
 		m_pAsicEfficiency3->get<TH1F>()->Fill( efficiency3 );
+
+//		std::cout << "Filling stacked eff at (" << x << " , " << y << ")" << std::endl;
 		m_pStackedEfficiencyMap->get<TH2F>()->Fill(x, y, efficiency1 / m_nActiveLayers);
 
 		if( m_layerElementMap.end() != layerIter )
@@ -566,7 +579,7 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 		// fill multiplicity
 		if( isEfficient )
 		{
-			const float multiplicity = iter->second->getAsicMultiplicity();
+			const float multiplicity = (efficiency1 > std::numeric_limits<float>::epsilon()) ? iter->second->m_multiplicity/efficiency1 : 0.f;
 			m_pAsicMultiplicity->get<TH1F>()->Fill( multiplicity );
 			m_pStackedMultiplicityMap->get<TH2F>()->Fill(x, y, multiplicity / m_nActiveLayers);
 
@@ -645,8 +658,7 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 
 dqm4hep::StatusCode AsicAnalysisModule::startOfRun(DQMRun *pRun)
 {
-	this->createAsicAndLayerContents();
-
+	this->clearContents();
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -654,7 +666,6 @@ dqm4hep::StatusCode AsicAnalysisModule::startOfRun(DQMRun *pRun)
 
 dqm4hep::StatusCode AsicAnalysisModule::endOfRun(DQMRun *pRun)
 {
-	this->clearContents();
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -662,6 +673,7 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfRun(DQMRun *pRun)
 
 dqm4hep::StatusCode AsicAnalysisModule::endModule()
 {
+	this->clearContents();
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -680,59 +692,118 @@ void AsicAnalysisModule::clearEventContents(caloobject::CaloHitList &hits, caloo
 
 //-------------------------------------------------------------------------------------------------
 
-void AsicAnalysisModule::createAsicAndLayerContents()
-{
-	// build layers and asics
-	for(unsigned int l=0 ; l<m_nActiveLayers ; ++l)
-	{
-		caloobject::CaloLayer *pLayer = new caloobject::CaloLayer(l);
-
-		pLayer->setLayerParameterSetting(m_layerSettings);
-		m_caloLayerList.push_back(pLayer);
-
-		for(unsigned int ax=0 ; ax<m_nAsicX ; ax++)
-		{
-			for(unsigned int ay=0 ; ay<m_nAsicY ; ay++)
-			{
-				int key = m_asicKeyFinderAlgorithm.BuildAsicKey(ax, ay, l);
-
-				caloobject::SDHCAL_Asic *pAsic = new caloobject::SDHCAL_Asic(key);
-				pAsic->setASIC_ID( this->findDifID(key) , this->findAsicID(key) );
-
-				m_asicMap.insert(caloobject::SDHCALAsicMap::value_type( key, pAsic ));
-			}
-		}
-	}
-}
-
-//-------------------------------------------------------------------------------------------------
-
 void AsicAnalysisModule::clearContents()
 {
-	for(caloobject::CaloLayerList::iterator iter = m_caloLayerList.begin(), endIter = m_caloLayerList.end() ;
-			endIter != iter ; ++iter)
-		delete *iter;
-
-	for(caloobject::SDHCALAsicMap::iterator iter = m_asicMap.begin(), endIter = m_asicMap.end() ;
+	for(caloobject::CaloLayerMap::iterator iter = m_caloLayerMap.begin(), endIter = m_caloLayerMap.end() ;
 			endIter != iter ; ++iter)
 		delete iter->second;
 
-	m_caloLayerList.clear();
+	for(AsicMap::iterator iter = m_asicMap.begin(), endIter = m_asicMap.end() ;
+			endIter != iter ; ++iter)
+		delete iter->second;
+
+	m_caloLayerMap.clear();
 	m_asicMap.clear();
 }
 
 //-------------------------------------------------------------------------------------------------
 
-int AsicAnalysisModule::findDifID(int key)
+void AsicAnalysisModule::createAsicKey(unsigned int difId, unsigned int asicId, unsigned int &key)
 {
-	return m_difList.at( key/1000*3 + 2 - key%1000%12/4 );
+	key = asicId + difId*1000;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-int AsicAnalysisModule::findAsicID(int key)
+void AsicAnalysisModule::decodeAsicKey(unsigned int key, unsigned int &difId, unsigned int &asicId)
 {
-	return m_asicTable.at( 4*(key%1000/12) + key%1000%12%4 );
+	difId = key / 1000;
+	asicId = key%difId;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void AsicAnalysisModule::updateAsic(unsigned int difId, unsigned int asicId, caloobject::CaloLayer *pLayer)
+{
+	unsigned int key(0);
+	this->createAsicKey(difId, asicId, key);
+
+	AsicMap::iterator iter = m_asicMap.find(key);
+
+	if( m_asicMap.end() == iter )
+	{
+		Asic *pAsic = new Asic();
+
+		// fill electronics ids
+		pAsic->m_difId = difId;
+		pAsic->m_asicId = asicId;
+		pAsic->m_layerId = pLayer->getLayerID();
+
+		// find a generic asic position
+		dqm4hep::DQMElectronicsMapping::Electronics electronics;
+		electronics.m_difId = pAsic->m_difId;
+		electronics.m_asicId = pAsic->m_asicId;
+		electronics.m_channelId = 1;
+
+		dqm4hep::DQMElectronicsMapping::Cell cell;
+
+		if(dqm4hep::STATUS_CODE_SUCCESS != m_pElectronicsMapping->electronicstoCell(electronics, cell))
+			return;
+
+		pAsic->m_x = cell.m_iCell;
+		pAsic->m_y = cell.m_jCell;
+
+		// insert and set iterator to the inserted one
+		iter = m_asicMap.insert( AsicMap::value_type(key, pAsic) ).first;
+	}
+
+	iter->second->m_nTracks++;
+	iter->second->m_efficiency += pLayer->getEfficiency();
+	iter->second->m_multiplicity += pLayer->getMultiplicity();
+
+	if( pLayer->getEfficiencyEnergy() == 3 )
+	{
+		iter->second->m_efficiency3 += pLayer->getEfficiency();
+		iter->second->m_efficiency2 += pLayer->getEfficiency();
+	}
+	else if( pLayer->getEfficiencyEnergy() == 2 )
+	{
+		iter->second->m_efficiency2 += pLayer->getEfficiency();
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+
+caloobject::CaloLayer *AsicAnalysisModule::getOrCreateLayer(unsigned int layerId)
+{
+	caloobject::CaloLayerMap::iterator iter = m_caloLayerMap.find(layerId);
+
+	if( m_caloLayerMap.end() == iter )
+	{
+		caloobject::CaloLayer *pLayer = new caloobject::CaloLayer( layerId );
+
+		pLayer->setLayerParameterSetting(m_layerSettings);
+
+		iter = m_caloLayerMap.insert( caloobject::CaloLayerMap::value_type( layerId , pLayer ) ).first;
+	}
+
+	return iter->second;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+bool AsicAnalysisModule::isValid(const dqm4hep::DQMCartesianVector &vector)
+{
+	const float x = vector.getX();
+	const float y = vector.getY();
+	const float z = vector.getZ();
+
+	if( std::isinf(x) || std::isnan(x)
+	 || std::isinf(y) || std::isnan(y)
+	 || std::isinf(z) || std::isnan(z) )
+		return false;
+
+	return true;
 }
 
 //-------------------------------------------------------------------------------------------------
