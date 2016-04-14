@@ -1,17 +1,5 @@
 <dqm4hep>
 
-	<!-- 
-	
-	ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
-	ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
-	
-	!!!!!!!!!!!!!!!  Changer asic key finder par l'electronics mapping !!!!!!!!!!!!!!!!!!!!
-	!!!!!!!!!!!!!!!  avec le parsing dans le xml file en dupliqué ...  !!!!!!!!!!!!!!!!!!!!
-	
-	ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp
-	ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp	
-	
-	 -->
     <archiver open="false" directory="/tmp" />
     
     <network>
