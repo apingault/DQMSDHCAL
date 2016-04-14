@@ -17,61 +17,55 @@
     <cycle type="TimerCycle" value="10" timeout="5" />
 
     <module type="NoiseAnalysisModule" name="NoiseAnalysisModule">
+        <parameter name="RawCollectionNames"> DHCALRawHits </parameter>
+        <parameter name="RecCollectionNames"> SDHCAL_HIT </parameter>
 
-        <parameter name="ShouldProcessStreamout">  false </parameter>
+            <RawDataConverters>
+                <converter plugin="SDHCALCaloHitConverter">
+                    <electronicsMapping plugin="SDHCALElectronicsMapping">
+                        <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+                        <parameter name="CellSize0"> 10.408 </parameter>
+                        <parameter name="CellSize1"> 10.408 </parameter>
+                        <parameter name="ReadFromDB"> true </parameter>
+                        <parameter name="Host"> localhost </parameter>
+                        <parameter name="User"> antoine </parameter>
+                        <parameter name="Password"> plop </parameter>
+                        <parameter name="Database"> GEOMETRY </parameter>
+                        <parameter name="BeamTest"> SPS_10_2015 </parameter>
+                        <parameter name="GeometryFileName"> geometry_SPS_10_2015.xml </parameter>
+                    </electronicsMapping>
 
-        <Streamout>
-        	<parameter name="InputCollectionName">  RU_XDAQ </parameter>
-        	<parameter name="OutputCollectionName">  DHCALRawHits </parameter>
-        	<parameter name="XDaqShift">  92 </parameter>
-        </Streamout>
+                    <parameter name="AmplitudeBitRotation"> 3 </parameter>
+                    <parameter name="EncodeDifAsicChannel"> true </parameter>
+                    <parameter name="IJKEncoding"> I J K-1 </parameter>
+                    <parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter>
+                    <parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+                </converter>
+            </RawDataConverters>
 
-        <parameter name="ShouldProcessTrivent">  false </parameter>
+        <!-- The following electronicsMapping handle is here only for geometry dependent Histogram Booking -->
+        <!-- Ensure the GeometryFileName is the same as in the converter settings -->
+        <electronicsMapping plugin="SDHCALElectronicsMapping">
+            <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+            <parameter name="CellSize0"> 10.408 </parameter>
+            <parameter name="CellSize1"> 10.408 </parameter>
+            <parameter name="ReadFromDB"> false </parameter>
+            <parameter name="GeometryFileName"> geometry_SPS_10_2015.xml </parameter>
+        </electronicsMapping>
 
-        <Trivent>
-        	<parameter name="InputCollectionName">  DHCALRawHits </parameter>
-        	<parameter name="OutputCollectionName">  SDHCAL_HIT </parameter>
-
-        	<!-- To adjust ! -->
-        	<parameter name="GeometryFile">  /Users/antoine/CALICE/Software/DQMSDHCAL/config/setup_geometry_nov.xml </parameter>
-
-        	<parameter name="LayerCut">  3 </parameter>
-        	<parameter name="NoiseCut">  10 </parameter>
-        	<parameter name="TimeWindow">  2 </parameter>
-        	<parameter name="LayerGap">  0.9 </parameter>
-        	<parameter name="ElecNoiseCut">  100000 </parameter>
-        	<parameter name="Time2PreviousEventCut">  0 </parameter>
-        	<parameter name="GainCorrectionMode">  false </parameter>
-        	<parameter name="CherenkovWindow">  20 </parameter>
-        	<parameter name="CherenkovLenght">  1 </parameter>
-        	<parameter name="CherenkovDifId">  0 </parameter>
-        	<parameter name="TreatCherenkov">  false </parameter>
-        	<parameter name="CellSizeU">  10.408 </parameter>
-        	<parameter name="CellSizeV">  10.408 </parameter>
-
-        	<!-- 26.131 for SDHCAL ; 55 at GIF++ -->
-        	<parameter name="LayerThickness">  26.131 </parameter>
-        </Trivent>
-
-
-        <parameter name="InputCollectionName"> DHCALRawHits </parameter>
-        <parameter name="DetectorName"> SDHCAL </parameter>
-        <parameter name="GeometryFile">  /Users/antoine/CALICE/Software/DQMSDHCAL/config/setup_geometry2015.xml </parameter>
-
+        <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
         <parameter name="NActiveLayers">  51 </parameter>
-        <parameter name="NDifPerLayer">  3 </parameter>
         <parameter name="NAsicPerDif">  48 </parameter>
         <parameter name="NChanPerAsic">  64 </parameter>
-
-
 
         <!-- spillLength in seconds -->
         <parameter name="SpillLength">  10 </parameter>
         <!-- ClockFrameLength in ns -->
         <parameter name="ClockFrameLength">  200 </parameter>
         <parameter name="NumberOfEventToSkip">  0 </parameter>
-        <parameter name="DropFirstSpillEvent">  false </parameter>
 
+
+        <!-- AsicOccupancy -->
         <monitorElement ID="AsicOccupancyAll"
             name="AsicOccupancyAll" path="." type="TH1F" title="Occupancy per Asic / integrated time (in s)"
             nBins="12241" min="0" max="12240"
@@ -88,11 +82,8 @@
             nBins="256" min="0" max="255"
             resetPolicy="EndOfRun"/>
 
-        <monitorElement ID="DIFAsicCount"
-            name="DIFAsicCount" path="." type="TH2S" title="Occupancy ASIC vs DIF"
-            nBinsX="256" minX="0.1" maxX="256.1" nBinsY="48" minY="0.1" maxY="48.1"
-            drawOption="colz" resetPolicy="EndOfRun"/>
 
+        <!-- Timing -->
         <monitorElement ID="TimeDiffTriggerToSpill"
                 name="TimeDiffTriggerToSpill" path="." type="TH1F" title="Time (s) between start time of new spill and start time of last trigger of previous Spill"
                 nBins="500" min="0" max="100"
@@ -113,12 +104,14 @@
                 nBins="2000" min="0" max="0.5"
                 resetPolicy="EndOfRun"/>
 
+
+        <!-- Raw Hit Study -->
         <monitorElement ID="HitFrequencyMap"
             name="HitFrequencyMap" path="." type="TH2F" title="HitMap DIF vs Asic"
             nBinsX="255" minX="0.1" maxX="255.1" nBinsY="48" minY="0.1" maxY="48.1"
             drawOption="colz" resetPolicy="EndOfRun"/>
 
-
+        <!-- Raw Hit Study / Per Layer-->
         <monitorElement ID="ChamberHitsMap1"
             name="ChamberHitsMap1" path="." type="TH2S" title="HitMap in Layer threshold 1"
             nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
@@ -134,7 +127,7 @@
             nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
             drawOption="colz" resetPolicy="EndOfRun"/>
 
-
+        <!-- Raw Hit Study / Per Layer & Per Dif-->
         <monitorElement ID="AsicOccupancy"
             name="AsicOccupancy" path="." type="TH1F" title="Occupancy per Asic over integrated time (in s)"
             nBins="48" min="0" max="47"
@@ -161,6 +154,22 @@
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
+        <!-- Asic Frequency = asichit/integratedTime -->
+        <monitorElement ID="AsicFrequency1"
+            name="AsicFrequency1" path="." type="TH1F" title="Frequency per pad and asic threshold 1+2+3"
+            nBins="3072" min="0" max="3071"
+            resetPolicy="EndOfRun"/>
+
+        <monitorElement ID="AsicFrequency2"
+            name="AsicFrequency2" path="." type="TH1F" title="Frequency per pad and asic threshold 2+3"
+            nBins="3072" min="0" max="3071"
+            resetPolicy="EndOfRun"/>
+
+        <monitorElement ID="AsicFrequency3"
+            name="AsicFrequency3" path="." type="TH1F" title="Frequency per pad and asic threshold 3"
+            nBins="3072" min="0" max="3071"
+            resetPolicy="EndOfRun"/>
+
         <monitorElement ID="AsicEventTime"
             name="EventTime" path="." type="TH1F" title="Hit time distribution"
             nBins="10001" min="0" max="1E6"
@@ -170,9 +179,5 @@
             name="EventTimeZoom" path="." type="TH1F" title="Zoom on hit time distribution"
             nBins="10001" min="0" max="10000"
             resetPolicy="EndOfRun"/>
-
-
-
     </module>
-
 </dqm4hep>

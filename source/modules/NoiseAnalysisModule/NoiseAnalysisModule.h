@@ -32,70 +32,40 @@
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMAnalysisModule.h"
+#include "dqm4hep/DQMElectronicsMapping.h"
+#include "dqm4hep/DQMDataConverter.h"
 
 // -- dqm sdhcal headers
-#include "Mapping.h"
+#include "Geometry.h"
 
 // -- lcio headers
 #include "lcio.h"
-#include "EVENT/RawCalorimeterHit.h"
+#include "EVENT/CalorimeterHit.h"
 
-// -- clhep headers
-#include "CLHEP/Vector/ThreeVector.h"
+// -- calo software headers
+#include "CaloObject/CaloHit.h"
 
 // -- std headers
 #include <string>
-#include <cstring>
 #include <vector>
-
-
-class RawCaloHit
-{
-public:
-  RawCaloHit(CLHEP::Hep3Vector vec, int chanId, int asicId, int layerId, int threshold, int time, CLHEP::Hep3Vector posShift);
-  // algorithms assume that the zero is located at the middle of the first layer.
-
-  ~RawCaloHit() {;}
-
-  inline const CLHEP::Hep3Vector getPosition() {return m_rawHitPosition;}
-  inline const int getThreshold() {return m_threshold;}
-  inline const float getTime() {return m_time;}
-  inline const int getchannelId() {return m_chanId;}
-  inline const int getAsicId() {return m_asicId;}
-  inline const int getLayerId() {return m_layerId;}
-
-private:
-  int m_chanId;
-  int m_asicId;
-  int m_layerId;
-  CLHEP::Hep3Vector m_rawHitPosition;
-  float m_threshold;
-  int m_time;
-};
 
 
 namespace dqm4hep { class TiXmlElement; class TiXmlHandle; }
 
 namespace dqm_sdhcal
 {
-
 class NoiseAnalysisModule : public dqm4hep::DQMAnalysisModule
 {
 public:
   NoiseAnalysisModule();
   virtual ~NoiseAnalysisModule();
 
-protected:
-  virtual dqm4hep::StatusCode userInitModule();
-  virtual dqm4hep::StatusCode userReadSettings(const dqm4hep::TiXmlHandle xmlHandle);
-  virtual dqm4hep::StatusCode processNoisyEvent(EVENT::LCEvent *pLCEvent);
-  virtual dqm4hep::StatusCode processPhysicalEvent(EVENT::LCEvent *pLCEvent);
-
 private:
   // from analysis module
   dqm4hep::StatusCode initModule();
   dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
   dqm4hep::StatusCode processEvent(dqm4hep::DQMEvent *const pEvent);
+  dqm4hep::StatusCode performOutputDataConversion(EVENT::LCEvent *pLCEvent);
 
   dqm4hep::StatusCode startOfRun(dqm4hep::DQMRun *const pRun);
   dqm4hep::StatusCode endOfRun(dqm4hep::DQMRun *const pRun);
@@ -103,38 +73,42 @@ private:
   dqm4hep::StatusCode endOfCycle();
   dqm4hep::StatusCode endModule();
 
-  // Trivent function
-  dqm4hep::StatusCode readGeometry(const std::string &fileName);
-  dqm4hep::StatusCode readDifGeometry(dqm4hep::TiXmlElement *pElement);
-  dqm4hep::StatusCode readChamberGeometry(dqm4hep::TiXmlElement *pElement);
-  unsigned int getCellDifId(int cellId) {return cellId & 0xFF;}
-  unsigned int getCellAsicId(int cellId) {return (cellId & 0xFF00) >> 8;}
-  unsigned int getCellChanId(int cellId) {return (cellId & 0x3F0000) >> 16;}
-  std::vector<dqm4hep::dqm_uint> getPadIndex(unsigned int difId, unsigned int asicId, unsigned int chanId);
-
-
-  dqm4hep::StatusCode decodeTrigger( EVENT::LCCollection* const pRawCalorimeterHitCollection, EVENT::RawCalorimeterHit * const pRawCaloHit);
-  dqm4hep::StatusCode doDIFStudy(EVENT::RawCalorimeterHit * const pRawCaloHit);
-  dqm4hep::StatusCode fillAsicOccupancyMap(EVENT::RawCalorimeterHit * const pRawCaloHit);
+  dqm4hep::StatusCode decodeTrigger( EVENT::LCCollection* const pRawCalorimeterHitCollection, caloobject::CaloHit * const pWrapperHit);
+  dqm4hep::StatusCode doDIFStudy(EVENT::CalorimeterHit * const pRawCaloHit);
+  dqm4hep::StatusCode fillAsicOccupancyMap( caloobject::CaloHit * const pWrapperHit);
   dqm4hep::StatusCode doAsicStudy();
   int createAsicKey(int chanId, int difId, int asicId);
   void resetElements();
-  // CerenkovTagger
+
+private:
+  // converter parameters
+  typedef dqm4hep::DQMDataConverter<EVENT::LCCollection, EVENT::LCCollection> CaloHitCollectionConverter;
+  dqm4hep::StringVector                      m_rawCollectionNames;
+  dqm4hep::StringVector                      m_recCollectionNames;
+  dqm4hep::StringVector                      m_rawDataConverterNames;
+  std::vector< CaloHitCollectionConverter *> m_dataConverters;
+  // electronicsMapping parameters
+  dqm4hep::DQMElectronicsMapping            *m_pElectronicsMapping;
+  dqm4hep::DQMCartesianVector                m_cellReferencePosition;
+  float m_cellSize0;
+  float m_cellSize1;
+  // Geometry parameters
+  Geometry                                   m_geometry;
+  DifMapping                                 m_difMapping;
+
 
 
 private:
   // module parameters
   std::string                              m_inputCollectionName;
-  std::vector<EVENT::RawCalorimeterHit*>   m_rawCalorimeterHitCollection;
+  std::string                              m_cellIDDecoderString;
   std::string                              m_moduleLogStr;
-  std::string                              m_geomXMLFile;
-  std::string                              m_detectorName;
   std::map<int, int>                       m_asicMap;
 
   unsigned int                             m_nActiveLayers;
   unsigned int                             m_nAsicPerDif;
-  unsigned int                             m_nDifPerLayer;
   unsigned int                             m_nChanPerAsic;
+  int                                      m_nStartLayerShift;
 
   int                                      m_nEventProcessed;
   unsigned long long                       m_eventIntegratedTime;
@@ -143,8 +117,6 @@ private:
   unsigned long long                       m_hitTimeMin;
   unsigned long long                       m_hitTimeMax;
 
-  bool                                     m_dropFirstSpillEvent;
-  unsigned long long                       m_previousBCID;
   double                                   m_timeLastTrigger;
   double                                   m_timeLastSpill;
   float                                    m_DAQ_BC_Period;
@@ -155,7 +127,6 @@ private:
 
 
   // Monitor Elements
-  //
   dqm4hep::DQMMonitorElementPtr               m_pTimeDiffSpill;
   dqm4hep::DQMMonitorElementPtr               m_pTimeDiffTriggerToSpill;
   dqm4hep::DQMMonitorElementPtr               m_pSpillLength;
@@ -179,7 +150,7 @@ private:
     dqm4hep::DQMMonitorElementPtr             m_pAsicEventTime;
     dqm4hep::DQMMonitorElementPtr             m_pAsicEventTimeZoom;
   };
- struct LayerElements
+  struct LayerElements
   {
     dqm4hep::DQMMonitorElementPtr             m_pChamberHitsMap1;
     dqm4hep::DQMMonitorElementPtr             m_pChamberHitsMap2;
@@ -187,18 +158,6 @@ private:
     std::map<int, DifElements>                m_difElementMap;
   };
   std::map<unsigned int, LayerElements>       m_layerElementMap;
-
-  struct positionXYZ
-  {
-    double X;
-    double Y;
-    double Z;
-  };
-
-  std::map<int, LayerID> m_difMapping;
-  std::map<int, positionXYZ> m_chamberPositions; //chamber , position
-
 };
-
 }
 #endif // NOISEANALYSISMODULE_H

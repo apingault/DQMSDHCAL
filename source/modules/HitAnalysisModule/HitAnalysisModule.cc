@@ -86,10 +86,8 @@ dqm4hep::StatusCode HitAnalysisModule::userReadSettings(const dqm4hep::TiXmlHand
 	m_nAsicY = 12;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 	                        "NAsicY", m_nAsicY));
-	//TODO See with remy
-	int m_nAsicPerDif = 48;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
-	"AsicTable", m_asicTable, [&] (const IntVector & vec) { return vec.size() == m_nActiveLayers; }));
+	"AsicTable", m_asicTable));
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
 	"DifList", m_difList, [] (const IntVector & vec) { return ! vec.empty(); }));
