@@ -37,6 +37,9 @@
 // -- lcio headers
 #include "UTIL/CellIDEncoder.h"
 
+// -- dqm4ilc headers
+#include "dqm4ilc/DQMLCHelper.h"
+
 namespace dqm_sdhcal
 {
 
@@ -68,16 +71,8 @@ dqm4hep::StatusCode SDHCALCaloHitConverter::convert(const EVENT::LCCollection *c
 	if( pInputCollection->getTypeName() != EVENT::LCIO::RAWCALORIMETERHIT || pOutputCollection->getTypeName() != EVENT::LCIO::CALORIMETERHIT )
 		return dqm4hep::STATUS_CODE_INVALID_PARAMETER;
 
-	// Copy parameters from inputCOllection to outputCollection
-	EVENT::StringVec parameterKeys;
-	pInputCollection->getParameters().getIntKeys(parameterKeys);
-
-	for (EVENT::StringVec::const_iterator keyIter = parameterKeys.begin(); keyIter != parameterKeys.end(); ++keyIter)
-	{
-		EVENT::IntVec values;
-		pInputCollection->getParameters().getIntVals((*keyIter), values);
-		pOutputCollection->parameters().setValues((*keyIter), values) ;
-	}
+	// Copy parameters from inputCollection to outputCollection
+	dqm4ilc::DQMLCHelper::copyLCParameters( pInputCollection->getParameters() , pOutputCollection->parameters() );
 
 	UTIL::CellIDEncoder<IMPL::CalorimeterHitImpl> cellIDEncoder( m_cellIDEncoderString , pOutputCollection );
 
