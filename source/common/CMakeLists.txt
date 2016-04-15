@@ -39,3 +39,15 @@ INSTALL(
 )
 
 
+# -------------------------------------------------
+# build dump db geometry executable
+
+ADD_EXECUTABLE( dqmsdhcal_dump_db_geometry main/dqmsdhcal_dump_db_geometry.cc )
+TARGET_LINK_LIBRARIES( dqmsdhcal_dump_db_geometry ${PROJECT_NAME}Common )
+
+INSTALL(
+    TARGETS dqmsdhcal_dump_db_geometry
+    RUNTIME DESTINATION bin
+)
+
+
