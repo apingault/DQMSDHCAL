@@ -38,9 +38,10 @@
 
 #include "DQMTriventModule.h"
 
-
 namespace dqm_sdhcal
 {
+
+class EventClassifier;
 
 /** EventDisplayModule class
  */ 
@@ -68,6 +69,8 @@ public:
 private:
 	dqm4hep::StringVector                 m_inputCaloHitCollections;
 	dqm4hep::IntVector                    m_colorWeightList;
+
+	EventClassifier                      *m_pEventClassifier;
 
 	dqm4hep::DQMMonitorElementPtr         m_pEventDisplay3D;
 

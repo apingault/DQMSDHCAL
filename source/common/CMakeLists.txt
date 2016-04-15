@@ -28,13 +28,13 @@ INSTALL(
 )
 
 # -------------------------------------------------
-# build shm reader executable
+# build shm publisher executable
 
-ADD_EXECUTABLE( dqmsdhcal_start_shm_reader main/dqmsdhcal_start_shm_reader.cc )
-TARGET_LINK_LIBRARIES( dqmsdhcal_start_shm_reader ${PROJECT_NAME}Common )
+ADD_EXECUTABLE( dqmsdhcal_start_shm_publisher main/dqmsdhcal_start_shm_publisher.cc )
+TARGET_LINK_LIBRARIES( dqmsdhcal_start_shm_publisher ${PROJECT_NAME}Common )
 
 INSTALL(
-    TARGETS dqmsdhcal_start_shm_reader
+    TARGETS dqmsdhcal_start_shm_publisher
     RUNTIME DESTINATION bin
 )
 

@@ -26,6 +26,7 @@
 
 
 #include "EventDisplayModule.h"
+#include "AnalysisTools.h"
 
 //-- lcio headers
 #include <EVENT/LCCollection.h>
@@ -42,7 +43,7 @@
 #include "dqm4hep/DQMEvent.h"
 #include "dqm4hep/DQMXmlHelper.h"
 #include "dqm4hep/DQMModuleApi.h"
-#include "dqm4hep/DQMPlugin.h"
+#include "dqm4hep/DQMPluginManager.h"
 
 namespace dqm_sdhcal
 {
@@ -127,6 +128,31 @@ dqm4hep::StatusCode EventDisplayModule::userReadSettings(const dqm4hep::TiXmlHan
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 			"CycleStackedProfileXY", m_pCycleStackedProfileXY));
 
+	/*-----------------------------------------------------*/
+
+	dqm4hep::TiXmlElement *pEventClassifierElement = xmlHandle.FirstChild("eventClassifier").Element();
+
+	if( ! pEventClassifierElement )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't found xml element eventClassifier !" );
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
+
+	std::string plugin;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::getAttribute(pEventClassifierElement, "plugin", plugin));
+
+	m_pEventClassifier = dqm4hep::DQMPluginManager::instance()->createPluginClass<EventClassifier>(plugin);
+
+	if( ! m_pEventClassifier )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't found eventClassifier plugin called : " << plugin );
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventClassifier->readSettings(dqm4hep::TiXmlHandle(pEventClassifierElement)));
+
+	/*-----------------------------------------------------*/
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -134,6 +160,11 @@ dqm4hep::StatusCode EventDisplayModule::userReadSettings(const dqm4hep::TiXmlHan
 
 dqm4hep::StatusCode EventDisplayModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventClassifier->processEvent(pLCEvent));
+
+	if( m_pEventClassifier->isNoisyEvent() )
+		return dqm4hep::STATUS_CODE_SUCCESS;
+
 	m_pEventDisplay3D->reset();
 	m_pLastProfileZX->reset();
 	m_pLastProfileZY->reset();
@@ -154,6 +185,8 @@ dqm4hep::StatusCode EventDisplayModule::processEvent(EVENT::LCEvent *pLCEvent)
 			{
 				EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(collectionName);
 				UTIL::CellIDDecoder<EVENT::CalorimeterHit> decoder(pCalorimeterHitCollection);
+
+				LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Processing collection " << collectionName << ", n elts = " << pCalorimeterHitCollection->getNumberOfElements() );
 
 				// loop over hits in this event
 				for(unsigned int h=0 ; h<pCalorimeterHitCollection->getNumberOfElements() ; h++)
