@@ -3,7 +3,7 @@
     <archiver open="false" directory="/tmp" />
     
     <network>
-        <runcontrol type="DimRunControlClient" name="SDHCALRunControl" />
+        <runcontrol type="DimRunControlClient" name="DQMRunControl" />
         
         <eventcollector type="DimEventClient">
         	<parameter name="collectorName"> sdhcal_event_collector </parameter>
@@ -14,7 +14,7 @@
         <monitorelementcollector name="sdhcal_me_collector"/>
     </network>
     
-    <cycle type="TimerCycle" value="3" timeout="5" />
+    <cycle type="TimerCycle" value="2" timeout="5" />
 
     <module type="EventDisplayModule" name="SDHCALEventDisplay">
         
@@ -42,7 +42,8 @@
         				<parameter name="Database"> GEOMETRY </parameter>
         				<parameter name="BeamTest"> SPS_08_2012 </parameter> -->
 
-        				<parameter name="GeometryFileName"> /home/rete/soft/DQMSDHCAL/config/geometry_SPS_08_2012.xml </parameter>
+        				<!-- <parameter name="GeometryFileName"> /home/rete/soft/DQMSDHCAL/config/geometry_SPS_08_2012.xml </parameter> -->
+        				<parameter name="GeometryFileName"> /home/rete/soft/DQMSDHCAL/config/geometry_PS_06_2015.xml </parameter>
 
         			</electronicsMapping>
         			
@@ -56,8 +57,8 @@
         	</RawDataConverters>
         	
         	<parameter name="TimeWindow"> 2 </parameter>
-        	<parameter name="MinPeakSize"> 10 </parameter>
-        	<parameter name="MinElements"> 10 </parameter>
+        	<parameter name="MinPeakSize"> 2 </parameter>
+        	<parameter name="MinElements"> 0 </parameter>
         	<parameter name="MaxElements"> 100000 </parameter>
         	
         </Trivent>
@@ -68,6 +69,14 @@
         <parameter name="MarkerColor3D"> 2 </parameter>
         <parameter name="MarkerSize3D"> 1 </parameter>
         <parameter name="MarkerStyle3D"> 21 </parameter>
+        
+        <eventClassifier plugin="SDHCALEventClassifier">
+        	<parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
+        	<parameter name="CellIDDecoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+        	<parameter name="NoiseMinNHitPerTouchedLayer"> 1 </parameter>
+        	<parameter name="NoiseMaxNHitPerTouchedLayer"> 40 </parameter>
+        	<parameter name="NoiseMinNHit"> 10 </parameter>
+        </eventClassifier>
         
 		<monitorElement ID="EventDisplay3D"
 			name="EventDisplay3D" path="/3D" type="TH3F"
