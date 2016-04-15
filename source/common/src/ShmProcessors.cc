@@ -114,6 +114,8 @@ dqm4hep::StatusCode EventInfoShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 	time_t currentTime = std::chrono::system_clock::to_time_t(dqm4hep::DQMCoreTool::now());
 	pLCEvent->parameters().setValue( m_creationTimeParameterName , static_cast<int>(currentTime) );
 
+	m_eventNumber++;
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
