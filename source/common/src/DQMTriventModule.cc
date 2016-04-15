@@ -37,6 +37,7 @@
 
 // -- lcio headers
 #include "EVENT/LCIO.h"
+#include "UTIL/LCTOOLS.h"
 #include "Exceptions.h"
 #include "EVENT/LCEvent.h"
 #include "EVENT/RawCalorimeterHit.h"
@@ -166,10 +167,16 @@ dqm4hep::StatusCode DQMTriventModule::processEvent(dqm4hep::DQMEvent *const pEve
 	if(NULL == pLCEvent)
 		return dqm4hep::STATUS_CODE_FAILURE;
 
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger, "Processing dqm event no " << pLCEvent->getEventNumber() );
+
 	try
 	{
 		trivent::Event triventEvent;
+
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "DQMTriventModule : converting event" );
 		THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->convertEvent(pLCEvent, triventEvent));
+
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "DQMTriventModule : processing trivent algorithm" );
 		m_pTrivent->processEvent(triventEvent);
 	}
 	catch(dqm4hep::StatusCodeException &exception)
@@ -218,8 +225,15 @@ dqm4hep::StatusCode DQMTriventModule::convertEvent(EVENT::LCEvent *pLCEvent, tri
 
 void DQMTriventModule::processReconstructedEvent(EVENT::LCEvent *pLCEvent)
 {
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "DQMTriventModule::processReconstructedEvent : event no " << pLCEvent->getEventNumber() );
+
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "Performing output data conversion ..." );
 	THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->performOutputDataConversion(pLCEvent));
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "Performing output data conversion ... OK" );
+
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "Processing physics event ..." );
 	THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->processEvent(pLCEvent));
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "Processing physics event ... OK" );
 }
 
 //-------------------------------------------------------------------------------------------------
