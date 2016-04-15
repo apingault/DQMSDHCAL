@@ -78,6 +78,8 @@ dqm4hep::StatusCode EventInfoShmProcessor::startOfRun(dqm4hep::DQMRun *const pRu
 	m_detectorName = pRun->getDetectorName();
 	m_eventNumber = 0;
 
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "===== Starting new run " << m_runNumber << " , detector name : " << m_detectorName << " ====" );
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -85,6 +87,9 @@ dqm4hep::StatusCode EventInfoShmProcessor::startOfRun(dqm4hep::DQMRun *const pRu
 
 dqm4hep::StatusCode EventInfoShmProcessor::endOfRun(const dqm4hep::DQMRun *const pRun)
 {
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "===== Ending run " << pRun->getRunNumber() << " , detector name : " << m_detectorName << " ====" );
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "===== N processed events : " << m_eventNumber );
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
