@@ -11,77 +11,27 @@ INCLUDE_DIRECTORIES( ../common/include )
 ADD_DEFINITIONS( "-pedantic -Wunused-value -O2" )
 ADD_DEFINITIONS("-Wno-long-long -Wreturn-type")
 
+# Macro definition to add a module library
+MACRO( ADD_MODULE  module_name )
+	
+	INCLUDE_DIRECTORIES( ${module_name} )
+	
+	ADD_SHARED_LIBRARY( ${module_name} ${module_name}/${module_name}.cc )
+	TARGET_LINK_LIBRARIES( ${module_name} ${PROJECT_NAME}Common )
+	
+	INSTALL(
+	    TARGETS ${module_name}
+	    LIBRARY DESTINATION lib
+	)
 
-# -------------------------------------------------
-# build NoiseAnalysisModule library
-
-INCLUDE_DIRECTORIES( NoiseAnalysisModule )
-ADD_SHARED_LIBRARY( NoiseAnalysisModule NoiseAnalysisModule/NoiseAnalysisModule.cc )
-TARGET_LINK_LIBRARIES( NoiseAnalysisModule ${PROJECT_NAME}Common )
-
-INSTALL(
-    TARGETS NoiseAnalysisModule
-    LIBRARY DESTINATION lib
-)
-
-# -------------------------------------------------
-# build HitAnalysisModule library
-
-INCLUDE_DIRECTORIES( HitAnalysisModule )
-ADD_SHARED_LIBRARY( HitAnalysisModule HitAnalysisModule/HitAnalysisModule.cc )
-TARGET_LINK_LIBRARIES( HitAnalysisModule ${PROJECT_NAME}Common )
-
-INSTALL(
-    TARGETS HitAnalysisModule
-    LIBRARY DESTINATION lib
-)
-
-# -------------------------------------------------
-# build AsicAnalysisModule library
-
-INCLUDE_DIRECTORIES( AsicAnalysisModule )
-ADD_SHARED_LIBRARY( AsicAnalysisModule AsicAnalysisModule/AsicAnalysisModule.cc )
-TARGET_LINK_LIBRARIES( AsicAnalysisModule ${PROJECT_NAME}Common )
-
-INSTALL(
-    TARGETS AsicAnalysisModule
-    LIBRARY DESTINATION lib
-)
+ENDMACRO()
 
 
-# -------------------------------------------------
-# build SlowControlModule library
-
-INCLUDE_DIRECTORIES( SlowControlModule )
-ADD_SHARED_LIBRARY( SlowControlModule SlowControlModule/SlowControlModule.cc )
-TARGET_LINK_LIBRARIES( SlowControlModule ${PROJECT_NAME}Common )
-
-INSTALL(
-    TARGETS SlowControlModule
-    LIBRARY DESTINATION lib
-)
-
-# -------------------------------------------------
-# build HoughTransformModule library
-
-INCLUDE_DIRECTORIES( HoughTransformModule )
-ADD_SHARED_LIBRARY( HoughTransformModule HoughTransformModule/HoughTransformModule.cc )
-TARGET_LINK_LIBRARIES( HoughTransformModule ${PROJECT_NAME}Common )
-
-INSTALL(
-    TARGETS HoughTransformModule
-    LIBRARY DESTINATION lib
-)
-
-# -------------------------------------------------
-# build EventDisplayModule library
-
-INCLUDE_DIRECTORIES( EventDisplayModule )
-ADD_SHARED_LIBRARY( EventDisplayModule EventDisplayModule/EventDisplayModule.cc )
-TARGET_LINK_LIBRARIES( EventDisplayModule ${PROJECT_NAME}Common )
-
-INSTALL(
-    TARGETS EventDisplayModule
-    LIBRARY DESTINATION lib
-)
+#ADD_MODULE( NoiseAnalysisModule )
+#ADD_MODULE( HitAnalysisModule )
+ADD_MODULE( AsicAnalysisModule )
+ADD_MODULE( SlowControlModule )
+ADD_MODULE( HoughTransformModule )
+ADD_MODULE( EventDisplayModule )
+ADD_MODULE( ParticleIDModule )
 
