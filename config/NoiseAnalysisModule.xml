@@ -6,9 +6,9 @@
         <runcontrol type="DimRunControlClient" name="SDHCALRunControl" />
 
         <eventcollector type="DimEventClient">
-        	<parameter name="collectorName"> sdhcal_event_collector </parameter>
-        	<parameter name="maxQueueSize"> 100 </parameter>
-        	<parameter name="streamerName"> LCIOStreamer </parameter>
+            <parameter name="collectorName"> sdhcal_event_collector </parameter>
+            <parameter name="maxQueueSize"> 100 </parameter>
+            <parameter name="streamerName"> LCIOStreamer </parameter>
         </eventcollector>
 
         <monitorelementcollector name="sdhcal_me_collector"/>
@@ -17,9 +17,16 @@
     <cycle type="TimerCycle" value="10" timeout="5" />
 
     <module type="NoiseAnalysisModule" name="NoiseAnalysisModule">
+
+        <parameter name="ShouldProcessStreamout">  false </parameter>
+          <Streamout>
+              <parameter name="InputCollectionName">  RU_XDAQ </parameter>
+              <parameter name="OutputCollectionName">  DHCALRawHits </parameter>
+              <parameter name="XDaqShift">  24 </parameter>
+          </Streamout>
+
         <parameter name="RawCollectionNames"> DHCALRawHits </parameter>
         <parameter name="RecCollectionNames"> SDHCAL_HIT </parameter>
-
             <RawDataConverters>
                 <converter plugin="SDHCALCaloHitConverter">
                     <electronicsMapping plugin="SDHCALElectronicsMapping">
@@ -46,23 +53,29 @@
         <!-- The following electronicsMapping handle is here only for geometry dependent Histogram Booking -->
         <!-- Ensure the GeometryFileName is the same as in the converter settings -->
         <electronicsMapping plugin="SDHCALElectronicsMapping">
-            <parameter name="CellReferencePosition"> 0 0 0 </parameter>
-            <parameter name="CellSize0"> 10.408 </parameter>
-            <parameter name="CellSize1"> 10.408 </parameter>
-            <parameter name="ReadFromDB"> false </parameter>
-            <parameter name="GeometryFileName"> geometry_SPS_10_2015.xml </parameter>
+           <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+           <parameter name="CellSize0"> 10.408 </parameter>
+           <parameter name="CellSize1"> 10.408 </parameter>
+           <parameter name="ReadFromDB"> true </parameter>
+           <parameter name="Host"> localhost </parameter>
+           <parameter name="User"> antoine </parameter>
+           <parameter name="Password"> plop </parameter>
+           <parameter name="Database"> GEOMETRY </parameter>
+           <parameter name="BeamTest"> SPS_10_2015 </parameter>
+           <parameter name="GeometryFileName"> geometry_SPS_10_2015.xml </parameter>
         </electronicsMapping>
 
-        <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
+        <parameter name="InputCollectionName"> DHCALRawHits </parameter>
         <parameter name="NActiveLayers">  51 </parameter>
         <parameter name="NAsicPerDif">  48 </parameter>
         <parameter name="NChanPerAsic">  64 </parameter>
+        <parameter name="AmplitudeBitRotation"> 3 </parameter>
 
         <!-- spillLength in seconds -->
         <parameter name="SpillLength">  10 </parameter>
         <!-- ClockFrameLength in ns -->
         <parameter name="ClockFrameLength">  200 </parameter>
-        <parameter name="NumberOfEventToSkip">  0 </parameter>
+        <parameter name="NumberOfEventToSkip">  -1 </parameter>
 
 
         <!-- AsicOccupancy -->
@@ -74,23 +87,28 @@
 
        <monitorElement ID="AsicOccupancyChamber"
             name="AsicOccupancyChamber" path="." type="TH1F" title="Asic Occupancy per chamber / integrated time (in s)"
-            nBins="61" min="0" max="60"
+            nBins="60" min="0" max="60"
             resetPolicy="EndOfRun"/>
 
         <monitorElement ID="AsicOccupancyDIF"
             name="AsicOccupancyDIF" path="." type="TH1F" title="Asic Occupancy per DIF / integrated time (in s)"
-            nBins="256" min="0" max="255"
+            nBins="255" min="0" max="255"
             resetPolicy="EndOfRun"/>
 
 
         <!-- Timing -->
-        <monitorElement ID="TimeDiffTriggerToSpill"
-                name="TimeDiffTriggerToSpill" path="." type="TH1F" title="Time (s) between start time of new spill and start time of last trigger of previous Spill"
+        <monitorElement ID="TimeDiffSpill"
+                name="TimeDiffSpill" path="." type="TH1F" title="Time (s) between two start time of spill"
                 nBins="500" min="0" max="100"
                 resetPolicy="EndOfRun"/>
 
-        <monitorElement ID="TimeDiffSpill"
-                name="TimeDiffSpill" path="." type="TH1F" title="Time (s) between two start time of spill"
+        <monitorElement ID="TimeDiffTrigger"
+                name="TimeDiffTrigger" path="." type="TH1F" title="Time (s) between two start time of trigger"
+                nBins="500" min="0" max="100E-2"
+                resetPolicy="EndOfRun"/>
+
+        <monitorElement ID="TimeDiffTriggerToSpill"
+                name="TimeDiffTriggerToSpill" path="." type="TH1F" title="Time (s) between start time of new spill and start time of last trigger of previous Spill"
                 nBins="500" min="0" max="100"
                 resetPolicy="EndOfRun"/>
 
@@ -99,16 +117,24 @@
                 nBins="100" min="0" max="10"
                 resetPolicy="EndOfRun"/>
 
+        <monitorElement ID="TriggerPerSpill"
+                name="TriggerPerSpill" path="." type="TH1F" title="Number of Trigger per Spill"
+                nBins="100" min="0" max="10"
+                resetPolicy="EndOfRun"/>
+
+        <monitorElement ID="TriggerLastSpill"
+                name="TriggerLastSpill" path="." type="string" title="Number of Trigger in last Spill"/>
+
         <monitorElement ID="AcquisitionTime"
                 name="AcquisitionTime" path="." type="TH1F" title="Acquisition Time"
-                nBins="2000" min="0" max="0.5"
+                nBins="2000" min="0" max="0.1"
                 resetPolicy="EndOfRun"/>
 
 
         <!-- Raw Hit Study -->
         <monitorElement ID="HitFrequencyMap"
             name="HitFrequencyMap" path="." type="TH2F" title="HitMap DIF vs Asic"
-            nBinsX="255" minX="0.1" maxX="255.1" nBinsY="48" minY="0.1" maxY="48.1"
+            nBinsX="255" minX="0" maxX="255" nBinsY="48" minY="0" maxY="48"
             drawOption="colz" resetPolicy="EndOfRun"/>
 
         <!-- Raw Hit Study / Per Layer-->
@@ -139,13 +165,13 @@
             resetPolicy="EndOfRun"/>
 
         <!-- 3072 = 48*64 = Asic * Pad -->
-		<monitorElement ID="AsicHits1"
-            name="AsicHits1" path="." type="TH1F" title="Hits per pad and asic threshold 1+2+3"
+        <monitorElement ID="AsicHits1"
+            name="AsicHits1" path="." type="TH1F" title="Hits per pad and asic threshold 1"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
         <monitorElement ID="AsicHits2"
-            name="AsicHits2" path="." type="TH1F" title="Hits per pad and asic threshold 2+3"
+            name="AsicHits2" path="." type="TH1F" title="Hits per pad and asic threshold 2"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
@@ -156,12 +182,12 @@
 
         <!-- Asic Frequency = asichit/integratedTime -->
         <monitorElement ID="AsicFrequency1"
-            name="AsicFrequency1" path="." type="TH1F" title="Frequency per pad and asic threshold 1+2+3"
+            name="AsicFrequency1" path="." type="TH1F" title="Frequency per pad and asic threshold 1"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
         <monitorElement ID="AsicFrequency2"
-            name="AsicFrequency2" path="." type="TH1F" title="Frequency per pad and asic threshold 2+3"
+            name="AsicFrequency2" path="." type="TH1F" title="Frequency per pad and asic threshold 2"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
