@@ -37,11 +37,9 @@
 #include "EVENT/CalorimeterHit.h"
 
 // -- calo software headers
-#include "CaloObject/Asic.h"
 #include "Algorithm/Cluster.h"
 #include "CaloObject/CaloHit.h"
 #include "Algorithm/ClusteringHelper.h"
-#include "Algorithm/AsicKeyFinder.h"
 
 // -- std headers
 #include <string>
@@ -55,9 +53,7 @@ namespace caloobject
 {
 typedef std::map<unsigned int, std::vector<CaloHit *> > CaloHitMap;
 typedef std::vector<CaloHit *> CaloHitList;
-typedef std::vector<CaloLayer *> CaloLayerList;
 typedef std::vector<CaloCluster *> CaloClusterList;
-typedef std::map<unsigned int, SDHCAL_Asic*> SDHCALAsicMap;
 }
 
 namespace dqm_sdhcal
@@ -78,8 +74,7 @@ public:
 
 	dqm4hep::StatusCode userInitModule();
 	dqm4hep::StatusCode userReadSettings(const dqm4hep::TiXmlHandle xmlHandle);
-	dqm4hep::StatusCode processNoisyEvent(EVENT::LCEvent *pLCEvent);
-	dqm4hep::StatusCode processPhysicalEvent(EVENT::LCEvent *pLCEvent);
+	dqm4hep::StatusCode processEvent(EVENT::LCEvent *pLCEvent);
 
 	dqm4hep::StatusCode startOfCycle();
 	dqm4hep::StatusCode endOfCycle();
@@ -88,26 +83,9 @@ public:
 	dqm4hep::StatusCode endModule();
 
 private:
-	/** Find the dif id for the given key
-	 */
-	int findDifID(int key);
-
-	/** Find the asic id for the given key
-	 */
-	int findAsicID(int key);
-
 	/** Clear the contents related to one event
 	 */
 	void clearEventContents(caloobject::CaloHitList &hits, caloobject::CaloClusterList &clusters);
-
-	/** Clear the contents related
-	 */
-	void clearContents();
-
-	/** Create the asic and layer contents needed
-	 *  to extract the asic efficiency and multiplicity
-	 */
-	void createAsicAndLayerContents();
 
 	/** Reset the monitor element tuned on cycle
 	 *  Called at end of cycle before filling again
@@ -116,30 +94,18 @@ private:
 	void resetElements();
 
 private:
-
-	// algorithm contents
-	caloobject::CaloLayerList                m_caloLayerList;
-	caloobject::SDHCALAsicMap                m_asicMap;
-
 	// algorithms
 	algorithm::Cluster                       m_clusteringAlgorithm;
 	algorithm::ClusteringHelper              m_clusteringHelper;
-	algorithm::AsicKeyFinder                 m_asicKeyFinderAlgorithm;
 
 	// algorithm parameters
 	algorithm::clusterParameterSetting           m_clusteringSettings;
 	algorithm::ClusteringHelperParameterSetting  m_clusteringHelperSettings;
-	algorithm::AsicKeyFinderParameterSetting     m_asicKeyFinderSettings;
-	caloobject::LayerParameterSetting            m_layerSettings;
 
 	// module parameters
 	std::string 														 m_moduleLogStr;
 	std::string                              m_inputCollectionName;
 	std::string                              m_cellIDDecoderString;
-	dqm4hep::IntVector                       m_asicTable;
-	dqm4hep::IntVector                       m_difList;
-	unsigned int                             m_nAsicX;
-	unsigned int                             m_nAsicY;
 	unsigned int                             m_nActiveLayers;
 	unsigned int                             m_firstLayerCut;
 	unsigned int                             m_lastLayerCut;
