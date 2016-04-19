@@ -1,0 +1,98 @@
+<dqm4hep>
+
+    <archiver open="false" directory="/tmp" />
+    
+    <network>
+        <runcontrol type="DimRunControlClient" name="DQMRunControl" />
+        
+        <eventcollector type="DimEventClient">
+        	<parameter name="collectorName"> sdhcal_event_collector </parameter>
+        	<parameter name="maxQueueSize"> 100 </parameter>
+        	<parameter name="streamerName"> LCIOStreamer </parameter>
+        </eventcollector>
+        
+        <monitorelementcollector name="sdhcal_me_collector"/>
+    </network>
+    
+    <cycle type="TimerCycle" value="2" timeout="5" />
+
+    <module type="ParticleIDModule" name="SDHCALParticleID">
+        
+        <Trivent>
+        
+        	<parameter name="RawCollectionNames"> DHCALRawHits </parameter>
+        	<parameter name="RecCollectionNames"> SDHCAL_HIT </parameter>
+        	
+        	<!-- Lookup in the same order as RawCollectionNames and RecCollectionNames -->
+        	<RawDataConverters>
+        	
+        		<converter plugin="SDHCALCaloHitConverter">
+        		
+        			<electronicsMapping plugin="SDHCALElectronicsMapping">
+        			
+        				<parameter name="CellReferencePosition"> 0 0 0 </parameter>
+        				<parameter name="CellSize0"> 10.408f </parameter>
+        				<parameter name="CellSize1"> 10.408f </parameter>
+        				
+        				<parameter name="ReadFromDB"> false </parameter>
+        				
+        				<!-- <parameter name="Host"> localhost </parameter>
+        				<parameter name="User"> rete </parameter>
+        				<parameter name="Password">  </parameter>
+        				<parameter name="Database"> GEOMETRY </parameter>
+        				<parameter name="BeamTest"> SPS_08_2012 </parameter> -->
+
+        				<!-- <parameter name="GeometryFileName"> /home/rete/soft/DQMSDHCAL/config/geometry_SPS_08_2012.xml </parameter> -->
+        				<parameter name="GeometryFileName"> /home/rete/soft/DQMSDHCAL/config/geometry_PS_06_2015.xml </parameter>
+
+        			</electronicsMapping>
+        			
+        			<parameter name="AmplitudeBitRotation"> 3 </parameter>
+        			<parameter name="EncodeDifAsicChannel"> true </parameter>
+        			<parameter name="IJKEncoding"> I J K-1 </parameter>
+        			<parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter>
+        			<parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+        		
+        		</converter>
+        	</RawDataConverters>
+        	
+        	<parameter name="TimeWindow"> 2 </parameter>
+        	<parameter name="MinPeakSize"> 10 </parameter>
+        	<parameter name="MinElements"> 10 </parameter>
+        	<parameter name="MaxElements"> 100000 </parameter>
+        	
+        </Trivent>
+        
+        <eventClassifier plugin="SDHCALEventClassifier">
+        
+        	<parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
+        	<parameter name="CellIDDecoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+        	<parameter name="NoiseMinNHit"> 10 </parameter>
+        	<parameter name="ShowerMinTransverseRatio"> 0.01 </parameter>
+        	
+        </eventClassifier>
+        
+        <parameter name="InputCollectionNames"> SDHCAL_HIT </parameter>
+        
+		<monitorElement ID="ParticleIDSummary"
+			name="ParticleIDSummary" path="/" type="string" value=""
+			title="Particle identification summary" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="NHitTight"
+			name="NHit" path="/NHits" type="TH1F"
+			nBins="201" min="0" max="200" 
+			title="Number of hits" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="NHitNormal"
+			name="NHit" path="/NHits" type="TH1F"
+			nBins="501" min="0" max="500" 
+			title="Number of hits" resetPolicy="EndOfRun"/>
+			
+		<monitorElement ID="NHitWide"
+			name="NHit" path="/NHits" type="TH1F"
+			nBins="150" min="0" max="1500"
+			title="Number of hits" resetPolicy="EndOfRun"/>
+        
+    </module>
+
+</dqm4hep>
