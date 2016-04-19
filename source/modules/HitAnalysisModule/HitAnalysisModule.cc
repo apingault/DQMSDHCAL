@@ -35,21 +35,9 @@
 #include "dqm4hep/DQMModuleApi.h"
 #include "dqm4hep/DQMPlugin.h"
 
-// -- std headers
-// #include <iostream>
-// #include <fstream>
-
 //-- lcio headers
 #include <EVENT/LCCollection.h>
-// #include <EVENT/MCParticle.h>
-// #include <IMPL/CalorimeterHitImpl.h>
-// #include <IMPL/LCCollectionVec.h>
-// #include <IMPL/LCFlagImpl.h>
-// #include <IMPL/LCRelationImpl.h>
-// #include <EVENT/LCParameters.h>
 #include <UTIL/CellIDDecoder.h>
-
-// #include "streamlog/streamlog.h"
 
 using namespace dqm4hep;
 
@@ -72,25 +60,11 @@ HitAnalysisModule::~HitAnalysisModule()
 }
 
 //-------------------------------------------------------------------------------------------------
-
 dqm4hep::StatusCode HitAnalysisModule::userReadSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
 	m_nActiveLayers = 48;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 	                        "NActiveLayers", m_nActiveLayers));
-
-	m_nAsicX = 12;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "NAsicX", m_nAsicX));
-
-	m_nAsicY = 12;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "NAsicY", m_nAsicY));
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
-	"AsicTable", m_asicTable));
-
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
-	"DifList", m_difList, [] (const IntVector & vec) { return ! vec.empty(); }));
 
 	m_cellIDDecoderString = "M:3,S-1:3,I:9,J:9,K-1:6";
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
@@ -125,57 +99,6 @@ dqm4hep::StatusCode HitAnalysisModule::userReadSettings(const dqm4hep::TiXmlHand
 	m_clusteringHelperSettings.transversalDistance = 200.f;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 	                        "ClusteringHelper.TransverseDistanceForIsolation", m_clusteringHelperSettings.transversalDistance));
-
-
-	/*-----------------------------------------------------*/
-	m_layerSettings.edgeX_min = 0.f;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "Layer.EdgeX_Min", m_layerSettings.edgeX_min));
-
-	m_layerSettings.edgeX_max = 1000.f;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "Layer.EdgeX_Max", m_layerSettings.edgeX_max));
-
-	m_layerSettings.edgeY_min = 0.f;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "Layer.EdgeY_Min", m_layerSettings.edgeY_min));
-
-	m_layerSettings.edgeY_max = 1000.f;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "Layer.EdgeY_Max", m_layerSettings.edgeY_max));
-
-	/*-----------------------------------------------------*/
-	const StatusCode statusCode = dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
-	                              "AsicKeyFinder.KeyFactor", m_asicKeyFinderSettings.keyFactors);
-
-	if (dqm4hep::STATUS_CODE_NOT_FOUND == statusCode)
-		m_asicKeyFinderSettings.keyFactors = { 1, 12, 1000 };
-	else if (dqm4hep::STATUS_CODE_SUCCESS != statusCode)
-		return statusCode;
-
-	m_asicKeyFinderSettings.nPadX = 96;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "AsicKeyFinder.NPadX", m_asicKeyFinderSettings.nPadX));
-
-	m_asicKeyFinderSettings.nPadY = 96;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "AsicKeyFinder.NPadY", m_asicKeyFinderSettings.nPadY));
-
-	m_asicKeyFinderSettings.asicNPad = 8;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "AsicKeyFinder.AsicNPad", m_asicKeyFinderSettings.asicNPad));
-
-	m_asicKeyFinderSettings.layerGap = 26.131;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "AsicKeyFinder.LayerGap", m_asicKeyFinderSettings.layerGap));
-
-	m_asicKeyFinderSettings.padSize = 10.408;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "AsicKeyFinder.PadSize", m_asicKeyFinderSettings.padSize));
-
-	m_asicKeyFinderSettings.printDebug = false;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "AsicKeyFinder.PrintDebug", m_asicKeyFinderSettings.printDebug));
 
 	/*-----------------------------------------------------*/
 	// Number of hits in full detector
@@ -237,27 +160,20 @@ dqm4hep::StatusCode HitAnalysisModule::userInitModule()
 	// initialize algorithms
 	m_clusteringAlgorithm.SetClusterParameterSetting(m_clusteringSettings);
 	m_clusteringHelper.SetClusteringHelperParameterSetting(m_clusteringHelperSettings);
-	m_asicKeyFinderAlgorithm.SetAsicKeyFinderParameterSetting(m_asicKeyFinderSettings);
 	return STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode HitAnalysisModule::processNoisyEvent(EVENT::LCEvent *pLCEvent)
-{
-	return dqm4hep::STATUS_CODE_SUCCESS;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-dqm4hep::StatusCode HitAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLCEvent)
+dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
 	LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << "Processing physics event no " << pLCEvent->getEventNumber() );
 	int nHitProcessedEvent = 0;
+
 	// content management
 	caloobject::CaloHitMap caloHitMap;
-	std::vector< caloobject::CaloHit *> hits;
-	std::vector< caloobject::CaloCluster *> clusters;
+	caloobject::CaloHitList hits;
+	caloobject::CaloClusterList clusters;
 
 	CLHEP::Hep3Vector globalHitShift(0, 0, 0);
 
@@ -285,6 +201,13 @@ dqm4hep::StatusCode HitAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLCE
 			cellID[1] = cellIDDecoder(pCaloHit)["J"];
 			cellID[2] = cellIDDecoder(pCaloHit)["K-1"];
 
+			if ( cellID[2] >= m_nActiveLayers )
+			{
+				LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong number of layer in your configuration file!");
+				LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Found a hit in layer " << cellID[2] << " - Last layer in xml configuration file is " << m_nActiveLayers);
+				continue;
+			}
+
 			CLHEP::Hep3Vector positionVector(
 			  pCaloHit->getPosition()[0],
 			  pCaloHit->getPosition()[1],
@@ -301,7 +224,7 @@ dqm4hep::StatusCode HitAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLCE
 			hits.push_back(pWrapperHit);
 		}
 
-		// LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << "Creating intra layer clusters");
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << "Creating intra layer clusters");
 
 		for (caloobject::CaloHitMap::iterator iter = caloHitMap.begin(), endIter = caloHitMap.end() ;
 		     iter != endIter ; ++iter)
@@ -318,19 +241,15 @@ dqm4hep::StatusCode HitAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLCE
 		int nHit2Layer = 0;
 		int nMipLayer  = 0;
 
-		for (std::vector<caloobject::CaloCluster*>::const_iterator clusterIter = clusters.begin(), clusterEndIter = clusters.end(); clusterEndIter != clusterIter ; ++clusterIter)
+		for (caloobject::CaloClusterList::const_iterator clusterIter = clusters.begin(), clusterEndIter = clusters.end(); clusterEndIter != clusterIter ; ++clusterIter)
 		{
 			unsigned int nHitProcessed = 0; 										// Number of hit processed in the current cluster
 
 			int layerId = (*clusterIter)->getLayerID();
 			if (layerId >= m_nActiveLayers)
-			{
-				LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong number of layer in your configuration file!");
-				LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Found a hit in layer " << layerId << " - Last layer in xml configuration file is " << m_nActiveLayers);
 				continue;
-			}
 
-			for (std::vector<caloobject::CaloHit*>::const_iterator hitIter = (*clusterIter)->getHits().begin(), hitEndIter = (*clusterIter)->getHits().end(); hitEndIter != hitIter; ++hitIter)
+			for (caloobject::CaloHitList::const_iterator hitIter = (*clusterIter)->getHits().begin(), hitEndIter = (*clusterIter)->getHits().end(); hitEndIter != hitIter; ++hitIter)
 			{
 				uint32_t hitWeight = 0;
 				int hitThreshold = (*hitIter)->getEnergy();
@@ -351,7 +270,7 @@ dqm4hep::StatusCode HitAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLCE
 				// if (hitEndIter == hitIter + 1)
 				// {
 				// 	int numberOfHit = (*clusterIter)->getHits().size(); // Number of hits in the current cluster
-				// 	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Processed : " << nHitProcessed << "/" << numberOfHit << " hits in current cluster of layer " << layerId << "\t nHitTot : " << nHit0Layer + nHit1Layer + nHit2Layer  << "\t nHitLayer0 : " << nHit0Layer << "\t nHitLayer1 : " << nHit1Layer << "\t nHitLayer2 : " << nHit2Layer);
+				// 	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Processed : " << nHitProcessed << "/" << numberOfHit << " hits in current cluster of layer " << layerId << "\t nHitTotLayer : " << nHit0Layer + nHit1Layer + nHit2Layer  << "\t nHitLayer0 : " << nHit0Layer << "\t nHitLayer1 : " << nHit1Layer << "\t nHitLayer2 : " << nHit2Layer);
 				// }
 			}
 
@@ -368,25 +287,31 @@ dqm4hep::StatusCode HitAnalysisModule::processPhysicalEvent(EVENT::LCEvent *pLCE
 			// 	{
 			// 		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Adding hits in layer : " << i << "\t hits0 : " << nHit0Layer << "\t hits1 : " << nHit1Layer<< "\t hits2 : " << nHit2Layer);
 
-			// Stack hits from multiple clusters in the same layer
+			// Stack hits from multiple clusters in the same layer before filling histograms
+			caloobject::CaloClusterList::const_iterator nextClusterIter;
 			if (clusterEndIter != clusterIter + 1)
-			{
-				auto nextClusterIter = std::next(clusterIter, 1);
-				if ( (*nextClusterIter)->getLayerID() != layerId)
-				{
-					m_layerElementMap[layerId].m_pNHit0Layer->get<TH1>()->Fill(nHit0Layer);
-					m_layerElementMap[layerId].m_pNHit1Layer->get<TH1>()->Fill(nHit1Layer);
-					m_layerElementMap[layerId].m_pNHit2Layer->get<TH1>()->Fill(nHit2Layer);
-					m_layerElementMap[layerId].m_pNHitTotLayer->get<TH1>()->Fill(nHit0Layer + nHit1Layer + nHit2Layer);
+				nextClusterIter = std::next(clusterIter, 1);
+			else
+				nextClusterIter = clusterIter;
 
-					nHit0 += nHit0Layer;
-					nHit1 += nHit1Layer;
-					nHit2 += nHit2Layer;
-					nMip += nMipLayer;
-					nHit0Layer = 0;
-					nHit1Layer = 0;
-					nHit2Layer = 0;
-				}
+			if ( (*nextClusterIter)->getLayerID() != layerId || nextClusterIter == clusterIter)
+			{
+				if (0 != nHit0Layer)
+					m_layerElementMap[layerId].m_pNHit0Layer->get<TH1>()->Fill(nHit0Layer);
+				if (0 != nHit1Layer)
+					m_layerElementMap[layerId].m_pNHit1Layer->get<TH1>()->Fill(nHit1Layer);
+				if (0 != nHit2Layer)
+					m_layerElementMap[layerId].m_pNHit2Layer->get<TH1>()->Fill(nHit2Layer);
+
+				m_layerElementMap[layerId].m_pNHitTotLayer->get<TH1>()->Fill(nHit0Layer + nHit1Layer + nHit2Layer);
+
+				nHit0 += nHit0Layer;
+				nHit1 += nHit1Layer;
+				nHit2 += nHit2Layer;
+				nMip += nMipLayer;
+				nHit0Layer = 0;
+				nHit1Layer = 0;
+				nHit2Layer = 0;
 			}
 			// 	}
 			// }
@@ -430,7 +355,6 @@ dqm4hep::StatusCode HitAnalysisModule::startOfCycle()
 
 dqm4hep::StatusCode HitAnalysisModule::endOfCycle()
 {
-
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -438,8 +362,6 @@ dqm4hep::StatusCode HitAnalysisModule::endOfCycle()
 
 dqm4hep::StatusCode HitAnalysisModule::startOfRun(DQMRun * pRun)
 {
-	this->createAsicAndLayerContents();
-
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -447,7 +369,6 @@ dqm4hep::StatusCode HitAnalysisModule::startOfRun(DQMRun * pRun)
 
 dqm4hep::StatusCode HitAnalysisModule::endOfRun(DQMRun * pRun)
 {
-	this->clearContents();
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -467,63 +388,6 @@ void HitAnalysisModule::clearEventContents(caloobject::CaloHitList & hits, caloo
 
 	hits.clear();
 	clusters.clear();
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void HitAnalysisModule::createAsicAndLayerContents()
-{
-	// build layers and asics
-	for (unsigned int l = 0 ; l < m_nActiveLayers ; ++l)
-	{
-		caloobject::CaloLayer *pLayer = new caloobject::CaloLayer(l);
-
-		pLayer->setLayerParameterSetting(m_layerSettings);
-		m_caloLayerList.push_back(pLayer);
-
-		for (unsigned int ax = 0 ; ax < m_nAsicX ; ax++)
-		{
-			for (unsigned int ay = 0 ; ay < m_nAsicY ; ay++)
-			{
-				int key = m_asicKeyFinderAlgorithm.BuildAsicKey(ax, ay, l);
-
-				caloobject::SDHCAL_Asic *pAsic = new caloobject::SDHCAL_Asic(key);
-				pAsic->setASIC_ID( this->findDifID(key) , this->findAsicID(key) );
-
-				m_asicMap.insert(caloobject::SDHCALAsicMap::value_type( key, pAsic ));
-			}
-		}
-	}
-}
-
-//-------------------------------------------------------------------------------------------------
-
-void HitAnalysisModule::clearContents()
-{
-	for (caloobject::CaloLayerList::iterator iter = m_caloLayerList.begin(), endIter = m_caloLayerList.end() ;
-	     endIter != iter ; ++iter)
-		delete *iter;
-
-	for (caloobject::SDHCALAsicMap::iterator iter = m_asicMap.begin(), endIter = m_asicMap.end() ;
-	     endIter != iter ; ++iter)
-		delete iter->second;
-
-	m_caloLayerList.clear();
-	m_asicMap.clear();
-}
-
-//-------------------------------------------------------------------------------------------------
-
-int HitAnalysisModule::findDifID(int key)
-{
-	return m_difList.at( key / 1000 * 3 + 2 - key % 1000 % 12 / 4 );
-}
-
-//-------------------------------------------------------------------------------------------------
-
-int HitAnalysisModule::findAsicID(int key)
-{
-	return m_asicTable.at( 4 * (key % 1000 / 12) + key % 1000 % 12 % 4 );
 }
 
 //-------------------------------------------------------------------------------------------------
