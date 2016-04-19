@@ -81,10 +81,6 @@ dqm4hep::StatusCode EventDisplayModule::userReadSettings(const dqm4hep::TiXmlHan
 
 	const unsigned int nCollections = m_inputCaloHitCollections.size();
 
-	m_pEventDisplay3D = NULL;
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"EventDisplay3D", m_pEventDisplay3D));
-
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
 			"ColorWeightList", m_colorWeightList, [&] (const dqm4hep::IntVector &vec) { return vec.size() == nCollections; }));
 
@@ -100,33 +96,77 @@ dqm4hep::StatusCode EventDisplayModule::userReadSettings(const dqm4hep::TiXmlHan
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"MarkerStyle3D", markerStyle3D));
 
-	m_pEventDisplay3D->get<TH3>()->SetMarkerColor(markerColor3D);
-	m_pEventDisplay3D->get<TH3>()->SetMarkerSize(markerSize3D);
-	m_pEventDisplay3D->get<TH3>()->SetMarkerStyle(markerStyle3D);
+	/*------ Monitor element booking ------*/
+	std::vector<std::string> directories =
+		{ "Noise", "CosmicMuons", "BeamMuons",
+		  "ChargedHadrons", "NeutralHadrons", "EmShowers" ,
+		  "Others"};
 
-	m_pLastProfileZX = NULL;
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"LastProfileZX", m_pLastProfileZX));
+	const std::string baseDirectory("/");
+//	dqm4hep::DQMModuleApi::mkdir(this, baseDirectory);
 
-	m_pLastProfileZY = NULL;
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"LastProfileZY", m_pLastProfileZY));
+	for(auto iter = directories.begin(), endIter = directories.end();
+			endIter != iter ; ++iter)
+	{
+		// enter global directory
+		dqm4hep::DQMModuleApi::cd(this, baseDirectory);
 
-	m_pLastProfileXY = NULL;
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"LastProfileXY", m_pLastProfileXY));
+		// create and enter per particle directory
+		dqm4hep::DQMModuleApi::mkdir(this, *iter);
+		dqm4hep::DQMModuleApi::cd(this, *iter);
 
-	m_pCycleStackedProfileZX = NULL;
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"CycleStackedProfileZX", m_pCycleStackedProfileZX));
+		dqm4hep::DQMMonitorElementPtrList list;
+		DisplayElements elements;
 
-	m_pCycleStackedProfileZY = NULL;
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"CycleStackedProfileZY", m_pCycleStackedProfileZY));
+		elements.m_pEventDisplay3D = NULL;
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"EventDisplay3D", elements.m_pEventDisplay3D));
+		list.push_back(elements.m_pEventDisplay3D);
 
-	m_pCycleStackedProfileXY = NULL;
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"CycleStackedProfileXY", m_pCycleStackedProfileXY));
+		elements.m_pEventDisplay3D->get<TH3>()->SetMarkerColor(markerColor3D);
+		elements.m_pEventDisplay3D->get<TH3>()->SetMarkerSize(markerSize3D);
+		elements.m_pEventDisplay3D->get<TH3>()->SetMarkerStyle(markerStyle3D);
+
+		// create and enter profiles directory
+		dqm4hep::DQMModuleApi::mkdir(this, "Profiles");
+		dqm4hep::DQMModuleApi::cd(this, "Profiles");
+
+		elements.m_pLastProfileZX = NULL;
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"LastProfileZX", elements.m_pLastProfileZX));
+		list.push_back(elements.m_pLastProfileZX);
+
+		elements.m_pLastProfileZY = NULL;
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"LastProfileZY", elements.m_pLastProfileZY));
+		list.push_back(elements.m_pLastProfileZY);
+
+		elements.m_pLastProfileXY = NULL;
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"LastProfileXY", elements.m_pLastProfileXY));
+		list.push_back(elements.m_pLastProfileXY);
+
+		elements.m_pCycleStackedProfileZX = NULL;
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"CycleStackedProfileZX", elements.m_pCycleStackedProfileZX));
+		list.push_back(elements.m_pCycleStackedProfileZX);
+
+		elements.m_pCycleStackedProfileZY = NULL;
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"CycleStackedProfileZY", elements.m_pCycleStackedProfileZY));
+		list.push_back(elements.m_pCycleStackedProfileZY);
+
+		elements.m_pCycleStackedProfileXY = NULL;
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+				"CycleStackedProfileXY", elements.m_pCycleStackedProfileXY));
+		list.push_back(elements.m_pCycleStackedProfileXY);
+
+		for(auto lIter = list.begin(), endLIter = list.end() ;
+				endLIter != lIter ; ++lIter)
+			(*lIter)->setTitle( (*lIter)->getTitle() + " [" + *iter + "]" );
+
+		m_displayElementsMap[ *iter ] = elements;
+	}
 
 	/*-----------------------------------------------------*/
 
@@ -160,17 +200,64 @@ dqm4hep::StatusCode EventDisplayModule::userReadSettings(const dqm4hep::TiXmlHan
 
 dqm4hep::StatusCode EventDisplayModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "Processing physics event no " << pLCEvent->getEventNumber() );
+
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventClassifier->processEvent(pLCEvent));
 
 	if( m_pEventClassifier->isNoisyEvent() )
+	{
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillElements(pLCEvent, m_displayElementsMap["Noise"]));
 		return dqm4hep::STATUS_CODE_SUCCESS;
+	}
 
-	m_pEventDisplay3D->reset();
-	m_pLastProfileZX->reset();
-	m_pLastProfileZY->reset();
-	m_pLastProfileXY->reset();
+	if( m_pEventClassifier->getEventType() == EventClassifier::COSMIC_MUON_EVENT )
+	{
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillElements(pLCEvent, m_displayElementsMap["CosmicMuons"]));
+		return dqm4hep::STATUS_CODE_SUCCESS;
+	}
 
-	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "Processing physics event no " << pLCEvent->getEventNumber() );
+	if( m_pEventClassifier->getEventType() == EventClassifier::BEAM_MUON_EVENT )
+	{
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillElements(pLCEvent, m_displayElementsMap["BeamMuons"]));
+		return dqm4hep::STATUS_CODE_SUCCESS;
+	}
+
+	if( m_pEventClassifier->getEventType() == EventClassifier::CHARGED_HAD_SHOWER_EVENT )
+	{
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillElements(pLCEvent, m_displayElementsMap["ChargedHadrons"]));
+		return dqm4hep::STATUS_CODE_SUCCESS;
+	}
+
+	if( m_pEventClassifier->getEventType() == EventClassifier::NEUTRAL_HAD_SHOWER_EVENT )
+	{
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillElements(pLCEvent, m_displayElementsMap["NeutralHadrons"]));
+		return dqm4hep::STATUS_CODE_SUCCESS;
+	}
+
+	// both neutral and charged EM showers
+	if( m_pEventClassifier->getEventType() == EventClassifier::NEUTRAL_EM_SHOWER_EVENT
+	 || m_pEventClassifier->getEventType() == EventClassifier::CHARGED_EM_SHOWER_EVENT )
+	{
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillElements(pLCEvent, m_displayElementsMap["EmShowers"]));
+		return dqm4hep::STATUS_CODE_SUCCESS;
+	}
+
+	// fill what remains ...
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillElements(pLCEvent, m_displayElementsMap["Others"]));
+	return dqm4hep::STATUS_CODE_SUCCESS;
+
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode EventDisplayModule::fillElements(EVENT::LCEvent *pLCEvent, DisplayElements &elements)
+{
+	elements.m_pEventDisplay3D->reset();
+	elements.m_pLastProfileZX->reset();
+	elements.m_pLastProfileZY->reset();
+	elements.m_pLastProfileXY->reset();
 
 	const unsigned int nCollections = m_inputCaloHitCollections.size();
 
@@ -200,15 +287,15 @@ dqm4hep::StatusCode EventDisplayModule::processEvent(EVENT::LCEvent *pLCEvent)
 					const float y(pCaloHit->getPosition()[1]);
 					const float z(pCaloHit->getPosition()[2]);
 
-					m_pEventDisplay3D->get<TH3>()->Fill(z, x, y, colorWeight);
+					elements.m_pEventDisplay3D->get<TH3>()->Fill(z, x, y, colorWeight);
 
-					m_pLastProfileZX->get<TH2>()->Fill(z, x);
-					m_pLastProfileZY->get<TH2>()->Fill(z, y);
-					m_pLastProfileXY->get<TH2>()->Fill(x, y);
+					elements.m_pLastProfileZX->get<TH2>()->Fill(z, x);
+					elements.m_pLastProfileZY->get<TH2>()->Fill(z, y);
+					elements.m_pLastProfileXY->get<TH2>()->Fill(x, y);
 
-					m_pCycleStackedProfileZX->get<TH2>()->Fill(z, x);
-					m_pCycleStackedProfileZY->get<TH2>()->Fill(z, y);
-					m_pCycleStackedProfileXY->get<TH2>()->Fill(x, y);
+					elements.m_pCycleStackedProfileZX->get<TH2>()->Fill(z, x);
+					elements.m_pCycleStackedProfileZY->get<TH2>()->Fill(z, y);
+					elements.m_pCycleStackedProfileXY->get<TH2>()->Fill(x, y);
 				}
 
 			}

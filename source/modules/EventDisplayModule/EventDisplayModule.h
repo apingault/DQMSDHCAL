@@ -47,6 +47,22 @@ class EventClassifier;
  */ 
 class EventDisplayModule : public DQMTriventModule
 {
+private:
+	struct DisplayElements
+	{
+		dqm4hep::DQMMonitorElementPtr         m_pEventDisplay3D;
+
+		dqm4hep::DQMMonitorElementPtr         m_pLastProfileZX;
+		dqm4hep::DQMMonitorElementPtr         m_pLastProfileZY;
+		dqm4hep::DQMMonitorElementPtr         m_pLastProfileXY;
+
+		dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileZX;
+		dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileZY;
+		dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileXY;
+	};
+
+	typedef std::map<std::string, DisplayElements> DisplayElementsMap;
+
 public:
 	/** Constructor
 	 */
@@ -67,20 +83,26 @@ public:
 	dqm4hep::StatusCode endModule();
 
 private:
+	/**
+	 */
+	dqm4hep::StatusCode fillElements(EVENT::LCEvent *pLCEvent, DisplayElements &elements);
+
+private:
 	dqm4hep::StringVector                 m_inputCaloHitCollections;
 	dqm4hep::IntVector                    m_colorWeightList;
 
 	EventClassifier                      *m_pEventClassifier;
+	DisplayElementsMap                    m_displayElementsMap;
 
-	dqm4hep::DQMMonitorElementPtr         m_pEventDisplay3D;
+//	dqm4hep::DQMMonitorElementPtr         m_pEventDisplay3D;
 
-	dqm4hep::DQMMonitorElementPtr         m_pLastProfileZX;
-	dqm4hep::DQMMonitorElementPtr         m_pLastProfileZY;
-	dqm4hep::DQMMonitorElementPtr         m_pLastProfileXY;
-
-	dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileZX;
-	dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileZY;
-	dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileXY;
+//	dqm4hep::DQMMonitorElementPtr         m_pLastProfileZX;
+//	dqm4hep::DQMMonitorElementPtr         m_pLastProfileZY;
+//	dqm4hep::DQMMonitorElementPtr         m_pLastProfileXY;
+//
+//	dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileZX;
+//	dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileZY;
+//	dqm4hep::DQMMonitorElementPtr         m_pCycleStackedProfileXY;
 }; 
 
 } 
