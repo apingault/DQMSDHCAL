@@ -35,7 +35,18 @@
 // -- lcio headers
 #include "EVENT/LCEvent.h"
 
+// -- calo software headers
+#include "CaloObject/Asic.h"
+#include "CaloObject/CaloHit.h"
+#include "Algorithm/Tracking.h"
+#include "Algorithm/Cluster.h"
+#include "Algorithm/ClusteringHelper.h"
+#include "Algorithm/InteractionFinder.h"
+#include "Algorithm/Efficiency.h"
+#include "Algorithm/AsicKeyFinder.h"
+
 namespace dqm4hep { class TiXmlHandle; }
+namespace caloobject { class CaloTrack; class CaloHit; class CaloCluster; }
 
 namespace dqm_sdhcal
 {
@@ -54,9 +65,11 @@ public:
 		GROUNDING_NOISE_EVENT,
 		BEAM_MUON_EVENT,
 		COSMIC_MUON_EVENT,
-		SHOWER_EVENT,
-		ELECTRON_SHOWER_EVENT,
-		HADRONIC_SHOWER_EVENT
+		SHOWER_EVENT,           // global tag if not one of the following tags
+		NEUTRAL_EM_SHOWER_EVENT,
+		CHARGED_EM_SHOWER_EVENT,
+		NEUTRAL_HAD_SHOWER_EVENT,
+		CHARGED_HAD_SHOWER_EVENT
 	};
 
 public:
@@ -74,36 +87,40 @@ public:
 
 	/** Whether the event has been classified as a noisy one.
 	 *  Could be one of the following event type
-	 *   - SQUARE_NOISE_EVENT,
-	 *	 - GROUNDING_NOISE_EVENT,
+	 *   - SQUARE_NOISE_EVENT
+	 *	 - GROUNDING_NOISE_EVENT
 	 *  May be overloaded by user to define more event types
 	 */
 	virtual bool isNoisyEvent() const;
 
 	/** Whether the event has been classified as a physics one.
 	 *  Could be one of the following event type
-	 *   - BEAM_MUON_EVENT,
-	 *	 - COSMIC_MUON_EVENT,
-	 *	 - SHOWER_EVENT,
-	 *	 - ELECTRON_SHOWER_EVENT,
-	 *	 - HADRONIC_SHOWER_EVENT
+	 *   - BEAM_MUON_EVENT
+	 *	 - COSMIC_MUON_EVENT
+	 *	 - SHOWER_EVENT
+	 *	 - NEUTRAL_EM_SHOWER_EVENT
+	 *	 - CHARGED_EM_SHOWER_EVENT
+	 *	 - NEUTRAL_HAD_SHOWER_EVENT
+	 *	 - CHARGED_HAD_SHOWER_EVENT
 	 *  May be overloaded by user to define more event types
 	 */
 	virtual bool isPhysicsEvent() const;
 
 	/** Whether the event has been classified as a muon one.
 	 *  Could be one of the following event type
-	 *   - BEAM_MUON_EVENT,
-	 *	 - COSMIC_MUON_EVENT,
+	 *   - BEAM_MUON_EVENT
+	 *	 - COSMIC_MUON_EVENT
 	 *  May be overloaded by user to define more event types
 	 */
 	virtual bool isMuonEvent() const;
 
 	/** Whether the event has been classified as a shower one.
 	 *  Could be one of the following event type
-	 *	 - SHOWER_EVENT,
-	 *	 - ELECTRON_SHOWER_EVENT,
-	 *	 - HADRONIC_SHOWER_EVENT
+	 *	 - SHOWER_EVENT
+	 *	 - NEUTRAL_EM_SHOWER_EVENT
+	 *	 - CHARGED_EM_SHOWER_EVENT
+	 *	 - NEUTRAL_HAD_SHOWER_EVENT
+	 *	 - CHARGED_HAD_SHOWER_EVENT
 	 *  May be overloaded by user to define more event types
 	 */
 	virtual bool isShowerEvent() const;
@@ -145,6 +162,10 @@ private:
  */
 class SDHCALEventClassifier : public EventClassifier
 {
+	typedef std::vector<caloobject::CaloHit *> CaloHitList;
+	typedef std::map<unsigned int, CaloHitList > CaloHitMap;
+	typedef std::vector<caloobject::CaloCluster *> CaloClusterList;
+	typedef std::vector<caloobject::CaloTrack *> CaloTrackList;
 public:
 	/** Constructor
 	 */
@@ -158,12 +179,58 @@ public:
 	 */
 	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
 
+	/** Run a complete tracking on the event
+	 */
+	dqm4hep::StatusCode runTracking(EVENT::LCEvent *pLCEvent, caloobject::CaloTrack *&pTrack);
+
 private:
-	std::string                 m_inputCollectionName;
-	std::string                 m_cellIDDecoderString;
-	float                       m_noiseMinNHitPerTouchedLayer;
-	float                       m_noiseMaxNHitPerTouchedLayer;
-	unsigned int                m_noiseMinNHit;
+	/** Clear the event contents
+	 */
+	void clearEventContents(CaloHitList &hits, CaloClusterList &clusters, CaloTrackList &tracks);
+
+	/** Get the shower starting layer
+	 */
+	int getStartingLayer(const CaloHitMap &caloHitMap);
+
+	/** Whether the shower is a neutral hadron
+	 */
+	bool isNeutralHadron(const CaloHitMap &caloHitMap);
+
+private:
+	// algorithms
+	algorithm::Cluster                           m_clusteringAlgorithm;
+	algorithm::ClusteringHelper                  m_clusteringHelper;
+	algorithm::Tracking                          m_trackingAlgorithm;
+	algorithm::InteractionFinder                 m_interactionFinderAlgorithm;
+
+	// algorithm parameters
+	algorithm::clusterParameterSetting           m_clusteringSettings;
+	algorithm::ClusteringHelperParameterSetting  m_clusteringHelperSettings;
+	algorithm::TrackingParameterSetting          m_trackingSettings;
+	algorithm::InteractionFinderParameterSetting m_interactionFinderSettings;
+
+	// input parameters
+	std::string                                  m_inputCollectionName;
+	std::string                                  m_cellIDDecoderString;
+	unsigned int                                 m_nActiveLayers;
+
+	// noise cut settings
+	unsigned int                                 m_noiseMinTouchedLayers;
+	unsigned int                                 m_noiseMinNHit;
+
+	// muon tracking cut settings
+	float                                        m_muonMaxCosmicCosTheta;
+
+	// shower cut settings
+	unsigned int                                 m_neutralNFirstLayers;
+	unsigned int                                 m_neutralMaxNHitPerLayer;
+	unsigned int                                 m_startingLayerCogRegion;
+	unsigned int                                 m_startingLayerNNextLayers;
+	unsigned int                                 m_startingLayerCounter;
+	float                                        m_showerMinTransverseRatio;
+	float                                        m_showerMinNHitOverNTouchedLayers;
+	unsigned int                                 m_electronMaxNTouchedLayers;
+	unsigned int                                 m_electronMaxStartingLayer;
 };
 
 } 
