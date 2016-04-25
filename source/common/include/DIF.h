@@ -38,7 +38,6 @@
 #include <stdio.h>
 
 // -- dqm sdhcal headers
-#include "Decoder.h"
 #include "DIFReadoutConstant.h"
 #include "DIFUnpacker.h"
 
