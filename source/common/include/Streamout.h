@@ -26,8 +26,8 @@
  */
 
 
-#ifndef STREAMOUT_H
-#define STREAMOUT_H
+#ifndef DQMSDHCAL_STREAMOUT_H
+#define DQMSDHCAL_STREAMOUT_H
 
 #include "dqm4hep/DQM4HEP.h"
 
@@ -93,4 +93,4 @@ private:
 
 } 
 
-#endif  //  STREAMOUT_H
+#endif  //  DQMSDHCAL_STREAMOUT_H

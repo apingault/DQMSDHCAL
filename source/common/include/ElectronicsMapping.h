@@ -26,8 +26,8 @@
  */
 
 
-#ifndef ELECTRONICSMAPPING_H
-#define ELECTRONICSMAPPING_H
+#ifndef DQMSDHCAL_ELECTRONICSMAPPING_H
+#define DQMSDHCAL_ELECTRONICSMAPPING_H
 
 // -- dqm4hep headers
 #include "dqm4hep/DQMElectronicsMapping.h"
@@ -96,4 +96,4 @@ private:
 
 } 
 
-#endif  //  ELECTRONICSMAPPING_H
+#endif  //  DQMSDHCAL_ELECTRONICSMAPPING_H

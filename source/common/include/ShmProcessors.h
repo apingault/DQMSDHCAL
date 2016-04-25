@@ -26,8 +26,8 @@
  */
 
 
-#ifndef SHMPROCESSORS_H
-#define SHMPROCESSORS_H
+#ifndef DQMSDHCAL_SHMPROCESSORS_H
+#define DQMSDHCAL_SHMPROCESSORS_H
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
@@ -204,4 +204,4 @@ private:
 
 } 
 
-#endif  //  SHMPROCESSORS_H
+#endif  //  DQMSDHCAL_SHMPROCESSORS_H

@@ -26,8 +26,8 @@
  */
 
 
-#ifndef GEOMETRY_H
-#define GEOMETRY_H
+#ifndef DQMSDHCAL_GEOMETRY_H
+#define DQMSDHCAL_GEOMETRY_H
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
@@ -110,4 +110,4 @@ public:
 
 } 
 
-#endif  //  GEOMETRY_H
+#endif  //  DQMSDHCAL_GEOMETRY_H

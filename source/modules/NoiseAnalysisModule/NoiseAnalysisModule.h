@@ -26,8 +26,8 @@
  */
 
 
-#ifndef NOISEANALYSISMODULE_H
-#define NOISEANALYSISMODULE_H
+#ifndef DQMSDHCAL_NOISEANALYSISMODULE_H
+#define DQMSDHCAL_NOISEANALYSISMODULE_H
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
@@ -202,4 +202,4 @@ private:
   std::map<unsigned int, LayerElements>       m_layerElementMap;
 };
 }
-#endif // NOISEANALYSISMODULE_H
+#endif // DQMSDHCAL_NOISEANALYSISMODULE_H

@@ -26,8 +26,8 @@
  */
 
 
-#ifndef DIFUNPACKER_H
-#define DIFUNPACKER_H
+#ifndef DQMSDHCAL_DIFUNPACKER_H
+#define DQMSDHCAL_DIFUNPACKER_H
 
 // -- std headers
 #include <string>
@@ -117,4 +117,4 @@ public:
 
 } 
 
-#endif  //  DIFUNPACKER_H
+#endif  //  DQMSDHCAL_DIFUNPACKER_H

@@ -25,8 +25,8 @@
  */
 
 
-#ifndef EVENTDISPLAYMODULE_H
-#define EVENTDISPLAYMODULE_H
+#ifndef DQMSDHCAL_EVENTDISPLAYMODULE_H
+#define DQMSDHCAL_EVENTDISPLAYMODULE_H
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
@@ -107,4 +107,4 @@ private:
 
 } 
 
-#endif  //  EVENTDISPLAYMODULE_H
+#endif  //  DQMSDHCAL_EVENTDISPLAYMODULE_H

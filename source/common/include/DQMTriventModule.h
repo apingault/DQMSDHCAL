@@ -26,8 +26,8 @@
  */
 
 
-#ifndef DQMTRIVENTMODULE_H
-#define DQMTRIVENTMODULE_H
+#ifndef DQMSDHCAL_DQMTRIVENTMODULE_H
+#define DQMSDHCAL_DQMTRIVENTMODULE_H
 
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMAnalysisModule.h"
@@ -83,4 +83,4 @@ private:
 
 } 
 
-#endif  //  DQMTRIVENTMODULE_H
+#endif  //  DQMSDHCAL_DQMTRIVENTMODULE_H

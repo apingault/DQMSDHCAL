@@ -25,8 +25,8 @@
  */
 
 
-#ifndef PARTICLEIDMODULE_H
-#define PARTICLEIDMODULE_H
+#ifndef DQMSDHCAL_PARTICLEIDMODULE_H
+#define DQMSDHCAL_PARTICLEIDMODULE_H
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
@@ -97,4 +97,4 @@ private:
 
 } 
 
-#endif  //  PARTICLEIDMODULE_H
+#endif  //  DQMSDHCAL_PARTICLEIDMODULE_H

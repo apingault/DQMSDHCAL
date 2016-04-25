@@ -25,8 +25,8 @@
  */
 
 
-#ifndef SLOWCONTROLMODULE_H
-#define SLOWCONTROLMODULE_H
+#ifndef DQMSDHCAL_SLOWCONTROLMODULE_H
+#define DQMSDHCAL_SLOWCONTROLMODULE_H
 
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMStandaloneModule.h"
@@ -135,4 +135,4 @@ private:
 
 } 
 
-#endif  //  SLOWCONTROLMODULE_H
+#endif  //  DQMSDHCAL_SLOWCONTROLMODULE_H

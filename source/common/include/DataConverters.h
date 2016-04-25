@@ -26,8 +26,8 @@
  */
 
 
-#ifndef DATACONVERTERS_H
-#define DATACONVERTERS_H
+#ifndef DQMSDHCAL_DATACONVERTERS_H
+#define DQMSDHCAL_DATACONVERTERS_H
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"

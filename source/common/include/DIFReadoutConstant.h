@@ -27,8 +27,8 @@
  *  Copy/paste from SDHCAL_common in sdhcal DAQ, file include/DIFReadoutConstant.h
  */
 
-#ifndef DIF_READOUT_CONSTANT_H
-#define DIF_READOUT_CONSTANT_H
+#ifndef DQMSDHCAL_DIF_READOUT_CONSTANT_H
+#define DQMSDHCAL_DIF_READOUT_CONSTANT_H
 
 #include <stdint.h>
 #define DIF_FIRMWARE_VERSION 12
@@ -170,4 +170,4 @@ typedef struct
 } DIFStatus;
 
 
-#endif  //  DIF_READOUT_CONSTANT_H
+#endif  //  DQMSDHCAL_DIF_READOUT_CONSTANT_H

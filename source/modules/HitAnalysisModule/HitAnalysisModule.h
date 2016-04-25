@@ -26,8 +26,8 @@
  */
 
 
-#ifndef HITANALYSISMODULE_H
-#define HITANALYSISMODULE_H
+#ifndef DQMSDHCAL_HITANALYSISMODULE_H
+#define DQMSDHCAL_HITANALYSISMODULE_H
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
@@ -134,4 +134,4 @@ private:
 
 }
 
-#endif  //  HITANALYSISMODULE_H
+#endif  //  DQMSDHCAL_HITANALYSISMODULE_H

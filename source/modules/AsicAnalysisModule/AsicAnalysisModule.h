@@ -26,8 +26,8 @@
  */
 
 
-#ifndef ASICANALYSISMODULE_H
-#define ASICANALYSISMODULE_H
+#ifndef DQMSDHCAL_ASICANALYSISMODULE_H
+#define DQMSDHCAL_ASICANALYSISMODULE_H
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
@@ -263,4 +263,4 @@ private:
 
 } 
 
-#endif  //  ASICANALYSISMODULE_H
+#endif  //  DQMSDHCAL_ASICANALYSISMODULE_H

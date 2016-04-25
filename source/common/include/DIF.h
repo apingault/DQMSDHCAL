@@ -26,8 +26,8 @@
  */
 
 
-#ifndef DIF_H
-#define DIF_H
+#ifndef DQMSDHCAL_DIF_H
+#define DQMSDHCAL_DIF_H
 
 // -- std headers
 #include <map>
@@ -222,4 +222,4 @@ public:
 
 } 
 
-#endif  //  DIF_H
+#endif  //  DQMSDHCAL_DIF_H

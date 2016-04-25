@@ -26,8 +26,8 @@
  */
 
 
-#ifndef ANALYSISTOOLS_H
-#define ANALYSISTOOLS_H
+#ifndef DQMSDHCAL_ANALYSISTOOLS_H
+#define DQMSDHCAL_ANALYSISTOOLS_H
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
@@ -235,4 +235,4 @@ private:
 
 } 
 
-#endif  //  ANALYSISTOOLS_H
+#endif  //  DQMSDHCAL_ANALYSISTOOLS_H
