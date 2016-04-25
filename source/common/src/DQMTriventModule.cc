@@ -218,6 +218,8 @@ dqm4hep::StatusCode DQMTriventModule::convertEvent(EVENT::LCEvent *pLCEvent, tri
 		}
 	}
 
+	event.setUserEvent( (void *) pLCEvent );
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
