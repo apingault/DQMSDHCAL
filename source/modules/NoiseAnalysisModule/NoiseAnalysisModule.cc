@@ -326,9 +326,7 @@ dqm4hep::StatusCode NoiseAnalysisModule::readSettings(const dqm4hep::TiXmlHandle
     int layerId = difIter->second.m_layerId + m_nStartLayerShift;
     std::string folderPath = "/Noise/Layer" + std::to_string(layerId);
 
-    // TODO: Get rid of the [ERROR] - pDirectory->findDir(dirName, pDirectory) return STATUS_CODE_NOT_FOUND
-    //                      [ERROR] -     in function: cd
-    if (dqm4hep::STATUS_CODE_NOT_FOUND == dqm4hep::DQMModuleApi::cd(this, folderPath))
+    if (!dqm4hep::DQMModuleApi::dirExists(this, folderPath))
     {
       RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::mkdir(this, folderPath));
       RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::cd(this, folderPath));
@@ -387,81 +385,49 @@ dqm4hep::StatusCode NoiseAnalysisModule::readSettings(const dqm4hep::TiXmlHandle
 }
 
 //-------------------------------------------------------------------------------------------------
-dqm4hep::StatusCode NoiseAnalysisModule::decodeTrigger( EVENT::LCCollection *  const pCalorimeterHitCollection)
+
+dqm4hep::StatusCode NoiseAnalysisModule::findTrigger(EVENT::LCCollection* const pLCCollection)
 {
-  EVENT::RawCalorimeterHit* pRawCaloHit;
-  unsigned int difId = 0;
-  if ( pCalorimeterHitCollection->getNumberOfElements() != 0)
-  {
-    try {pRawCaloHit = (EVENT::RawCalorimeterHit*) pCalorimeterHitCollection->getElementAt(0);}
-    catch (std::exception e)
-    {
-      LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - No hits in collection : " << pCalorimeterHitCollection->getTypeName() );
-      return dqm4hep::STATUS_CODE_FAILURE;
-    }
+  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->decodeEventParameter<EVENT::RawCalorimeterHit>(pLCCollection));
 
-    if (NULL == pRawCaloHit)
-      return dqm4hep::STATUS_CODE_FAILURE;
-    difId = this->getDifId(pRawCaloHit->getCellID0());
+  double timeTrigger = m_pEventHelper->getTimeTrigger();
+  double timeDif = timeTrigger - m_timeLastTrigger;
+
+  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - time since previous trigger : " << timeDif << "s");
+
+  if (timeDif > m_newSpillTimeCut) // New Spill
+  {
+    LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Spill -  time since last startOfSpill : " <<  timeTrigger - m_timeLastSpill << " s.  Last spill Stat: Length : " << m_spillIntegratedTime << "s\t triggers : " << m_nTrigger << "\t particles : " << m_nParticleLastSpill );
+
+    m_pSpillLength->get<TH1>()->Fill(m_spillIntegratedTime);
+    m_pTimeDiffTriggerToSpill->get<TH1>()->Fill(timeDif);
+    m_pTimeDiffSpill->get<TH1>()->Fill(timeTrigger - m_timeLastSpill);
+    // TODO: make it update on each spill?
+    m_pTriggerLastSpill->get<dqm4hep::TScalarString>()->Set(std::to_string(m_nTrigger));
+    m_pTriggerPerSpill->get<TH1>()->Fill(m_nTrigger);
+
+    m_timeLastSpill = timeTrigger;
+    m_nParticleLastSpill = 0;
+    m_nTrigger = 0;
+    m_spillIntegratedTime = 0;
   }
 
-  // Find Trigger information & Extract abolute bcid
-  std::vector<int> vTrigger;
-  std::stringstream pname("");
-  pname << "DIF" << difId << "_Triggers";
-
-  pCalorimeterHitCollection->getParameters().getIntVals(pname.str(), vTrigger);
-
-  if (vTrigger.size() != 0)
+  // timeDif is not meaningful for the first event
+  if (m_nEventProcessed != 0)
   {
-    m_eventIntegratedTime = vTrigger[2];
-    dqm4hep::dqm_uint m_bcid1 = vTrigger[4];
-    dqm4hep::dqm_uint m_bcid2 = vTrigger[3];
-
-    // Shift the value from the 24 first bits
-    unsigned long long Shift = 16777216ULL;
-    unsigned long long theBCID_ = m_bcid1 * Shift + m_bcid2;
-    double timeTrigger = theBCID_ * m_DAQ_BC_Period; // in seconds since ...?
-    double timeDif = timeTrigger - m_timeLastTrigger;
-
-    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - bcid0(trigger[2]): " << m_eventIntegratedTime << "\t bcid1(trigger[4]): " << m_bcid1 << "\t bcid2(trigger[3]): " << m_bcid2 << "\t theBCID : " << theBCID_ * m_DAQ_BC_Period << "s - time since previous trigger : " << timeDif << "s");
-
-    if (timeDif > m_newSpillTimeCut) // New Spill
-    {
-      LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Spill -  time since last startOfSpill : " <<  timeTrigger - m_timeLastSpill << " s.  Last spill Stat: Length : " << m_spillIntegratedTime << "s\t triggers : " << m_nTrigger << "\t particles : " << m_nParticleLastSpill );
-
-      m_pSpillLength->get<TH1>()->Fill(m_spillIntegratedTime);
-      m_pTimeDiffTriggerToSpill->get<TH1>()->Fill(timeDif);
-      m_pTimeDiffSpill->get<TH1>()->Fill(timeTrigger - m_timeLastSpill);
-      // TODO: make it update on each spill?
-      m_pTriggerLastSpill->get<dqm4hep::TScalarString>()->Set(std::to_string(m_nTrigger));
-      m_pTriggerPerSpill->get<TH1>()->Fill(m_nTrigger);
-
-      m_timeLastSpill = timeTrigger;
-      m_nParticleLastSpill = 0;
-      m_nTrigger = 0;
-      m_spillIntegratedTime = 0;
-    }
-
-    // timeDif is not meaningful for the first event
-    if (m_nEventProcessed != 0)
-    {
-      m_totalIntegratedTime += timeDif;
-      if (m_nTrigger != 0)
-        m_spillIntegratedTime += timeDif;
-    }
-
-    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Trigger at time : " << theBCID_ << "s - time since previous trigger : " << timeDif << "s\t spillIntegratedTime : " << m_spillIntegratedTime << "s");
-
-    m_nTrigger++;
-    m_pTimeDiffTrigger->get<TH1>()->Fill(timeDif);
-    m_pAcquisitionTime->get<TH1F>()->Fill((m_eventIntegratedTime * m_DAQ_BC_Period));
-    m_timeLastTrigger = timeTrigger;
+    m_totalIntegratedTime += timeDif;
+    if (m_nTrigger != 0)
+      m_spillIntegratedTime += timeDif;
   }
-  else
-    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - No vTrigger in CaloHit...");
 
-  return STATUS_CODE_SUCCESS;
+  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Trigger at time : " << timeTrigger << "s - time since previous trigger : " << timeDif << "s\t spillIntegratedTime : " << m_spillIntegratedTime << "s");
+
+  m_nTrigger++;
+  m_pTimeDiffTrigger->get<TH1>()->Fill(timeDif);
+  m_pAcquisitionTime->get<TH1F>()->Fill((m_eventIntegratedTime * m_DAQ_BC_Period));
+  m_timeLastTrigger = timeTrigger;
+
+  return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -491,22 +457,6 @@ dqm4hep::StatusCode NoiseAnalysisModule::performOutputDataConversion(EVENT::LCEv
     }
   }
   return dqm4hep::STATUS_CODE_SUCCESS;
-}
-
-//-------------------------------------------------------------------------------------------------
-unsigned int NoiseAnalysisModule::getThreshold( const EVENT::RawCalorimeterHit *const pInputCaloHit )
-{
-  int shift;
-  const float amplitude( static_cast<float>( pInputCaloHit->getAmplitude() & m_amplitudeBitRotation ) );
-
-  if ( amplitude > 2.5 )
-    shift = 0;         // 3rd threshold
-  else if ( amplitude > 1.5 )
-    shift = -1;        // 2nd threshold
-  else
-    shift = +1;        // 1rst Threshold
-
-  return static_cast<unsigned int>(amplitude) + shift;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -554,7 +504,10 @@ dqm4hep::StatusCode NoiseAnalysisModule::processEvent(dqm4hep::DQMEvent * const 
     }
 
     //Find Triggers and NewSpill
-    StatusCode status = decodeTrigger(pRawCalorimeterHitCollection);
+
+
+    RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->decodeEventParameter<EVENT::RawCalorimeterHit>(pRawCalorimeterHitCollection));
+    StatusCode status = findTrigger(pRawCalorimeterHitCollection);
     if (dqm4hep::STATUS_CODE_SUCCESS != status)
       return dqm4hep::STATUS_CODE_SUCCESS;
 
@@ -567,15 +520,15 @@ dqm4hep::StatusCode NoiseAnalysisModule::processEvent(dqm4hep::DQMEvent * const 
 
       int cellID = pRawCaloHit->getCellID0();
 
-      unsigned int hitThresh = this->getThreshold(pRawCaloHit);
+      unsigned int hitThresh = m_pEventHelper->getThreshold(pRawCaloHit);
       unsigned int hitTime = pRawCaloHit->getTimeStamp();
 
       dqm4hep::DQMElectronicsMapping::Electronics electronics;
 
       // extract raw data electronics ids
-      electronics.m_difId = this->getDifId( cellID );
-      electronics.m_asicId = this->getAsicId( cellID );
-      electronics.m_channelId = this->getChannelId( cellID );
+      electronics.m_difId = m_pEventHelper->getDifId( cellID );
+      electronics.m_asicId = m_pEventHelper->getAsicId( cellID );
+      electronics.m_channelId = m_pEventHelper->getChannelId( cellID );
 
       // perform conversion to cell ids and absolute position
       dqm4hep::DQMCartesianVector position(0.f, 0.f, 0.f);
@@ -611,17 +564,17 @@ dqm4hep::StatusCode NoiseAnalysisModule::processEvent(dqm4hep::DQMEvent * const 
       {
         LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - hitTime > m_eventIntegratedTime!");
         LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Amplitude: " << hitThresh
-                      << "\t Layer : " << cell.m_layer
-                      << "\t dif : " << difId
-                      << "\t asic : " << asicId
-                      << "\t chan : " << chanId
-                      << "\t I : " << cell.m_iCell
-                      << "\t J : " << cell.m_jCell
-                      << "\t time : " << hitTime
-                      << "\t time (s): " << hitTime * m_DAQ_BC_Period
-                      << "\t m_eventIntegratedTime : " << m_eventIntegratedTime
-                      << "\t m_eventIntegratedTime (s) : " << m_eventIntegratedTime * m_DAQ_BC_Period
-                    );
+                       << "\t Layer : " << cell.m_layer
+                       << "\t dif : " << difId
+                       << "\t asic : " << asicId
+                       << "\t chan : " << chanId
+                       << "\t I : " << cell.m_iCell
+                       << "\t J : " << cell.m_jCell
+                       << "\t time : " << hitTime
+                       << "\t time (s): " << hitTime * m_DAQ_BC_Period
+                       << "\t m_eventIntegratedTime : " << m_eventIntegratedTime
+                       << "\t m_eventIntegratedTime (s) : " << m_eventIntegratedTime * m_DAQ_BC_Period
+                     );
         continue;
       }
 
