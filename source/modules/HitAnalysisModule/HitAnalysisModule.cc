@@ -34,10 +34,16 @@
 #include "dqm4hep/DQMXmlHelper.h"
 #include "dqm4hep/DQMModuleApi.h"
 #include "dqm4hep/DQMPlugin.h"
+#include "dqm4hep/DQMPluginManager.h"
 
-//-- lcio headers
+
+// -- lcio headers
 #include <EVENT/LCCollection.h>
 #include <UTIL/CellIDDecoder.h>
+#include <UTIL/LCTOOLS.h>
+
+// -- dqmsdhcal headers
+#include <AnalysisTools.h>
 
 using namespace dqm4hep;
 
@@ -102,33 +108,68 @@ dqm4hep::StatusCode HitAnalysisModule::userReadSettings(const dqm4hep::TiXmlHand
 
 	/*-----------------------------------------------------*/
 	// Number of hits in full detector
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::mkdir(this, "/"));
+	//
+	//
+	m_pInstantRate = NULL;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+	                 "InstantRate", m_pInstantRate));
+
+	m_pMeanRunRate = NULL;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+	                 "MeanRunRate", m_pMeanRunRate));
+
+	m_pRateVsClusterProfile = NULL;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+	                 "RateVsClusterProfile", m_pRateVsClusterProfile));
+
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 	                 "NumberOfHits0", m_pNHit0));
+
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 	                 "NumberOfHits1", m_pNHit1));
+
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 	                 "NumberOfHits2", m_pNHit2));
+
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 	                 "NumberOfHitsTotal", m_pNHit));
 
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+	                 "NumberOfHits0PerLayer", m_pNHit0PerLayer));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+	                 "NumberOfHits1PerLayer", m_pNHit1PerLayer));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+	                 "NumberOfHits2PerLayer", m_pNHit2PerLayer));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+	                 "NumberOfHitsTotalPerLayer", m_pNHitTotPerLayer));
+
+
 	// Number of hits per layer
-	for (unsigned int l = 0 ; l < m_nActiveLayers ; l++)
+	for (unsigned int layerId = 0 ; layerId < m_nActiveLayers ; layerId++)
 	{
-		std::string folderPath = "/Layer" + std::to_string(l);
-		if ( dqm4hep::STATUS_CODE_NOT_FOUND == dqm4hep::DQMModuleApi::cd(this, folderPath))
+		std::string folderPath = "/Layer" + std::to_string(layerId);
+		if (!dqm4hep::DQMModuleApi::dirExists(this, folderPath))
 		{
 			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::mkdir(this, folderPath));
 			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::cd(this, folderPath));
 
-			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			                 "LayerNumberOfHits0", m_layerElementMap[l].m_pNHit0Layer));
-			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			                 "LayerNumberOfHits1", m_layerElementMap[l].m_pNHit1Layer));
-			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			                 "LayerNumberOfHits2", m_layerElementMap[l].m_pNHit2Layer));
-			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			                 "LayerNumberOfHitsTotal", m_layerElementMap[l].m_pNHitTotLayer));
+
+
+			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "ChamberHitsMap1", m_layerElementMap[layerId].m_pChamberHitsMap0));
+			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "ChamberHitsMap2", m_layerElementMap[layerId].m_pChamberHitsMap1));
+			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "ChamberHitsMap3", m_layerElementMap[layerId].m_pChamberHitsMap2));
+
+			// RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			//                  "LayerNumberOfHits0", m_layerElementMap[l].m_pNHit0Layer));
+			// RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			//                  "LayerNumberOfHits1", m_layerElementMap[l].m_pNHit1Layer));
+			// RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			//                  "LayerNumberOfHits2", m_layerElementMap[l].m_pNHit2Layer));
+			// RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+			//                  "LayerNumberOfHitsTotal", m_layerElementMap[l].m_pNHitTotLayer));
 		}
 	}
 
@@ -150,6 +191,55 @@ dqm4hep::StatusCode HitAnalysisModule::userReadSettings(const dqm4hep::TiXmlHand
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 	                        "InputCollectionName", m_inputCollectionName));
 
+	/*------ Event classifier settings ------*/
+	dqm4hep::TiXmlElement *pEventClassifierElement = xmlHandle.FirstChild("eventClassifier").Element();
+
+	if ( ! pEventClassifierElement )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't found xml element eventClassifier !" );
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
+
+	std::string plugin;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::getAttribute(pEventClassifierElement, "plugin", plugin));
+
+	m_pEventClassifier = dqm4hep::DQMPluginManager::instance()->createPluginClass<EventClassifier>(plugin);
+
+	if ( ! m_pEventClassifier )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't found eventClassifier plugin called : " << plugin );
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventClassifier->readSettings(dqm4hep::TiXmlHandle(pEventClassifierElement)));
+
+	/*-----------------------------------------------------*/
+
+	/*------ Event helper settings ------*/
+	dqm4hep::TiXmlElement *pEventHelperElement = xmlHandle.FirstChild("eventHelper").Element();
+
+	if ( ! pEventHelperElement )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't found xml element eventHelper !" );
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::getAttribute(pEventHelperElement, "plugin", plugin));
+
+	m_pEventHelper = dqm4hep::DQMPluginManager::instance()->createPluginClass<EventHelper>(plugin);
+
+	if ( ! m_pEventHelper )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't found eventHelper plugin called : " << plugin );
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->readSettings(dqm4hep::TiXmlHandle(pEventHelperElement)));
+
+	/*-----------------------------------------------------*/
+
+
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -157,6 +247,15 @@ dqm4hep::StatusCode HitAnalysisModule::userReadSettings(const dqm4hep::TiXmlHand
 
 dqm4hep::StatusCode HitAnalysisModule::userInitModule()
 {
+
+	m_eventIntegratedTime = 0;
+	m_spillIntegratedTime = 0;
+	m_totalIntegratedTime = 0;
+	m_timeLastTrigger = 0;
+	m_timeLastSpill = 0;
+	m_nTrigger = 0;
+	m_nSpill = 0;
+
 	// initialize algorithms
 	m_clusteringAlgorithm.SetClusterParameterSetting(m_clusteringSettings);
 	m_clusteringHelper.SetClusteringHelperParameterSetting(m_clusteringHelperSettings);
@@ -164,10 +263,9 @@ dqm4hep::StatusCode HitAnalysisModule::userInitModule()
 }
 
 //-------------------------------------------------------------------------------------------------
-
 dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
-	LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << "Processing physics event no " << pLCEvent->getEventNumber() );
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Processing physics event no " << pLCEvent->getEventNumber() );
 	int nHitProcessedEvent = 0;
 
 	// content management
@@ -183,6 +281,104 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		if (NULL == pCalorimeterHitCollection)
 			return dqm4hep::STATUS_CODE_SUCCESS;
+
+		// Classify and count particle in event
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventClassifier->processEvent(pLCEvent));
+		if (m_pEventClassifier->isUndefined())
+		{
+			m_nUndefinedWithinRun++;
+			m_nUndefinedWithinSpill++;
+		}
+		else if (m_pEventClassifier->isNoisyEvent())
+		{
+			m_nNoiseWithinRun++;
+			m_nNoiseWithinSpill++;
+		}
+		else if ( m_pEventClassifier->isPhysicsEvent() )
+		{
+			if ( m_pEventClassifier->getEventType() != EventClassifier::COSMIC_MUON_EVENT)
+			{
+				m_nParticleWithinRun++;
+				m_nParticleWithinSpill++;
+
+				if ( m_pEventClassifier->getEventType() == EventClassifier::BEAM_MUON_EVENT )
+				{
+					m_nBeamMuonWithinRun++;
+					m_nBeamMuonWithinSpill++;
+				}
+
+				else if ( m_pEventClassifier->getEventType() == EventClassifier::CHARGED_HAD_SHOWER_EVENT )
+				{
+					m_nChargedHadronsWithinRun++;
+					m_nChargedHadronsWithinSpill++;
+				}
+				else if ( m_pEventClassifier->getEventType() == EventClassifier::NEUTRAL_HAD_SHOWER_EVENT )
+				{
+					m_nNeutralHadronsWithinRun++;
+					m_nNeutralHadronsWithinSpill++;
+				}
+				else if ( m_pEventClassifier->getEventType() == EventClassifier::NEUTRAL_EM_SHOWER_EVENT )
+				{
+					m_nPhotonsWithinRun++;
+					m_nPhotonsWithinSpill++;
+				}
+				else if ( m_pEventClassifier->getEventType() == EventClassifier::CHARGED_EM_SHOWER_EVENT )
+				{
+					m_nElectronsWithinRun++;
+					m_nElectronsWithinSpill++;
+				}
+			}
+			else
+			{
+				m_nCosmicMuonsWithinSpill++;
+				m_nCosmicMuonsWithinRun++;
+			}
+		}
+
+		// Find New Trigger/Spill and fill Rates per particle
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->decodeEventParameter<EVENT::CalorimeterHit>(pCalorimeterHitCollection));
+
+		double timeTrigger = m_pEventHelper->getTimeTrigger();
+		double timeDif = timeTrigger - m_timeLastTrigger;
+		m_eventIntegratedTime = m_pEventHelper->getEventIntegratedTime();
+
+		if (timeDif > 0) // NewTrigger
+		{
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Trigger at time : " << timeTrigger << "s - time since previous trigger : " << timeDif << "s\t spillIntegratedTime : " << m_spillIntegratedTime << "s");
+
+			if (timeDif > m_pEventHelper->getSpillTimeCut()) // New Spill
+			{
+				LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Spill -  time since last startOfSpill : " <<  timeTrigger - m_timeLastSpill << " s.  Last spill Stat: Length : " << m_spillIntegratedTime << "s\t triggers : " << m_nTrigger << "\t particles : " << m_nParticleWithinSpill );
+
+				m_timeLastSpill = timeTrigger;
+				m_nSpill++;
+				m_nTrigger = 0;
+
+				RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillRates());
+
+				// Reinitialize rates
+				m_spillIntegratedTime = 0;
+				m_nUndefinedWithinSpill = 0;
+				m_nNoiseWithinSpill = 0;
+				m_nCosmicMuonsWithinSpill = 0;
+				m_nParticleWithinSpill = 0;
+				m_nBeamMuonWithinSpill = 0;
+				m_nChargedHadronsWithinSpill = 0;
+				m_nNeutralHadronsWithinSpill = 0;
+				m_nPhotonsWithinSpill = 0;
+				m_nElectronsWithinSpill = 0;
+			}
+
+			// timeDif is not meaningful for the first event
+			if (pLCEvent->getEventNumber() != 0)
+			{
+				m_totalIntegratedTime += timeDif;
+				if (m_nTrigger != 0)
+					m_spillIntegratedTime += timeDif;
+			}
+			m_nTrigger++;
+			m_timeLastTrigger = timeTrigger;
+		}
 
 		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(m_cellIDDecoderString);
 
@@ -232,6 +428,13 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		std::sort(clusters.begin(), clusters.end(), algorithm::ClusteringHelper::SortClusterByLayer);
 
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Number of clusters : " << clusters.size());
+
+
+		// Fill Number Of Clusters vs Rate
+		if (m_spillIntegratedTime>0 && m_pEventClassifier->isPhysicsEvent() && m_pEventClassifier->getEventType() != EventClassifier::COSMIC_MUON_EVENT)
+			m_pRateVsClusterProfile->get<TProfile>()->Fill(m_nParticleWithinSpill/m_spillIntegratedTime, clusters.size());
+
 		int nHit0 = 0;
 		int nHit1 = 0;
 		int nHit2 = 0;
@@ -254,9 +457,27 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 				uint32_t hitWeight = 0;
 				int hitThreshold = (*hitIter)->getEnergy();
 
-				if (hitThreshold == 1) {hitWeight = 1; nHit0Layer++;}
-				else if (hitThreshold == 2) {hitWeight = 3; nHit1Layer++;}
-				else if (hitThreshold == 3) {hitWeight = 15; nHit2Layer++;}
+				if (hitThreshold == 1)
+				{
+					hitWeight = 1;
+					nHit0Layer++;
+					if ( m_pEventClassifier->isPhysicsEvent() && m_pEventClassifier->getEventType() != EventClassifier::COSMIC_MUON_EVENT)
+						m_layerElementMap[layerId].m_pChamberHitsMap0->get<TH2>()->Fill((*hitIter)->getCellID()[0], (*hitIter)->getCellID()[1]);
+				}
+				else if (hitThreshold == 2)
+				{
+					hitWeight = 3;
+					nHit1Layer++;
+					if ( m_pEventClassifier->isPhysicsEvent() && m_pEventClassifier->getEventType() != EventClassifier::COSMIC_MUON_EVENT)
+						m_layerElementMap[layerId].m_pChamberHitsMap1->get<TH2>()->Fill((*hitIter)->getCellID()[0], (*hitIter)->getCellID()[1]);
+				}
+				else if (hitThreshold == 3)
+				{
+					hitWeight = 15;
+					nHit2Layer++;
+					if ( m_pEventClassifier->isPhysicsEvent() && m_pEventClassifier->getEventType() != EventClassifier::COSMIC_MUON_EVENT)
+						m_layerElementMap[layerId].m_pChamberHitsMap2->get<TH2>()->Fill((*hitIter)->getCellID()[0], (*hitIter)->getCellID()[1]);
+				}
 				else
 				{
 					LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " Wait what? Hit with threshold : " << hitThreshold << " in layer " << layerId);
@@ -294,16 +515,28 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 			else
 				nextClusterIter = clusterIter;
 
+			// Fill hit histograms only if last cluster of current layer or last cluster of the event
 			if ( (*nextClusterIter)->getLayerID() != layerId || nextClusterIter == clusterIter)
 			{
 				if (0 != nHit0Layer)
-					m_layerElementMap[layerId].m_pNHit0Layer->get<TH1>()->Fill(nHit0Layer);
+				{
+					// m_layerElementMap[layerId].m_pNHit0Layer->get<TH1>()->Fill(nHit0Layer);
+					m_pNHit0PerLayer->get<TH1>()->SetBinContent(layerId, m_pNHit0PerLayer->get<TH1>()->GetBinContent(layerId) + nHit0Layer);
+				}
 				if (0 != nHit1Layer)
-					m_layerElementMap[layerId].m_pNHit1Layer->get<TH1>()->Fill(nHit1Layer);
+				{
+					// m_layerElementMap[layerId].m_pNHit1Layer->get<TH1>()->Fill(nHit1Layer);
+					m_pNHit1PerLayer->get<TH1>()->SetBinContent(layerId, m_pNHit1PerLayer->get<TH1>()->GetBinContent(layerId) +  nHit1Layer);
+				}
 				if (0 != nHit2Layer)
-					m_layerElementMap[layerId].m_pNHit2Layer->get<TH1>()->Fill(nHit2Layer);
+				{
+					// m_layerElementMap[layerId].m_pNHit2Layer->get<TH1>()->Fill(nHit2Layer);
+					m_pNHit2PerLayer->get<TH1>()->SetBinContent(layerId, m_pNHit2PerLayer->get<TH1>()->GetBinContent(layerId) +  nHit2Layer);
+				}
 
-				m_layerElementMap[layerId].m_pNHitTotLayer->get<TH1>()->Fill(nHit0Layer + nHit1Layer + nHit2Layer);
+				// m_layerElementMap[layerId].m_pNHitTotLayer->get<TH1>()->Fill(nHit0Layer + nHit1Layer + nHit2Layer);
+				m_pNHitTotPerLayer->get<TH1>()->SetBinContent(layerId, m_pNHitTotPerLayer->get<TH1>()->GetBinContent(layerId) +  nHit0Layer + nHit1Layer + nHit2Layer);
+
 
 				nHit0 += nHit0Layer;
 				nHit1 += nHit1Layer;
@@ -340,6 +573,77 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		this->clearEventContents(hits, clusters);
 		return STATUS_CODE_FAILURE;
 	}
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode HitAnalysisModule::fillRates()
+{
+	std::stringstream instantRate;
+
+	instantRate << "*****  Instant Rate  *****\n";
+	instantRate << "*****  Physics  *****\n";
+	instantRate << "Current spill Length : " << m_spillIntegratedTime << "s\n";
+	instantRate << " - Particles    	 : " 		<< m_nParticleWithinSpill 			<< "/spill\t" << m_nParticleWithinSpill / m_spillIntegratedTime 			<< "/s" << "\n";
+	instantRate << " - Beam muons      : " 		<< m_nBeamMuonWithinSpill 			<< "/spill\t" << m_nBeamMuonWithinSpill / m_spillIntegratedTime 			<< "/s" << "\n";
+	instantRate << " - Charged hadrons : " 		<< m_nChargedHadronsWithinSpill << "/spill\t" << m_nChargedHadronsWithinSpill / m_spillIntegratedTime << "/s" << "\n";
+	instantRate << " - Neutral hadrons : " 		<< m_nNeutralHadronsWithinSpill << "/spill\t" << m_nNeutralHadronsWithinSpill / m_spillIntegratedTime << "/s" << "\n";
+	instantRate << " - Photons         : " 		<< m_nPhotonsWithinSpill 				<< "/spill\t" << m_nPhotonsWithinSpill / m_spillIntegratedTime 				<< "/s" << "\n";
+	instantRate << " - Electrons       : " 		<< m_nElectronsWithinSpill			<< "/spill\t" << m_nElectronsWithinSpill / m_spillIntegratedTime 			<< "/s" << "\n";
+	instantRate << "*****  Non Physics  *****\n";
+	instantRate << " - Undefined       : " 		<< m_nUndefinedWithinSpill 			<< "/spill\t" << m_nUndefinedWithinSpill / m_spillIntegratedTime 			<< "/s" << "\n";
+	instantRate << " - Noise           : " 		<< m_nNoiseWithinSpill					<< "/spill\t" << m_nNoiseWithinSpill / m_spillIntegratedTime 		 			<< "/s" << "\n";
+	instantRate << " - Cosmic muons    : " 		<< m_nCosmicMuonsWithinSpill 		<< "/spill\t" << m_nCosmicMuonsWithinSpill / m_spillIntegratedTime 		<< "/s" << "\n";
+	instantRate << "*********************************";
+
+	m_pInstantRate->get< dqm4hep::TScalarString >()->Set( instantRate.str() );
+
+	std::stringstream meanRunRate;
+
+	meanRunRate << "*****  Mean Run Rate  *****\n";
+	meanRunRate << "*****  Physics  *****\n";
+	meanRunRate << "Current run length : " << m_totalIntegratedTime << "s\n";
+	meanRunRate << " - Particles    	 : " << m_nParticleWithinRun << "/Run\t"
+	            << m_nParticleWithinRun / m_nSpill << "/Spill\t"
+	            << m_nParticleWithinRun / m_totalIntegratedTime << "/s\n";
+
+	meanRunRate << " - Beam muons      : " << m_nBeamMuonWithinRun 	<< "/Run\t"
+	            << m_nBeamMuonWithinRun / m_nSpill << "/Spill\t"
+	            << m_nBeamMuonWithinRun / m_totalIntegratedTime << "/s\n";
+
+	meanRunRate << " - Charged hadrons : " << m_nChargedHadronsWithinRun << "/Run\t"
+	            << m_nChargedHadronsWithinRun / m_nSpill << "/Spill\t"
+	            << m_nChargedHadronsWithinRun / m_totalIntegratedTime << "/s\n";
+
+	meanRunRate << " - Neutral hadrons : " << m_nNeutralHadronsWithinRun << "/Run\t"
+	            << m_nNeutralHadronsWithinRun / m_nSpill << "/Spill\t"
+	            << m_nNeutralHadronsWithinRun / m_totalIntegratedTime << "/s\n";
+
+	meanRunRate << " - Photons         : " << m_nPhotonsWithinRun << "/Run\t"
+	            << m_nPhotonsWithinRun / m_nSpill << "/Spill\t"
+	            << m_nPhotonsWithinRun / m_totalIntegratedTime << "/s\n";
+
+	meanRunRate << " - Electrons       : " << m_nElectronsWithinRun	<< "/Run\t"
+	            << m_nElectronsWithinRun / m_nSpill << "/Spill\t"
+	            << m_nElectronsWithinRun / m_totalIntegratedTime << "/s\n";
+
+	meanRunRate << "*****  Non Physics  *****\n";
+	meanRunRate << " - Undefined       : " << m_nUndefinedWithinRun << "/Run\t"
+	            << m_nUndefinedWithinRun / m_nSpill << "/Spill\t"
+	            << m_nUndefinedWithinRun / m_totalIntegratedTime << "/s\n";
+
+	meanRunRate << " - Noise           : " << m_nNoiseWithinRun	<< "/Run\t"
+	            << m_nNoiseWithinRun / m_nSpill << "/Spill\t"
+	            << m_nNoiseWithinRun / m_totalIntegratedTime << "/s\n";
+
+	meanRunRate << " - Cosmic muons    : " << m_nCosmicMuonsWithinRun << "/Run\t"
+	            << m_nCosmicMuonsWithinRun / m_nSpill << "/Spill\t"
+	            << m_nCosmicMuonsWithinRun / m_totalIntegratedTime << "/s\n";
+	meanRunRate << "*********************************";
+
+	m_pMeanRunRate->get< dqm4hep::TScalarString >()->Set( meanRunRate.str() );
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }

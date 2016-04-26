@@ -59,6 +59,8 @@ typedef std::vector<CaloCluster *> CaloClusterList;
 namespace dqm_sdhcal
 {
 
+class EventClassifier;
+class EventHelper;
 /** HitAnalysisModule class
  */
 class HitAnalysisModule : public DQMTriventModule
@@ -87,6 +89,12 @@ private:
 	 */
 	void clearEventContents(caloobject::CaloHitList &hits, caloobject::CaloClusterList &clusters);
 
+	/**
+	 *
+	 */
+dqm4hep::StatusCode fillRates();
+
+
 	/** Reset the monitor element tuned on cycle
 	 *  Called at end of cycle before filling again
 	 *  efficiencies and multiplicities
@@ -112,13 +120,52 @@ private:
 	unsigned int 													   m_nMipMinimum;
 	unsigned int 													   m_nMipInLayer;
 
-private:
+  EventHelper															*m_pEventHelper;
+  double 																	 m_eventIntegratedTime;
+  double 																	 m_timeLastTrigger;
+  double 																	 m_timeLastSpill;
+  double 																	 m_spillIntegratedTime;
+  double 																	 m_totalIntegratedTime;
+	int 																		 m_nTrigger;
+	int 																		 m_nSpill;
+
+  EventClassifier 											  *m_pEventClassifier;
+  int 																	   m_nParticleWithinRun;
+  int 																	   m_nParticleWithinSpill;
+  int 																	   m_nBeamMuonWithinRun;
+  int 																	   m_nBeamMuonWithinSpill;
+  int 																	   m_nChargedHadronsWithinRun;
+  int 																	   m_nChargedHadronsWithinSpill;
+  int 																	   m_nNeutralHadronsWithinRun;
+  int 																	   m_nNeutralHadronsWithinSpill;
+  int 																	   m_nPhotonsWithinRun;
+  int 																	   m_nPhotonsWithinSpill;
+  int 																	   m_nElectronsWithinRun;
+  int 																	   m_nElectronsWithinSpill;
+  int 																	   m_nOthersWithinRun;
+  int 																	   m_nOthersWithinSpill;
+	int 																	   m_nCosmicMuonsWithinRun;
+	int 																	   m_nCosmicMuonsWithinSpill;
+  int 																	   m_nUndefinedWithinRun;
+  int 																	   m_nUndefinedWithinSpill;
+  int 																	   m_nNoiseWithinRun;
+  int 																	   m_nNoiseWithinSpill;
+
 	// monitor elements
 	//
+	dqm4hep::DQMMonitorElementPtr			m_pInstantRate;
+	dqm4hep::DQMMonitorElementPtr			m_pMeanRunRate;
 	dqm4hep::DQMMonitorElementPtr			m_pNHit0;
 	dqm4hep::DQMMonitorElementPtr			m_pNHit1;
 	dqm4hep::DQMMonitorElementPtr			m_pNHit2;
 	dqm4hep::DQMMonitorElementPtr			m_pNHit;
+
+	dqm4hep::DQMMonitorElementPtr			m_pNHit0PerLayer;
+	dqm4hep::DQMMonitorElementPtr			m_pNHit1PerLayer;
+	dqm4hep::DQMMonitorElementPtr			m_pNHit2PerLayer;
+	dqm4hep::DQMMonitorElementPtr			m_pNHitTotPerLayer;
+	dqm4hep::DQMMonitorElementPtr			m_pRateVsClusterProfile;
+
 
 	struct LayerElements
 	{
@@ -126,6 +173,9 @@ private:
 		dqm4hep::DQMMonitorElementPtr			m_pNHit1Layer;
 		dqm4hep::DQMMonitorElementPtr			m_pNHit2Layer;
 		dqm4hep::DQMMonitorElementPtr			m_pNHitTotLayer;
+		dqm4hep::DQMMonitorElementPtr			m_pChamberHitsMap0;
+		dqm4hep::DQMMonitorElementPtr			m_pChamberHitsMap1;
+		dqm4hep::DQMMonitorElementPtr			m_pChamberHitsMap2;
 
 	};
 
