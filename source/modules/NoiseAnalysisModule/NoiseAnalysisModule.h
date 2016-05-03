@@ -37,6 +37,7 @@
 
 // -- dqm sdhcal headers
 #include "Geometry.h"
+#include "AnalysisTools.h"
 
 // -- lcio headers
 #include "lcio.h"
@@ -53,7 +54,7 @@ namespace dqm_sdhcal
 {
 
 class RawCaloHitObject
- {
+{
 public:
   RawCaloHitObject(dqm4hep::DQMCartesianVector vec, int chanId, int asicId, int difId, int layerId, int threshold, int time, dqm4hep::DQMCartesianVector posShift);
   // algorithms assume that the zero is located at the middle of the first layer.
@@ -81,6 +82,8 @@ private:
 };
 
 class Streamout;
+class EventHelper;
+
 class NoiseAnalysisModule : public dqm4hep::DQMAnalysisModule
 {
 public:
@@ -100,13 +103,7 @@ private:
   dqm4hep::StatusCode endOfCycle();
   dqm4hep::StatusCode endModule();
 
-  /// cellID conversion
-  inline unsigned int getDifId(int cellID)      { return cellID & 0xFF; }
-  inline unsigned int getAsicId(int cellID)     { return (cellID & 0xFF00)>>8; }
-  inline unsigned int getChannelId(int cellID)  { return (cellID & 0x3F0000)>>16; }
-  unsigned int getThreshold( const EVENT::RawCalorimeterHit *const pInputCaloHit );
-
-  dqm4hep::StatusCode decodeTrigger( EVENT::LCCollection* const pRawCalorimeterHitCollection);
+  dqm4hep::StatusCode findTrigger(EVENT::LCCollection* const pLCCollection);
   dqm4hep::StatusCode doDIFStudy(RawCaloHitObject * const pRawCaloHitObject);
   dqm4hep::StatusCode fillAsicOccupancyMap( RawCaloHitObject * const pRawCaloHitObject);
   dqm4hep::StatusCode doAsicStudy();
@@ -114,12 +111,12 @@ private:
   void resetElements();
 
 private:
-    // converter parameters
- typedef dqm4hep::DQMDataConverter<EVENT::LCCollection, EVENT::LCCollection> CaloHitCollectionConverter;
- dqm4hep::StringVector                      m_rawCollectionNames;
- dqm4hep::StringVector                      m_recCollectionNames;
- dqm4hep::StringVector                      m_rawDataConverterNames;
- std::vector< CaloHitCollectionConverter *> m_dataConverters;
+  // converter parameters
+  typedef dqm4hep::DQMDataConverter<EVENT::LCCollection, EVENT::LCCollection> CaloHitCollectionConverter;
+  dqm4hep::StringVector                      m_rawCollectionNames;
+  dqm4hep::StringVector                      m_recCollectionNames;
+  dqm4hep::StringVector                      m_rawDataConverterNames;
+  std::vector< CaloHitCollectionConverter *> m_dataConverters;
   unsigned short                             m_amplitudeBitRotation;
   // electronicsMapping parameters
   dqm4hep::DQMElectronicsMapping            *m_pElectronicsMapping;
@@ -130,6 +127,9 @@ private:
   Geometry                                   m_geometry;
   DifMapping                                 m_difMapping;
 
+private:
+  EventHelper                                  *m_pEventHelper;
+  EventClassifier                              *m_pEventClassifier;
 
 
 private:
