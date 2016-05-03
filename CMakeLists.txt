@@ -27,22 +27,22 @@ ENDIF()
 #-- dependencies --
 LIST( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 
-FIND_PACKAGE( ILCUTIL COMPONENTS ILCSOFT_CMAKE_MODULES streamlog REQUIRED )
-INCLUDE( ilcsoft_default_settings )
-
+# ----- Find DQMCore package -----
 FIND_PACKAGE( DQMCore         REQUIRED )
-FIND_PACKAGE( DQM4ILC         REQUIRED )
-FIND_PACKAGE( LOG4CXX         REQUIRED )
-FIND_PACKAGE( LCIO            REQUIRED )
-FIND_PACKAGE( xdrstream       REQUIRED )
-FIND_PACKAGE( xdrlcio         REQUIRED )
-FIND_PACKAGE( Marlin          REQUIRED )
-FIND_PACKAGE( CLHEP           REQUIRED )
-FIND_PACKAGE( Trivent         REQUIRED )
-FIND_PACKAGE( CaloSoftWare    REQUIRED )
-FIND_PACKAGE( Eigen3          REQUIRED )
+LIST( APPEND CMAKE_MODULE_PATH ${DQMCore_DIR}/cmake )
 
-FOREACH( pkg DQMCore DQM4ILC LCIO streamlog xdrstream xdrlcio LOG4CXX Marlin CLHEP Trivent CaloSoftWare )
+INCLUDE( default_settings )
+
+# ----- Find DQM4ILC package -----
+FIND_PACKAGE( DQM4ILC         REQUIRED )
+
+# ----- Find Trivent package -----
+FIND_PACKAGE( Trivent         REQUIRED )
+
+# ----- Find CaloSoftWare package -----
+FIND_PACKAGE( CaloSoftWare    REQUIRED )
+
+FOREACH( pkg DQMCore DQM4ILC Trivent CaloSoftWare )
     INCLUDE_DIRECTORIES( ${${pkg}_INCLUDE_DIRS} )
     LINK_LIBRARIES( ${${pkg}_LIBRARIES} )
     ADD_DEFINITIONS ( ${${pkg}_DEFINITIONS} )
