@@ -282,7 +282,8 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 
 				LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Run interaction finder");
 
-				bool isInteraction = m_interactionFinderAlgorithm.Run(clusters, pTrack->getTrackParameters());
+				m_interactionFinderAlgorithm.Run(clusters, pTrack->getTrackParameters());
+				bool isInteraction = m_interactionFinderAlgorithm.FindInteraction();
 				const float cosThetaTrack(pTrack->getCosTheta());
 
 				if ( ! isInteraction )
@@ -466,7 +467,7 @@ void SDHCALEventClassifier::clearEventContents(SDHCALEventClassifier::CaloHitLis
     SDHCALEventClassifier::CaloClusterList &clusters, SDHCALEventClassifier::CaloTrackList &tracks)
 {
 	for_each(hits.begin(), hits.end(), [] (caloobject::CaloHit * pCaloHit) { delete pCaloHit; });
-	for_each(clusters.begin(), clusters.end(), [] (caloobject::CaloCluster * pCluster) { delete pCluster; });
+	for_each(clusters.begin(), clusters.end(), [] (caloobject::CaloCluster2D * pCluster) { delete pCluster; });
 	for_each(tracks.begin(), tracks.end(), [] (caloobject::CaloTrack * pTrack) { delete pTrack; });
 
 	hits.clear();
