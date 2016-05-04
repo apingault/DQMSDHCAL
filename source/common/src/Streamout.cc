@@ -29,6 +29,7 @@
 #include "Streamout.h"
 #include "DIFUnpacker.h"
 #include "DIF.h"
+#include "dqm4hep/DQMLogging.h"
 
 // -- lcio headers
 #include "EVENT/LCIO.h"
@@ -38,8 +39,6 @@
 #include "IMPL/LCGenericObjectImpl.h"
 #include "IMPL/RawCalorimeterHitImpl.h"
 #include "IMPL/LCFlagImpl.h"
-
-#include "streamlog/streamlog.h"
 
 namespace dqm_sdhcal
 {
@@ -70,6 +69,7 @@ Streamout::Streamout() :
 		m_xdaqShift(24),
 		m_inputCollectionName("RU_XDAQ"),
 		m_outputCollectionName("DHCALRawHits"),
+	m_moduleLogStr("[Streamout]"),
 		m_dropFirstRU(true),
 		m_skipFullAsics(true)
 {
@@ -96,7 +96,7 @@ dqm4hep::StatusCode Streamout::processEvent(EVENT::LCEvent *pLCEvent)
 	}
 	catch(EVENT::DataNotAvailableException &exception)
 	{
-	  streamlog_out(ERROR) << "Input collection name not found : " << m_inputCollectionName << std::endl;
+		LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Input collection name not found : " << m_inputCollectionName );;
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 
