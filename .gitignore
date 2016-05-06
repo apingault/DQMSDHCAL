@@ -5,7 +5,3 @@
 /data
 .gitignore
 /TODO.txt
-
-.tags
-.tags_sorted_by_file
-DQMSDHCAL.sublime-workspace
