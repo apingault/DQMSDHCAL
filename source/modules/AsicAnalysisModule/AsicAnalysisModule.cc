@@ -175,21 +175,21 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 			"InteractionFinder.MinNumberOfCluster", m_interactionFinderSettings.minNumberOfCluster));
 
 	/*-----------------------------------------------------*/
-	m_geomSettings.xmin = 0.f;
+	m_layerSettings.edgeX_min = 0.f;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"Layer.EdgeX_Min", m_geomSettings.xmin));
+			"Layer.EdgeX_Min", m_layerSettings.edgeX_min));
 
-	m_geomSettings.xmax = 1000.f;
+	m_layerSettings.edgeX_max = 1000.f;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"Layer.EdgeX_Max", m_geomSettings.xmax));
+			"Layer.EdgeX_Max", m_layerSettings.edgeX_max));
 
-	m_geomSettings.ymin = 0.f;
+	m_layerSettings.edgeY_min = 0.f;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"Layer.EdgeY_Min", m_geomSettings.ymin));
+			"Layer.EdgeY_Min", m_layerSettings.edgeY_min));
 
-	m_geomSettings.ymax = 1000.f;
+	m_layerSettings.edgeY_max = 1000.f;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"Layer.EdgeY_Max", m_geomSettings.ymax));
+			"Layer.EdgeY_Max", m_layerSettings.edgeY_max));
 
 	/*-----------------------------------------------------*/
 
@@ -333,7 +333,7 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 	// content management
 	caloobject::CaloHitMap caloHitMap;
 	std::vector< caloobject::CaloHit *> hits;
-	std::vector< caloobject::CaloCluster2D *> clusters;
+	std::vector< caloobject::CaloCluster *> clusters;
 	std::vector< caloobject::CaloTrack *>   tracks;
 
 	CLHEP::Hep3Vector globalHitShift(0, 0, 0);
@@ -393,7 +393,7 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		caloobject::CaloClusterList trackingClusters;
 
-		for(std::vector<caloobject::CaloCluster2D*>::iterator iter = clusters.begin(), endIter = clusters.end() ;
+		for(std::vector<caloobject::CaloCluster*>::iterator iter = clusters.begin(), endIter = clusters.end() ;
 				endIter != iter ; ++iter)
 			if( ! m_clusteringHelper.IsIsolatedCluster(*iter, clusters) )
 				trackingClusters.push_back(*iter);
@@ -415,8 +415,8 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Run interaction finder");
 
-		m_interactionFinderAlgorithm.Run(clusters, pTrack->getTrackParameters());
-		bool isInteraction =  m_interactionFinderAlgorithm.FindInteraction();
+		bool isInteraction = m_interactionFinderAlgorithm.Run(clusters, pTrack->getTrackParameters());
+
 		// tracking on muons only
 		// stop processing if event is an interaction
 		if( isInteraction )
@@ -682,7 +682,7 @@ dqm4hep::StatusCode AsicAnalysisModule::endModule()
 void AsicAnalysisModule::clearEventContents(caloobject::CaloHitList &hits, caloobject::CaloClusterList &clusters, caloobject::CaloTrackList &tracks)
 {
 	for_each(hits.begin(), hits.end(), [] (caloobject::CaloHit *pCaloHit) { delete pCaloHit; });
-	for_each(clusters.begin(), clusters.end(), [] (caloobject::CaloCluster2D *pCluster) { delete pCluster; });
+	for_each(clusters.begin(), clusters.end(), [] (caloobject::CaloCluster *pCluster) { delete pCluster; });
 	for_each(tracks.begin(), tracks.end(), [] (caloobject::CaloTrack *pTrack) { delete pTrack; });
 
 	hits.clear();
@@ -782,7 +782,7 @@ caloobject::CaloLayer *AsicAnalysisModule::getOrCreateLayer(unsigned int layerId
 	{
 		caloobject::CaloLayer *pLayer = new caloobject::CaloLayer( layerId );
 
-		// pLayer->setLayerParameterSetting(m_geomSettings);
+		pLayer->setLayerParameterSetting(m_layerSettings);
 
 		iter = m_caloLayerMap.insert( caloobject::CaloLayerMap::value_type( layerId , pLayer ) ).first;
 	}

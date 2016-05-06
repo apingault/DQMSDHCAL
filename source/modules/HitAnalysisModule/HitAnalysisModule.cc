@@ -688,7 +688,7 @@ dqm4hep::StatusCode HitAnalysisModule::endModule()
 void HitAnalysisModule::clearEventContents(caloobject::CaloHitList & hits, caloobject::CaloClusterList & clusters)
 {
 	for_each(hits.begin(), hits.end(), [] (caloobject::CaloHit * pCaloHit) { delete pCaloHit; });
-	for_each(clusters.begin(), clusters.end(), [] (caloobject::CaloCluster2D * pCluster) { delete pCluster; });
+	for_each(clusters.begin(), clusters.end(), [] (caloobject::CaloCluster * pCluster) { delete pCluster; });
 
 	hits.clear();
 	clusters.clear();

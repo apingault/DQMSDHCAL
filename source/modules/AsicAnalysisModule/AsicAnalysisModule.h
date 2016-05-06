@@ -60,7 +60,7 @@ namespace caloobject
 	typedef std::map<unsigned int, std::vector<CaloHit *> > CaloHitMap;
 	typedef std::map<unsigned int, CaloLayer *> CaloLayerMap;
 	typedef std::vector<CaloHit *> CaloHitList;
-	typedef std::vector<CaloCluster2D *> CaloClusterList;
+	typedef std::vector<CaloCluster *> CaloClusterList;
 	typedef std::vector<CaloTrack *> CaloTrackList;
 }
 
@@ -216,7 +216,7 @@ private:
 	algorithm::TrackingParameterSetting          m_trackingSettings;
 	algorithm::InteractionFinderParameterSetting m_interactionFinderSettings;
 	algorithm::EfficiencyParameterSetting        m_efficiencySettings;
-	caloobject::GeomParameterSetting            m_geomSettings;
+	caloobject::LayerParameterSetting            m_layerSettings;
 
 	// module parameters
 	std::string                              m_inputCollectionName;

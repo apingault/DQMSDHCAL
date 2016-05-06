@@ -53,7 +53,7 @@ namespace caloobject
 {
 typedef std::map<unsigned int, std::vector<CaloHit *> > CaloHitMap;
 typedef std::vector<CaloHit *> CaloHitList;
-typedef std::vector<CaloCluster2D *> CaloClusterList;
+typedef std::vector<CaloCluster *> CaloClusterList;
 }
 
 namespace dqm_sdhcal
