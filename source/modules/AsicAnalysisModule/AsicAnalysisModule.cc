@@ -5,22 +5,22 @@
  * Creation date : ven. ao�t 28 2015
  *
  * This file is part of DQMSDHCAL libraries.
- * 
+ *
  * DQMSDHCAL is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  * based upon these libraries are permitted. Any copy of these libraries
  * must include this copyright notice.
- * 
+ *
  * DQMSDHCAL is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with DQMSDHCAL.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * @author Remi Ete, Arnaud Steen
  * @copyright CNRS , IPNL
  */
@@ -65,7 +65,7 @@ AsicAnalysisModule::AsicAnalysisModule() :
 
 //-------------------------------------------------------------------------------------------------
 
-AsicAnalysisModule::~AsicAnalysisModule() 
+AsicAnalysisModule::~AsicAnalysisModule()
 {
 }
 
@@ -313,6 +313,8 @@ dqm4hep::StatusCode AsicAnalysisModule::userInitModule()
 	m_clusteringHelper.SetClusteringHelperParameterSetting(m_clusteringHelperSettings);
 	m_trackingAlgorithm.SetTrackingParameterSetting(m_trackingSettings);
 	m_interactionFinderAlgorithm.SetInteractionFinderParameterSetting(m_interactionFinderSettings);
+	m_efficiencySettings.geometry=m_geomSettings;
+	m_efficiencySettings.trackingParams=m_trackingSettings;
 	m_efficiencyAlgorithm.SetEfficiencyParameterSetting(m_efficiencySettings);
 
 	return STATUS_CODE_SUCCESS;
