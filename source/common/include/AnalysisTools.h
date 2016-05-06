@@ -98,10 +98,10 @@ public:
 	 */
 	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
 
-/**
- * decode lcio parameters from the triggerEvent
- *
- */
+	/**
+	 * decode lcio parameters from the triggerEvent
+	 *
+	 */
 	template <typename CaloHitType>
 	dqm4hep::StatusCode decodeEventParameter(EVENT::LCCollection *pLCCollection)
 	{
@@ -148,7 +148,7 @@ private:
 	float                                    m_DAQ_BC_Period;
 	float 																   m_newSpillTimeCut;
 	unsigned long long 											 m_shiftBCID;
-	std::string 														 m_amplitudeBitRotation;
+	unsigned short 													 m_amplitudeBitRotation;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -267,7 +267,7 @@ class SDHCALEventClassifier : public EventClassifier
 {
 	typedef std::vector<caloobject::CaloHit *> CaloHitList;
 	typedef std::map<unsigned int, CaloHitList > CaloHitMap;
-	typedef std::vector<caloobject::CaloCluster *> CaloClusterList;
+	typedef std::vector<caloobject::CaloCluster2D *> CaloClusterList;
 	typedef std::vector<caloobject::CaloTrack *> CaloTrackList;
 public:
 	/** Constructor

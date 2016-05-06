@@ -5,22 +5,22 @@
  * Creation date : lun. ao�t 3 2015
  *
  * This file is part of DQMSDHCAL libraries.
- * 
+ *
  * DQMSDHCAL is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  * based upon these libraries are permitted. Any copy of these libraries
  * must include this copyright notice.
- * 
+ *
  * DQMSDHCAL is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with DQMSDHCAL.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * @author Laurent Mirabito, Remi Ete
  * @copyright CNRS , IPNL
  */
@@ -38,7 +38,7 @@ namespace dqm_sdhcal
 
 /** Streamout class
  */
-class Streamout 
+class Streamout
 {
 public:
 	/** Constructor
@@ -84,13 +84,14 @@ public:
 private:
 
 	int                m_ruShift;
-	unsigned int      m_xdaqShift;
+	unsigned int       m_xdaqShift;
 	bool               m_dropFirstRU;
 	bool               m_skipFullAsics;
 	std::string        m_inputCollectionName;
 	std::string        m_outputCollectionName;
-}; 
+	std::string 			 m_moduleLogStr;
+};
 
-} 
+}
 
 #endif  //  DQMSDHCAL_STREAMOUT_H

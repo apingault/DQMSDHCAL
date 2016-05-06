@@ -6,9 +6,9 @@
         <runcontrol type="DimRunControlClient" name="SDHCALRunControl" />
 
         <eventcollector type="DimEventClient">
-            <parameter name="collectorName"> sdhcal_event_collector </parameter>
-            <parameter name="maxQueueSize"> 100 </parameter>
-            <parameter name="streamerName"> LCIOStreamer </parameter>
+        	<parameter name="collectorName"> sdhcal_event_collector </parameter>
+        	<parameter name="maxQueueSize"> 100 </parameter>
+        	<parameter name="streamerName"> LCIOStreamer </parameter>
         </eventcollector>
 
         <monitorelementcollector name="sdhcal_me_collector"/>
@@ -16,7 +16,7 @@
 
     <cycle type="TimerCycle" value="10" timeout="5" />
 
-    <module type="NoiseAnalysisModule" name="NoiseAnalysisModule">
+    <module type="RawAnalysisModule" name="RawAnalysisModule">
 
         <parameter name="ShouldProcessStreamout">  false </parameter>
           <Streamout>
@@ -49,6 +49,8 @@
                     <parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
                 </converter>
             </RawDataConverters>
+
+        <parameter name="AmplitudeBitRotation"> 3 </parameter>
 
         <!-- The following electronicsMapping handle is here only for geometry dependent Histogram Booking -->
         <!-- Ensure the GeometryFileName is the same as in the converter settings -->
@@ -96,34 +98,6 @@
             resetPolicy="EndOfRun"/>
 
 
-        <!-- Timing -->
-        <monitorElement ID="TimeDiffSpill"
-                name="TimeDiffSpill" path="." type="TH1F" title="Time (s) between two start time of spill"
-                nBins="500" min="0" max="100"
-                resetPolicy="EndOfRun"/>
-
-        <monitorElement ID="TimeDiffTrigger"
-                name="TimeDiffTrigger" path="." type="TH1F" title="Time (s) between two start time of trigger"
-                nBins="500" min="0" max="100E-2"
-                resetPolicy="EndOfRun"/>
-
-        <monitorElement ID="TimeDiffTriggerToSpill"
-                name="TimeDiffTriggerToSpill" path="." type="TH1F" title="Time (s) between start time of new spill and start time of last trigger of previous Spill"
-                nBins="500" min="0" max="100"
-                resetPolicy="EndOfRun"/>
-
-        <monitorElement ID="SpillLength"
-                name="SpillLength" path="." type="TH1F" title="Spill Length in s"
-                nBins="100" min="0" max="10"
-                resetPolicy="EndOfRun"/>
-
-        <monitorElement ID="TriggerPerSpill"
-                name="TriggerPerSpill" path="." type="TH1F" title="Number of Trigger per Spill"
-                nBins="100" min="0" max="10"
-                resetPolicy="EndOfRun"/>
-
-        <monitorElement ID="TriggerLastSpill"
-                name="TriggerLastSpill" path="." type="string" title="Number of Trigger in last Spill"/>
 
         <monitorElement ID="AcquisitionTime"
                 name="AcquisitionTime" path="." type="TH1F" title="Acquisition Time" decription=""
@@ -165,7 +139,7 @@
             resetPolicy="EndOfRun"/>
 
         <!-- 3072 = 48*64 = Asic * Pad -->
-        <monitorElement ID="AsicHits1"
+		<monitorElement ID="AsicHits1"
             name="AsicHits1" path="." type="TH1F" title="Hits per pad and asic threshold 1"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>

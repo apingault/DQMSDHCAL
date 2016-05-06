@@ -180,7 +180,7 @@ dqm4hep::StatusCode HoughTransformModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 
 		// contents
-		std::vector<caloobject::CaloCluster *> clusters;
+		std::vector<caloobject::CaloCluster2D *> clusters;
 		std::vector<caloobject::CaloTrack *>   tracks;
 
 		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating intra layer clusters");
@@ -193,9 +193,9 @@ dqm4hep::StatusCode HoughTransformModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Filter non - isolated clusters");
 
-		std::vector<caloobject::CaloCluster*> houghClusters;
+		std::vector<caloobject::CaloCluster2D*> houghClusters;
 
-		for(std::vector<caloobject::CaloCluster*>::iterator iter = clusters.begin(), endIter = clusters.end() ;
+		for(std::vector<caloobject::CaloCluster2D*>::iterator iter = clusters.begin(), endIter = clusters.end() ;
 				endIter != iter ; ++iter)
 			if( ! clusteringHelper.IsIsolatedCluster(*iter, clusters) )
 				houghClusters.push_back(*iter);
@@ -207,7 +207,7 @@ dqm4hep::StatusCode HoughTransformModule::processEvent(EVENT::LCEvent *pLCEvent)
 		THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->analyzeTracks(tracks));
 
 		std::for_each(caloHitList.begin(), caloHitList.end(), [](caloobject::CaloHit *pCaloHit) { delete pCaloHit; });
-		std::for_each(clusters.begin(), clusters.end(), [](caloobject::CaloCluster *pCluster) { delete pCluster; });
+		std::for_each(clusters.begin(), clusters.end(), [](caloobject::CaloCluster2D *pCluster) { delete pCluster; });
 		std::for_each(tracks.begin(), tracks.end(), [](caloobject::CaloTrack *pTrack) { delete pTrack; });
 	}
 	catch(EVENT::DataNotAvailableException &exception)
@@ -233,7 +233,7 @@ dqm4hep::StatusCode HoughTransformModule::analyzeTracks( const std::vector<caloo
 	{
 		caloobject::CaloTrack *pTrack = *iter;
 
-		const std::vector<caloobject::CaloCluster*> &trackClusters(pTrack->getClusters());
+		const std::vector<caloobject::CaloCluster2D*> &trackClusters(pTrack->getClusters());
 		const unsigned int nClusters(trackClusters.size());
 
 		const int startingLayer(pTrack->getTrackStartingCluster()->getLayerID());
@@ -245,13 +245,13 @@ dqm4hep::StatusCode HoughTransformModule::analyzeTracks( const std::vector<caloo
 		float meanClusterSize(0.f);
 
 		std::for_each(trackClusters.begin(), trackClusters.end(),
-				[&] (caloobject::CaloCluster *pCluster) {
+				[&] (caloobject::CaloCluster2D *pCluster) {
 			meanClusterSize += static_cast<float>(pCluster->getHits().size());
 		});
 
 		meanClusterSize /= static_cast<float>(nClusters);
 
-		const float *trackParameters = pTrack->getTrackParameters();
+		const std::vector<float> trackParameters = pTrack->getTrackParameters();
 
 		const CLHEP::Hep3Vector trackPoint1( -1, 0, trackParameters[0] );
 		const CLHEP::Hep3Vector trackPoint2( 0, -1, trackParameters[3] );

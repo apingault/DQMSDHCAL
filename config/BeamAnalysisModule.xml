@@ -1,0 +1,63 @@
+<dqm4hep>
+
+    <archiver open="true" directory="/tmp" />
+
+    <network>
+        <runcontrol type="DimRunControlClient" name="SDHCALRunControl" />
+
+        <eventcollector type="DimEventClient">
+        	<parameter name="collectorName"> sdhcal_event_collector </parameter>
+        	<parameter name="maxQueueSize"> 100 </parameter>
+        	<parameter name="streamerName"> LCIOStreamer </parameter>
+        </eventcollector>
+
+        <monitorelementcollector name="sdhcal_me_collector"/>
+    </network>
+
+    <cycle type="TimerCycle" value="10" timeout="5" />
+
+    <module type="BeamAnalysisModule" name="BeamAnalysisModule">
+        <parameter name="InputCollectionName"> DHCALRawHits </parameter>
+
+        <!-- spillLength in seconds -->
+        <parameter name="SpillLength">  10 </parameter>
+        <!-- ClockFrameLength in ns -->
+        <parameter name="ClockFrameLength">  200 </parameter>
+        <parameter name="NumberOfEventToSkip">  -1 </parameter>
+
+        <!-- Timing -->
+        <monitorElement ID="TimeDiffSpill"
+                name="TimeDiffSpill" path="." type="TH1F" title="Time (s) between two start time of spill"
+                nBins="500" min="0" max="100"
+                resetPolicy="EndOfRun"/>
+
+        <monitorElement ID="TimeDiffTrigger"
+                name="TimeDiffTrigger" path="." type="TH1F" title="Time (s) between two start time of trigger"
+                nBins="500" min="0" max="100E-2"
+                resetPolicy="EndOfRun"/>
+
+        <monitorElement ID="TimeDiffTriggerToSpill"
+                name="TimeDiffTriggerToSpill" path="." type="TH1F" title="Time (s) between start time of new spill and start time of last trigger of previous Spill"
+                nBins="500" min="0" max="100"
+                resetPolicy="EndOfRun"/>
+
+        <monitorElement ID="SpillLength"
+                name="SpillLength" path="." type="TH1F" title="Spill Length in s"
+                nBins="100" min="0" max="10"
+                resetPolicy="EndOfRun"/>
+
+       <monitorElement ID="TriggerPerSpill"
+                name="TriggerPerSpill" path="." type="TH1F" title="Number of Trigger per Spill"
+                nBins="100" min="0" max="10"
+                resetPolicy="EndOfRun"/>
+
+        <monitorElement ID="TriggerLastSpill"
+                name="TriggerLastSpill" path="." type="string" title="Number of Trigger in last Spill"/>
+
+        <monitorElement ID="AcquisitionTime"
+                name="AcquisitionTime" path="." type="TH1F" title="Acquisition Time" decription=""
+                nBins="2000" min="0" max="0.5"
+                resetPolicy="EndOfRun"/>
+
+    </module>
+</dqm4hep>

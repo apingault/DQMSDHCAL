@@ -27,8 +27,9 @@ MACRO( ADD_MODULE  module_name )
 ENDMACRO()
 
 
-#ADD_MODULE( NoiseAnalysisModule )
-#ADD_MODULE( HitAnalysisModule )
+ADD_MODULE( BeamAnalysisModule )
+ADD_MODULE( RawAnalysisModule )
+ADD_MODULE( HitAnalysisModule )
 ADD_MODULE( AsicAnalysisModule )
 ADD_MODULE( SlowControlModule )
 ADD_MODULE( HoughTransformModule )
