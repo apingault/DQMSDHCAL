@@ -156,11 +156,15 @@
 		<!-- Run control client to receive start/end of run signals -->
 		<runcontrol plugin="DimRunControlClient" name="DQMRunControl"/>
 	
-		<!-- Event client to send data to event collector -->
-        <eventclient plugin="DimEventClient">
-        	<parameter name="collectorName"> sdhcal_event_collector </parameter>
-        	<parameter name="streamerName"> LCIOStreamer </parameter>
-        </eventclient>
+		<!-- Event clients to send data to event collector -->
+		<eventclientlist>
+			<eventclient plugin="DimEventClient">
+	        	<parameter name="collectorName"> sdhcal_event_collector </parameter>
+	        </eventclient>
+		</eventclientlist>
+		
+		<!-- The event streamer to serialize data for event client -->
+		<eventstreamer plugin="LCIOStreamer"/>
 		
 		<!-- Event builder processor. Fill an event from the shm driver data source buffers -->	
 		<evbprocessors>

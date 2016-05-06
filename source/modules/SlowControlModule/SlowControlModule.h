@@ -54,8 +54,8 @@ struct HVInfo
 {
 	int      m_chamberID;   ///< The chamber ID
 	float    m_vSet;        ///< The voltage as supplied by shifters
-	float    m_vRead;       ///< The read voltage by the device
 	float    m_iSet;        ///< The current as supplied by shifters
+	float    m_vRead;       ///< The read voltage by the device
 	float    m_iRead;       ///< The read current by the device
 };
 
