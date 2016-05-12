@@ -64,13 +64,13 @@ BeamAnalysisModule::~BeamAnalysisModule()
 //-------------------------------------------------------------------------------------------------
 dqm4hep::StatusCode BeamAnalysisModule::initModule()
 {
-  m_nEventProcessed = 0;
-  m_eventIntegratedTime = 0;
-  m_spillIntegratedTime = 0;
-  m_totalIntegratedTime = 0;
-  m_timeLastTrigger = 0;
-  m_timeLastSpill = 0;
-  m_nTrigger = 0;
+  m_eventParameters.nTriggerProcessed = 0;
+  m_eventParameters.eventIntegratedTime = 0;
+  m_eventParameters.spillIntegratedTime = 0;
+  m_eventParameters.totalIntegratedTime = 0;
+  m_eventParameters.timeLastTrigger = 0;
+  m_eventParameters.timeLastSpill = 0;
+  m_eventParameters.nTriggerInSpill = 0;
   m_moduleLogStr = "[BeamAnalysisModule]";
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -78,6 +78,28 @@ dqm4hep::StatusCode BeamAnalysisModule::initModule()
 //-------------------------------------------------------------------------------------------------
 dqm4hep::StatusCode BeamAnalysisModule::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
+  /*------ Event Helper settings ------*/
+  dqm4hep::TiXmlElement *pEventHelperElement = xmlHandle.FirstChild("eventHelper").Element();
+  if ( ! pEventHelperElement )
+  {
+    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't find xml element eventHelper !" );
+    return dqm4hep::STATUS_CODE_NOT_FOUND;
+  }
+
+  std::string plugin;
+  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::getAttribute(pEventHelperElement, "plugin", plugin));
+
+  m_pEventHelper = dqm4hep::DQMPluginManager::instance()->createPluginClass<EventHelper>(plugin);
+
+  if ( ! m_pEventHelper )
+  {
+    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't find eventHelper plugin called : " << plugin );
+    return dqm4hep::STATUS_CODE_NOT_FOUND;
+  }
+  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->readSettings(dqm4hep::TiXmlHandle(pEventHelperElement)));
+  /*------ Event Helper settings ------*/
+
+
   /* ------ Booking Monitor Elements ------ */
   // ------ General ME ------
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "TimeDiffSpill", m_pTimeDiffSpill));
@@ -101,64 +123,9 @@ dqm4hep::StatusCode BeamAnalysisModule::readSettings(const dqm4hep::TiXmlHandle 
   RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
                           "InputCollectionName", m_inputCollectionName));
 
-  m_newSpillTimeCut = 10;
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-                   "SpillLength", m_newSpillTimeCut));
-
-  m_DAQ_BC_Period = 200; // Size of a clock frame, in nsecond
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-                   "ClockFrameLength", m_DAQ_BC_Period));
-  m_DAQ_BC_Period *= 1E-9; // Size of a clock frame, in second
-
   m_skipEvent = 0; //=1 to skip first event of the acquisition
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
                    "NumberOfEventToSkip", m_skipEvent));
-
-  return dqm4hep::STATUS_CODE_SUCCESS;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-dqm4hep::StatusCode BeamAnalysisModule::findTrigger(EVENT::LCCollection* const pLCCollection)
-{
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->decodeEventParameter<EVENT::RawCalorimeterHit>(pLCCollection));
-
-  double timeTrigger = m_pEventHelper->getTimeTrigger();
-  double timeDif = timeTrigger - m_timeLastTrigger;
-
-  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - time since previous trigger : " << timeDif << "s");
-
-  if (timeDif > m_newSpillTimeCut) // New Spill
-  {
-    LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Spill -  time since last startOfSpill : " <<  timeTrigger - m_timeLastSpill << " s.  Last spill Stat: Length : " << m_spillIntegratedTime << "s\t triggers : " << m_nTrigger << "\t particles : " << m_nParticleLastSpill );
-
-    m_pSpillLength->get<TH1>()->Fill(m_spillIntegratedTime);
-    m_pTimeDiffTriggerToSpill->get<TH1>()->Fill(timeDif);
-    m_pTimeDiffSpill->get<TH1>()->Fill(timeTrigger - m_timeLastSpill);
-    // TODO: make it update on each spill?
-    m_pTriggerLastSpill->get<dqm4hep::TScalarString>()->Set(std::to_string(m_nTrigger));
-    m_pTriggerPerSpill->get<TH1>()->Fill(m_nTrigger);
-
-    m_timeLastSpill = timeTrigger;
-    m_nParticleLastSpill = 0;
-    m_nTrigger = 0;
-    m_spillIntegratedTime = 0;
-  }
-
-  // timeDif is not meaningful for the first event
-  if (m_nEventProcessed != 0)
-  {
-    m_totalIntegratedTime += timeDif;
-    if (m_nTrigger != 0)
-      m_spillIntegratedTime += timeDif;
-  }
-
-  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Trigger at time : " << timeTrigger << "s - time since previous trigger : " << timeDif << "s\t spillIntegratedTime : " << m_spillIntegratedTime << "s");
-
-  m_nTrigger++;
-  m_pTimeDiffTrigger->get<TH1>()->Fill(timeDif);
-  m_pAcquisitionTime->get<TH1F>()->Fill((m_eventIntegratedTime * m_DAQ_BC_Period));
-  m_timeLastTrigger = timeTrigger;
 
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -195,14 +162,12 @@ dqm4hep::StatusCode BeamAnalysisModule::processEvent(dqm4hep::DQMEvent * const p
     }
 
     //Find Triggers and NewSpill
-    RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->decodeEventParameter<EVENT::RawCalorimeterHit>(pRawCalorimeterHitCollection));
-    StatusCode status = findTrigger(pRawCalorimeterHitCollection);
-
+    StatusCode status = m_pEventHelper->findTrigger<EVENT::RawCalorimeterHit>(pRawCalorimeterHitCollection, m_eventParameters);
     if (dqm4hep::STATUS_CODE_SUCCESS != status)
       return dqm4hep::STATUS_CODE_SUCCESS;
 
-    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - eventIntegratedTime (s): " << m_eventIntegratedTime * m_DAQ_BC_Period << "s\t spillIntegratedTime (s): " << m_spillIntegratedTime << "s\t totalIntegratedTime (s) : " << m_totalIntegratedTime << "s");
-
+    m_DAQ_BC_Period = m_pEventHelper->getDAQ_BC_Period();
+    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - eventIntegratedTime (s): " << m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period << "s\t spillIntegratedTime (s): " << m_eventParameters.spillIntegratedTime * m_DAQ_BC_Period << "s\t totalIntegratedTime (s) : " << m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period << "s");
   }
   catch (EVENT::DataNotAvailableException &exception)
   {
@@ -215,7 +180,7 @@ dqm4hep::StatusCode BeamAnalysisModule::processEvent(dqm4hep::DQMEvent * const p
     LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " Caught unknown exception !");
     return dqm4hep::STATUS_CODE_FAILURE;
   }
-  m_nEventProcessed++;
+  m_eventParameters.nTriggerProcessed++;
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -237,15 +202,21 @@ dqm4hep::StatusCode BeamAnalysisModule::endOfCycle()
 
 dqm4hep::StatusCode BeamAnalysisModule::startOfRun(dqm4hep::DQMRun * const pRun)
 {
-  m_totalIntegratedTime = 0;
-  return dqm4hep::STATUS_CODE_SUCCESS;
+  m_eventParameters.nTriggerProcessed = 0;
+  m_eventParameters.eventIntegratedTime = 0;
+  m_eventParameters.spillIntegratedTime = 0;
+  m_eventParameters.totalIntegratedTime = 0;
+  m_eventParameters.timeLastTrigger = 0;
+  m_eventParameters.timeLastSpill = 0;
+  m_eventParameters.nTriggerInSpill = 0;
+    return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
 
 dqm4hep::StatusCode BeamAnalysisModule::endOfRun(dqm4hep::DQMRun * const pRun)
 {
-  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Run lasted " << m_totalIntegratedTime << "s : " << floor(m_totalIntegratedTime / 3600) << "h " << floor(fmod(m_totalIntegratedTime / 60, 60)) << "min " << fmod(m_totalIntegratedTime, 60) <<  "s");
+  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Run lasted " << m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period << "s : " << floor(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period / 3600) << "h " << floor(fmod(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period / 60, 60)) << "min " << fmod(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period, 60) <<  "s");
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
 

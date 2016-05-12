@@ -103,7 +103,6 @@ private:
   dqm4hep::StatusCode endOfCycle();
   dqm4hep::StatusCode endModule();
 
-  dqm4hep::StatusCode findTrigger(EVENT::LCCollection* const pLCCollection);
   dqm4hep::StatusCode doDIFStudy(RawCaloHitObject * const pRawCaloHitObject);
   dqm4hep::StatusCode fillAsicOccupancyMap( RawCaloHitObject * const pRawCaloHitObject);
   dqm4hep::StatusCode doAsicStudy();
@@ -129,7 +128,7 @@ private:
 
 private:
   EventHelper                                  *m_pEventHelper;
-  EventClassifier                              *m_pEventClassifier;
+  EventHelper::EventParameters                  m_eventParameters;
 
 
 private:
@@ -148,34 +147,17 @@ private:
   unsigned int                             m_nChanPerAsic;
   int                                      m_nStartLayerShift;
 
-  int                                      m_nEventProcessed;
-  double                                   m_eventIntegratedTime;
-  double                                   m_spillIntegratedTime;
-  double                                   m_totalIntegratedTime;
   unsigned long long                       m_hitTimeMin;
   unsigned long long                       m_hitTimeMax;
-
-  double                                   m_timeLastTrigger;
-  double                                   m_timeLastSpill;
   float                                    m_DAQ_BC_Period;
-  unsigned int                             m_nParticleLastSpill;
-  unsigned int                             m_nTrigger;
+
   // Cuts
   int                                      m_skipEvent;
-  double                                   m_newSpillTimeCut;
-
 
   // Monitor Elements
-  dqm4hep::DQMMonitorElementPtr               m_pTimeDiffSpill;
-  dqm4hep::DQMMonitorElementPtr               m_pTimeDiffTrigger;
-  dqm4hep::DQMMonitorElementPtr               m_pTimeDiffTriggerToSpill;
-  dqm4hep::DQMMonitorElementPtr               m_pTriggerPerSpill;
-  dqm4hep::DQMMonitorElementPtr               m_pTriggerLastSpill;
-  dqm4hep::DQMMonitorElementPtr               m_pSpillLength;
   dqm4hep::DQMMonitorElementPtr               m_pAsicOccupancyAll;
   dqm4hep::DQMMonitorElementPtr               m_pAsicOccupancyChamber;
   dqm4hep::DQMMonitorElementPtr               m_pAsicOccupancyDIF;
-  dqm4hep::DQMMonitorElementPtr               m_pAcquisitionTime;
   dqm4hep::DQMMonitorElementPtr               m_pHitFrequencyMap;
 
   struct DifElements

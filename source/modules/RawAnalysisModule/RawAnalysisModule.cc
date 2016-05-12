@@ -89,22 +89,20 @@ RawAnalysisModule::~RawAnalysisModule()
     delete *iter;
 
   m_dataConverters.clear();
-  m_pStreamout = new Streamout();
+  delete m_pStreamout;
 
 }
 
 //-------------------------------------------------------------------------------------------------
 dqm4hep::StatusCode RawAnalysisModule::initModule()
 {
-  m_nEventProcessed = 0;
-  m_hitTimeMin = 99999999.;
-  m_hitTimeMax = 0;
-  m_eventIntegratedTime = 0;
-  m_spillIntegratedTime = 0;
-  m_totalIntegratedTime = 0;
-  m_timeLastTrigger = 0;
-  m_timeLastSpill = 0;
-  m_nTrigger = 0;
+  m_eventParameters.nTriggerProcessed = 0;
+  m_eventParameters.eventIntegratedTime = 0;
+  m_eventParameters.spillIntegratedTime = 0;
+  m_eventParameters.totalIntegratedTime = 0;
+  m_eventParameters.timeLastTrigger = 0;
+  m_eventParameters.timeLastSpill = 0;
+  m_eventParameters.nTriggerInSpill = 0;
   m_moduleLogStr = "[RawAnalysisModule]";
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -159,10 +157,6 @@ dqm4hep::StatusCode RawAnalysisModule::readSettings(const dqm4hep::TiXmlHandle x
   m_nChanPerAsic = 64;
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
                    "NChanPerAsic", m_nChanPerAsic));
-
-  m_amplitudeBitRotation = 3;
-  RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-                          "AmplitudeBitRotation", m_amplitudeBitRotation));
   /* ------ End Detector Settings ------ */
 
 
@@ -249,7 +243,6 @@ dqm4hep::StatusCode RawAnalysisModule::readSettings(const dqm4hep::TiXmlHandle x
   RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(electronicsXmlHandle,
                           "ReadFromDB", readFromDB));
 
-
   std::string geometryFileName = "geometry_SPS_08_2012.xml";
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(electronicsXmlHandle,
                    "GeometryFileName", geometryFileName));
@@ -302,13 +295,34 @@ dqm4hep::StatusCode RawAnalysisModule::readSettings(const dqm4hep::TiXmlHandle x
   /*------------- End Geometry Mapping settings ------------*/
 
 
+  /*------ Event Helper settings ------*/
+  dqm4hep::TiXmlElement *pEventHelperElement = xmlHandle.FirstChild("eventHelper").Element();
+
+  if ( ! pEventHelperElement )
+  {
+    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't find xml element eventHelper !" );
+    return dqm4hep::STATUS_CODE_NOT_FOUND;
+  }
+
+  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::getAttribute(pEventHelperElement, "plugin", plugin));
+
+  m_pEventHelper = dqm4hep::DQMPluginManager::instance()->createPluginClass<EventHelper>(plugin);
+
+  if ( ! m_pEventHelper )
+  {
+    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't find eventHelper plugin called : " << plugin );
+    return dqm4hep::STATUS_CODE_NOT_FOUND;
+  }
+
+  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->readSettings(dqm4hep::TiXmlHandle(pEventHelperElement)));
+  /*------ End Event Helper settings ------*/
+
+
   /* ------ Booking Monitor Elements ------ */
   // ------ General ME ------
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "AsicOccupancyAll", m_pAsicOccupancyAll));
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "AsicOccupancyChamber", m_pAsicOccupancyChamber));
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "AsicOccupancyDIF", m_pAsicOccupancyDIF));
-
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "AcquisitionTime", m_pAcquisitionTime));
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "HitFrequencyMap", m_pHitFrequencyMap));
 
   // ------ PerLayer ME ------
@@ -353,66 +367,23 @@ dqm4hep::StatusCode RawAnalysisModule::readSettings(const dqm4hep::TiXmlHandle x
 
 
   // Print Monitor Elements tree structure
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::cd(this, "/"));
-  dqm4hep::DQMModuleApi::ls(this, true);
+  bool shouldDumpMEStructure = false;
+  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+                   "DumpMEStructure", shouldDumpMEStructure));
+  if (shouldDumpMEStructure)
+  {
+    RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::cd(this, "/"));
+    dqm4hep::DQMModuleApi::ls(this, true);
+  }
 
   /* ------ Analysis Settings ------ */
   m_inputCollectionName = "SDHCAL_HIT";
   RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
                           "InputCollectionName", m_inputCollectionName));
 
-  m_newSpillTimeCut = 10;
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-                   "SpillLength", m_newSpillTimeCut));
-
-  // m_DAQ_BC_Period = 200; // Size of a clock frame, in nsecond
-  // RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-                   // "ClockFrameLength", m_DAQ_BC_Period));
-  // m_DAQ_BC_Period *= 1E-9; // Size of a clock frame, in second
-
   m_skipEvent = 0; //=1 to skip first event of the acquisition
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
                    "NumberOfEventToSkip", m_skipEvent));
-
-  return dqm4hep::STATUS_CODE_SUCCESS;
-}
-
-//-------------------------------------------------------------------------------------------------
-
-dqm4hep::StatusCode RawAnalysisModule::findTrigger(EVENT::LCCollection* const pLCCollection)
-{
-
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->decodeEventParameter<EVENT::RawCalorimeterHit>(pLCCollection));
-  m_DAQ_BC_Period = m_pEventHelper->getDAQBCPeriod();
-  double timeTrigger = m_pEventHelper->getTimeTrigger();
-  double timeDif = timeTrigger - m_timeLastTrigger;
-
-  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - time since previous trigger : " << timeDif << "s");
-
-  if (timeDif > m_newSpillTimeCut) // New Spill
-  {
-    LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Spill -  time since last startOfSpill : " <<  timeTrigger - m_timeLastSpill << " s.  Last spill Stat: Length : " << m_spillIntegratedTime << "s\t triggers : " << m_nTrigger << "\t particles : " << m_nParticleLastSpill );
-
-    m_timeLastSpill = timeTrigger;
-    m_nParticleLastSpill = 0;
-    m_nTrigger = 0;
-    m_spillIntegratedTime = 0;
-  }
-
-  // timeDif is not meaningful for the first event
-  if (m_nEventProcessed != 0)
-  {
-    m_totalIntegratedTime += timeDif;
-    if (m_nTrigger != 0)
-      m_spillIntegratedTime += timeDif;
-  }
-
-  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Trigger at time : " << timeTrigger << "s - time since previous trigger : " << timeDif << "s\t spillIntegratedTime : " << m_spillIntegratedTime << "s");
-
-  m_nTrigger++;
-  m_pTimeDiffTrigger->get<TH1>()->Fill(timeDif);
-  m_pAcquisitionTime->get<TH1F>()->Fill((m_eventIntegratedTime * m_DAQ_BC_Period));
-  m_timeLastTrigger = timeTrigger;
 
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -471,7 +442,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
     THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pStreamout->processEvent(pLCEvent));
 
   // Convert DHCALRawHits to SDHCAL_HIT
-  // THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->performOutputDataConversion(pLCEvent));
+  THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->performOutputDataConversion(pLCEvent));
 
   RawCaloHitObject::RawCaloHitList rawCaloHitList;
   m_hitTimeMin = 99999999.;
@@ -491,9 +462,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
     }
 
     //Find Triggers and NewSpill
-    // RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->decodeEventParameter<EVENT::RawCalorimeterHit>(pRawCalorimeterHitCollection));
-    StatusCode status = findTrigger(pRawCalorimeterHitCollection);
-
+    StatusCode status = m_pEventHelper->findTrigger<EVENT::RawCalorimeterHit>(pRawCalorimeterHitCollection, m_eventParameters);
     if (dqm4hep::STATUS_CODE_SUCCESS != status)
       return dqm4hep::STATUS_CODE_SUCCESS;
 
@@ -546,9 +515,9 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
         globalHitShift);
 
       // TODO: There is regularly hits with timeStamp 4294967295=858.993s. Not physical && don't know why
-      if (hitTime > m_eventIntegratedTime + 1) // +1== Lost of trigger have Physics hits at m_eventIntegratedTime+1
+      if (hitTime > m_eventParameters.eventIntegratedTime + 1) // +1== Lost of trigger have Physics hits at m_eventParameters.eventIntegratedTime+1
       {
-        LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - hitTime > m_eventIntegratedTime!");
+        LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - hitTime > m_eventParameters.eventIntegratedTime!");
         LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Amplitude: " << hitThresh
                        << "\t Layer : " << cell.m_layer
                        << "\t dif : " << difId
@@ -558,8 +527,8 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
                        << "\t J : " << cell.m_jCell
                        << "\t time : " << hitTime
                        << "\t time (s): " << hitTime * m_DAQ_BC_Period
-                       << "\t m_eventIntegratedTime : " << m_eventIntegratedTime
-                       << "\t m_eventIntegratedTime (s) : " << m_eventIntegratedTime * m_DAQ_BC_Period
+                       << "\t m_eventParameters.eventIntegratedTime : " << m_eventParameters.eventIntegratedTime
+                       << "\t m_eventParameters.eventIntegratedTime (s) : " << m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period
                      );
         continue;
       }
@@ -606,6 +575,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
 
       RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, fillAsicOccupancyMap(pRawCaloHitObject));
       rawCaloHitList.push_back(pRawCaloHitObject);
+      delete pRawCaloHitObject;
     }
 
     // Fill hit frequency
@@ -624,13 +594,13 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
 
       for (int iBin = 0; iBin < h_asicHit1->GetNbinsX(); ++iBin)
       {
-        h_asicFreq1->SetBinContent(iBin, h_asicHit1->GetBinContent(iBin) / (m_eventIntegratedTime));
-        h_asicFreq2->SetBinContent(iBin, h_asicHit2->GetBinContent(iBin) / (m_eventIntegratedTime));
-        h_asicFreq3->SetBinContent(iBin, h_asicHit3->GetBinContent(iBin) / (m_eventIntegratedTime));
+        h_asicFreq1->SetBinContent(iBin, h_asicHit1->GetBinContent(iBin) / (m_eventParameters.eventIntegratedTime));
+        h_asicFreq2->SetBinContent(iBin, h_asicHit2->GetBinContent(iBin) / (m_eventParameters.eventIntegratedTime));
+        h_asicFreq3->SetBinContent(iBin, h_asicHit3->GetBinContent(iBin) / (m_eventParameters.eventIntegratedTime));
       }
     }
 
-    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " m_hitTimeMin : " << m_hitTimeMin << "\t m_hitTimeMax : " << m_hitTimeMax << "\t eventIntegratedTime (s): " << m_eventIntegratedTime * m_DAQ_BC_Period << "s\t spillIntegratedTime (s): " << m_spillIntegratedTime << "s\t totalIntegratedTime (s) : " << m_totalIntegratedTime << "s");
+    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " m_hitTimeMin : " << m_hitTimeMin << "\t m_hitTimeMax : " << m_hitTimeMax << "\t eventIntegratedTime (s): " << m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period << "s\t spillIntegratedTime (s): " << m_eventParameters.spillIntegratedTime * m_DAQ_BC_Period << "s\t totalIntegratedTime (s) : " << m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period << "s");
 
     RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, doAsicStudy());
 
@@ -651,7 +621,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
     LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " Caught unknown exception !");
     return dqm4hep::STATUS_CODE_FAILURE;
   }
-  m_nEventProcessed++;
+  m_eventParameters.nTriggerProcessed++;
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -690,11 +660,12 @@ dqm4hep::StatusCode RawAnalysisModule::doAsicStudy()
     TH1F* hAsicOccupancyDIF = m_pAsicOccupancyDIF->get<TH1F>();
     TH1F* hAsicOccupancyChamber = m_pAsicOccupancyChamber->get<TH1F>();
 
+    m_DAQ_BC_Period = m_pEventHelper->getDAQ_BC_Period();
     m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancyNumber->get<TH1F>()->SetBinContent(asicId, asicIter->second);
-    m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancy->get<TH1F>()->SetBinContent(asicId, asicIter->second / (m_eventIntegratedTime * m_DAQ_BC_Period));
+    m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancy->get<TH1F>()->SetBinContent(asicId, asicIter->second / (m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period));
 
-    m_pAsicOccupancyAll->get<TH1F>()->SetBinContent(difId * m_nAsicPerDif + asicId, asicIter->second / (m_eventIntegratedTime * m_DAQ_BC_Period));
-    float fOccupancy = asicIter->second / (m_eventIntegratedTime * m_DAQ_BC_Period);
+    m_pAsicOccupancyAll->get<TH1F>()->SetBinContent(difId * m_nAsicPerDif + asicId, asicIter->second / (m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period));
+    float fOccupancy = asicIter->second / (m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period);
 
     if (fOccupancy > hAsicOccupancyChamber->GetBinContent(layerId)) hAsicOccupancyChamber->SetBinContent(layerId, fOccupancy);
     if (fOccupancy > hAsicOccupancyDIF->GetBinContent(difId)) hAsicOccupancyDIF->SetBinContent(difId, fOccupancy);
@@ -722,7 +693,7 @@ dqm4hep::StatusCode RawAnalysisModule::endOfCycle()
 
 dqm4hep::StatusCode RawAnalysisModule::startOfRun(dqm4hep::DQMRun * const pRun)
 {
-  m_totalIntegratedTime = 0;
+  m_eventParameters.totalIntegratedTime = 0;
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -730,7 +701,7 @@ dqm4hep::StatusCode RawAnalysisModule::startOfRun(dqm4hep::DQMRun * const pRun)
 
 dqm4hep::StatusCode RawAnalysisModule::endOfRun(dqm4hep::DQMRun * const pRun)
 {
-  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Run lasted " << m_totalIntegratedTime << "s : " << floor(m_totalIntegratedTime / 3600) << "h " << floor(fmod(m_totalIntegratedTime / 60, 60)) << "min " << fmod(m_totalIntegratedTime, 60) <<  "s");
+  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Run lasted " << m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period << "s : " << floor(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period / 3600) << "h " << floor(fmod(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period / 60, 60)) << "min " << fmod(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period, 60) <<  "s");
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -769,11 +740,9 @@ void RawAnalysisModule::resetElements()
     }
   }
 
-  m_pAcquisitionTime->reset();
   m_pAsicOccupancyAll->reset();
   m_pAsicOccupancyChamber->reset();
   m_pAsicOccupancyDIF->reset();
-  m_pAcquisitionTime->reset();
   m_pHitFrequencyMap->reset();
 }
 

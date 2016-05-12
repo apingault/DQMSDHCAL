@@ -336,11 +336,11 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		}
 
 		// Find New Trigger/Spill and fill Rates per particle
-		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->decodeEventParameter<EVENT::CalorimeterHit>(pCalorimeterHitCollection));
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->decodeEventParameter<EVENT::CalorimeterHit>(pCalorimeterHitCollection, m_eventParameters));
 
-		double timeTrigger = m_pEventHelper->getTimeTrigger();
+		double timeTrigger = m_eventParameters.timeTrigger;
 		double timeDif = timeTrigger - m_timeLastTrigger;
-		m_eventIntegratedTime = m_pEventHelper->getEventIntegratedTime();
+		m_eventIntegratedTime = m_eventParameters.eventIntegratedTime;
 
 		if (timeDif > 0) // NewTrigger
 		{

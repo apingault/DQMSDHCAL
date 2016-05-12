@@ -69,25 +69,18 @@ private:
   dqm4hep::StatusCode endOfCycle();
   dqm4hep::StatusCode endModule();
 
-  dqm4hep::StatusCode findTrigger(EVENT::LCCollection* const pLCCollection);
   void resetElements();
 
 private:
-  EventHelper                                  *m_pEventHelper;
+  EventHelper                             *m_pEventHelper;
+  EventHelper::EventParameters             m_eventParameters;
 
   std::string                              m_inputCollectionName;
   std::string                              m_moduleLogStr;
 
   int                                      m_nEventProcessed;
-  double                                   m_eventIntegratedTime;
-  double                                   m_spillIntegratedTime;
-  double                                   m_totalIntegratedTime;
-
-  double                                   m_timeLastTrigger;
-  double                                   m_timeLastSpill;
   float                                    m_DAQ_BC_Period;
   unsigned int                             m_nParticleLastSpill;
-  unsigned int                             m_nTrigger;
 
   // Cuts
   int                                      m_skipEvent;
@@ -95,13 +88,13 @@ private:
 
 
   // Monitor Elements
-  dqm4hep::DQMMonitorElementPtr               m_pTimeDiffSpill;
-  dqm4hep::DQMMonitorElementPtr               m_pTimeDiffTrigger;
-  dqm4hep::DQMMonitorElementPtr               m_pTimeDiffTriggerToSpill;
-  dqm4hep::DQMMonitorElementPtr               m_pTriggerPerSpill;
-  dqm4hep::DQMMonitorElementPtr               m_pTriggerLastSpill;
-  dqm4hep::DQMMonitorElementPtr               m_pSpillLength;
-  dqm4hep::DQMMonitorElementPtr               m_pAcquisitionTime;
+  dqm4hep::DQMMonitorElementPtr            m_pTimeDiffSpill;
+  dqm4hep::DQMMonitorElementPtr            m_pTimeDiffTrigger;
+  dqm4hep::DQMMonitorElementPtr            m_pTimeDiffTriggerToSpill;
+  dqm4hep::DQMMonitorElementPtr            m_pTriggerPerSpill;
+  dqm4hep::DQMMonitorElementPtr            m_pTriggerLastSpill;
+  dqm4hep::DQMMonitorElementPtr            m_pSpillLength;
+  dqm4hep::DQMMonitorElementPtr            m_pAcquisitionTime;
 
 };
 }

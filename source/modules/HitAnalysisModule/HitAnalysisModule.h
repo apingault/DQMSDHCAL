@@ -48,6 +48,7 @@
 
 // -- dqmsdhcal headers
 #include "DQMTriventModule.h"
+#include "AnalysisTools.h"
 
 namespace caloobject
 {
@@ -121,6 +122,7 @@ private:
 	unsigned int 													   m_nMipInLayer;
 
   EventHelper															*m_pEventHelper;
+  EventHelper::EventParameters             m_eventParameters;
   double 																	 m_eventIntegratedTime;
   double 																	 m_timeLastTrigger;
   double 																	 m_timeLastSpill;
