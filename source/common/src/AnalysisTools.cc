@@ -252,7 +252,6 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 
 				caloHitMap[ cellID[2] ].push_back(pWrapperHit);
 				hits.push_back(pWrapperHit);
-				delete pWrapperHit;
 			}
 
 			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating intra layer clusters");

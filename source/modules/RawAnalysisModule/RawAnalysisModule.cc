@@ -575,7 +575,6 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
 
       RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, fillAsicOccupancyMap(pRawCaloHitObject));
       rawCaloHitList.push_back(pRawCaloHitObject);
-      delete pRawCaloHitObject;
     }
 
     // Fill hit frequency
