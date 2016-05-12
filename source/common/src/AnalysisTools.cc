@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with DQMSHCAL.  If not, see <http://www.gnu.org/licenses/>.
  *
- * @author Remi Ete
+ * @author Remi Ete, Antoine Pingault
  * @copyright CNRS , IPNL
  */
 
@@ -58,25 +58,25 @@ EventHelper::~EventHelper()
 	/* nop */
 }
 
+//-------------------------------------------------------------------------------------------------
+
 dqm4hep::StatusCode EventHelper::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
- m_amplitudeBitRotation = 3;
-  RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-                          "AmplitudeBitRotation", m_amplitudeBitRotation));
+	m_amplitudeBitRotation = 3;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+	                        "AmplitudeBitRotation", m_amplitudeBitRotation));
 	m_shiftBCID = 16777216ULL;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 	                        "BCIDShift", m_shiftBCID));
 
-  m_newSpillTimeCut = 10;
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-                   "SpillLength", m_newSpillTimeCut));
+	m_newSpillTimeCut = 10;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+	                 "SpillLength", m_newSpillTimeCut));
 
 	m_DAQ_BC_Period = 200; // Size of a clock frame, in nsecond
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-                   "ClockFrameLength", m_DAQ_BC_Period));
-  m_DAQ_BC_Period *= 1E-9; // Size of a clock frame, in second
-
-  			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "\n\n\tm_DAQ_BC_Period : " << m_DAQ_BC_Period);
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+	                 "ClockFrameLength", m_DAQ_BC_Period));
+	m_DAQ_BC_Period *= 1E-9; // Size of a clock frame, in second
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -252,6 +252,7 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 
 				caloHitMap[ cellID[2] ].push_back(pWrapperHit);
 				hits.push_back(pWrapperHit);
+				delete pWrapperHit;
 			}
 
 			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating intra layer clusters");
