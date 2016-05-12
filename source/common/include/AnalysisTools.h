@@ -31,6 +31,7 @@
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
+#include "dqm4hep/DQMLogging.h"
 
 // -- lcio headers
 #include "EVENT/LCEvent.h"
@@ -57,6 +58,19 @@ namespace dqm_sdhcal
  */
 class  EventHelper
 {
+public:
+
+	struct EventParameters
+	{
+		dqm4hep::dqm_uint                        eventIntegratedTime;
+		dqm4hep::dqm_uint                        spillIntegratedTime;
+		dqm4hep::dqm_uint                        totalIntegratedTime;
+		dqm4hep::dqm_uint                        timeTrigger;
+		dqm4hep::dqm_uint                        timeLastTrigger;
+		dqm4hep::dqm_uint                        timeLastSpill;
+		dqm4hep::dqm_uint                  		   nTriggerInSpill;
+		dqm4hep::dqm_uint                  		   nTriggerProcessed;
+	};
 
 public:
 	/** Constructor
@@ -72,14 +86,13 @@ public:
 	inline unsigned int getAsicId(int cellID)     { return (cellID & 0xFF00) >> 8; }
 	inline unsigned int getChannelId(int cellID)  { return (cellID & 0x3F0000) >> 16; }
 
-	inline double getDAQBCPeriod() {return m_DAQ_BC_Period;}
-	inline double getSpillTimeCut() {return m_newSpillTimeCut;}
+	inline const float getDAQ_BC_Period() {return m_DAQ_BC_Period;}
+	inline const int getSpillTimeCut() {return m_newSpillTimeCut;}
 
-	inline double getEventIntegratedTime() {return m_eventIntegratedTime;}
-	inline double getTimeTrigger() {return m_timeTrigger;}
+	// inline EventParameters getEventParameters() {return m_evtParameters;}
 
 	template <typename CaloHitType>
-	unsigned int getThreshold( const CaloHitType *const pInputCaloHit )
+	unsigned int getThreshold( const CaloHitType &pInputCaloHit )
 	{
 		int shift;
 		const float amplitude( static_cast<float>( pInputCaloHit->getAmplitude() & m_amplitudeBitRotation ) );
@@ -98,12 +111,12 @@ public:
 	 */
 	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
 
-/**
- * decode lcio parameters from the triggerEvent
+	/**
+	 * decode lcio parameters from the triggerEvent
  *
- */
+	 */
 	template <typename CaloHitType>
-	dqm4hep::StatusCode decodeEventParameter(EVENT::LCCollection *pLCCollection)
+	dqm4hep::StatusCode decodeEventParameter(EVENT::LCCollection *pLCCollection, EventParameters &m_evtParameters)
 	{
 		CaloHitType *pCaloHit;
 		unsigned int difId = 0;
@@ -130,25 +143,65 @@ public:
 
 		if (vTrigger.size() != 0)
 		{
-			m_eventIntegratedTime = vTrigger[2];
+			m_evtParameters.eventIntegratedTime = vTrigger[2];
 			dqm4hep::dqm_uint m_bcid1 = vTrigger[4];
 			dqm4hep::dqm_uint m_bcid2 = vTrigger[3];
 
 			// Shift the value from the 24 first bits
 			unsigned long long theBCID_ = m_bcid1 * m_shiftBCID + m_bcid2;
-			m_timeTrigger = theBCID_ * m_DAQ_BC_Period; // in seconds since ...?
+
+			m_evtParameters.timeTrigger = theBCID_ ;
 		}
+		return dqm4hep::STATUS_CODE_SUCCESS;
+	}
+
+	/**
+	 * find trigger information in the triggerEvent
+	 */
+	template <typename CaloHitType>
+	dqm4hep::StatusCode findTrigger(EVENT::LCCollection * pLCCollection, EventParameters &m_evtParameters)
+	{
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->decodeEventParameter<CaloHitType>(pLCCollection, m_evtParameters));
+
+		double timeDif = m_evtParameters.timeTrigger - m_evtParameters.timeLastTrigger;
+
+		if (timeDif > 1E12) // prevent 'negative' time when rewinding a lcio file
+		{
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , " [EventHelper] - I'm Late! I'm Late! I'm Late! : " << timeDif * m_DAQ_BC_Period << "s");
+			return dqm4hep::STATUS_CODE_SUCCESS;
+		}
+
+		if (timeDif * m_DAQ_BC_Period > m_newSpillTimeCut) // New Spill
+		{
+			LOG4CXX_INFO( dqm4hep::dqmMainLogger , " [EventHelper] - New Spill -  time since last startOfSpill : " <<  (m_evtParameters.timeTrigger - m_evtParameters.timeLastSpill) * m_DAQ_BC_Period << " s.  Last spill Stat: Length : " << m_evtParameters.spillIntegratedTime * m_DAQ_BC_Period << "s\t triggers : " << m_evtParameters.nTriggerInSpill);
+
+			m_evtParameters.timeLastSpill = m_evtParameters.timeTrigger;
+			m_evtParameters.nTriggerInSpill = 0;
+			m_evtParameters.spillIntegratedTime = 0;
+		}
+
+		// timeDif is not meaningful for the first event
+		if (m_evtParameters.nTriggerProcessed != 0)
+		{
+			m_evtParameters.totalIntegratedTime += timeDif;
+			if (m_evtParameters.nTriggerInSpill != 0)
+				m_evtParameters.spillIntegratedTime += timeDif;
+		}
+
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , " [EventHelper] - New Trigger at time : " << m_evtParameters.timeTrigger * m_DAQ_BC_Period << "s - time since previous trigger : " << timeDif * m_DAQ_BC_Period << "s\t spillIntegratedTime : " << m_evtParameters.spillIntegratedTime * m_DAQ_BC_Period << "s");
+
+		m_evtParameters.nTriggerInSpill = 1;
+		m_evtParameters.timeLastTrigger = m_evtParameters.timeTrigger;
 
 		return dqm4hep::STATUS_CODE_SUCCESS;
 	}
 
 private:
-	double                                   m_eventIntegratedTime;
-	double                                   m_timeTrigger;
-	float                                    m_DAQ_BC_Period;
-	float 																   m_newSpillTimeCut;
-	unsigned long long 											 m_shiftBCID;
-	std::string 														 m_amplitudeBitRotation;
+	EventParameters					m_evtParameters;
+	float										m_DAQ_BC_Period;
+	float										m_newSpillTimeCut;
+	unsigned long long			m_shiftBCID;
+	unsigned short					m_amplitudeBitRotation;
 };
 
 //-------------------------------------------------------------------------------------------------
