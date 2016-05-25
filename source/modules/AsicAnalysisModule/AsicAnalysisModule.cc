@@ -59,7 +59,8 @@ namespace dqm_sdhcal
 DQM_PLUGIN_DECL( AsicAnalysisModule, "AsicAnalysisModule" )
 
 AsicAnalysisModule::AsicAnalysisModule() :
-	DQMTriventModule()
+	DQMTriventModule(),
+	m_moduleLogStr("[AsicAnalysisModule]")
 {
 }
 
@@ -197,7 +198,7 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 
 	if( ! pElecMapElement )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't found xml element electronicsMapping !" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Couldn't find xml element electronicsMapping !" );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 
@@ -208,7 +209,7 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 
 	if( ! m_pElectronicsMapping )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't found electronicsMapping plugin called : " << plugin );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Couldn't find electronicsMapping plugin called : " << plugin );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 
@@ -219,15 +220,27 @@ dqm4hep::StatusCode AsicAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 	{
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 				"EfficiencyMap", l, m_layerElementMap[l].m_pEfficiencyMap));
+		std::string meTitle = m_layerElementMap[l].m_pEfficiencyMap->getTitle();
+		meTitle += " layer " + std::to_string(l);
+		m_layerElementMap[l].m_pEfficiencyMap->setTitle(meTitle.c_str());
 
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 				"Efficiency2Map", l, m_layerElementMap[l].m_pEfficiency2Map));
+		meTitle = m_layerElementMap[l].m_pEfficiency2Map->getTitle();
+		meTitle += " layer " + std::to_string(l);
+		m_layerElementMap[l].m_pEfficiency2Map->setTitle(meTitle.c_str());
 
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 				"Efficiency3Map", l, m_layerElementMap[l].m_pEfficiency3Map));
+		meTitle = m_layerElementMap[l].m_pEfficiency3Map->getTitle();
+		meTitle += " layer " + std::to_string(l);
+		m_layerElementMap[l].m_pEfficiency3Map->setTitle(meTitle.c_str());
 
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 				"MultiplicityMap", l, m_layerElementMap[l].m_pMultiplicityMap));
+		meTitle = m_layerElementMap[l].m_pMultiplicityMap->getTitle();
+		meTitle += " layer " + std::to_string(l);
+		m_layerElementMap[l].m_pMultiplicityMap->setTitle(meTitle.c_str());
 	}
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
@@ -322,7 +335,7 @@ dqm4hep::StatusCode AsicAnalysisModule::userInitModule()
 
 dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
-	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "Processing physics event no " << pLCEvent->getEventNumber() );
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Processing physics event no " << pLCEvent->getEventNumber() );
 
 	// check for event rejection : noise ?
 	bool rejectEvent = this->shouldRejectEvent(pLCEvent);
@@ -347,7 +360,7 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(m_cellIDDecoderString);
 
-		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating wrapper hits");
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Creating wrapper hits");
 
 		// loop over hits in this event
 		for(unsigned int h=0 ; h<pCalorimeterHitCollection->getNumberOfElements() ; h++)
@@ -381,7 +394,7 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 			hits.push_back(pWrapperHit);
 		}
 
-		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating intra layer clusters");
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Creating intra layer clusters");
 
 		for(caloobject::CaloHitMap::iterator iter = caloHitMap.begin(), endIter = caloHitMap.end() ;
 				iter != endIter ; ++iter)
@@ -389,7 +402,7 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		std::sort(clusters.begin(), clusters.end(), algorithm::ClusteringHelper::SortClusterByLayer);
 
-		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Filter non - isolated clusters");
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Filter non - isolated clusters");
 
 		caloobject::CaloClusterList trackingClusters;
 
@@ -400,20 +413,20 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		caloobject::CaloTrack *pTrack = NULL;
 
-		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Run tracking algorithm");
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Run tracking algorithm");
 
 		m_trackingAlgorithm.Run(clusters, pTrack);
 
 		// stop processing if no reconstructed track
 		if( NULL == pTrack )
 		{
-			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "No track found !");
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - No track found !");
 			throw dqm4hep::StatusCodeException(dqm4hep::STATUS_CODE_SUCCESS);
 		}
 
 		tracks.push_back(pTrack);
 
-		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Run interaction finder");
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Run interaction finder");
 
 		bool isInteraction = m_interactionFinderAlgorithm.Run(clusters, pTrack->getTrackParameters());
 
@@ -433,7 +446,7 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		if(m_nActiveLayers-2 == trackEnd)
 			trackEnd = m_nActiveLayers-1;
 
-		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Analyzing track, layer per layer");
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Analyzing track, layer per layer");
 
 		for(unsigned int l = trackBegin ; l<=trackEnd ; l++)
 		{
@@ -471,13 +484,13 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 			this->updateAsic(electronics.m_difId, electronics.m_asicId, pLayer);
 		}
 
-		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "End of event, clearing content");
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - End of event, clearing content");
 
 		this->clearEventContents(hits, clusters, tracks);
 	}
 	catch(EVENT::DataNotAvailableException &exception)
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  "Caught EVENT::DataNotAvailableException : " << exception.what() << ". Skipping event ..." );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught EVENT::DataNotAvailableException : " << exception.what() << ". Skipping event ..." );
 		this->clearEventContents(hits, clusters, tracks);
 		return dqm4hep::STATUS_CODE_SUCCESS;
 	}
@@ -488,13 +501,13 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		if(dqm4hep::STATUS_CODE_SUCCESS == exception.getStatusCode() )
 			return dqm4hep::STATUS_CODE_SUCCESS;
 
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  "Caught StatusCodeException : " << exception.toString() << ". Skipping event ..." );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught StatusCodeException : " << exception.toString() << ". Skipping event ..." );
 		return dqm4hep::STATUS_CODE_SUCCESS;
 	}
 	catch(...)
 	{
 		this->clearEventContents(hits, clusters, tracks);
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  "Caught unknown exception !" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught unknown exception !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
@@ -579,7 +592,7 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 		// fill multiplicity
 		if( isEfficient )
 		{
-			const float multiplicity = (efficiency1 > std::numeric_limits<float>::epsilon()) ? iter->second->m_multiplicity/efficiency1 : 0.f;
+			const float multiplicity = (efficiency1 > std::numeric_limits<float>::epsilon()) ? iter->second->m_multiplicity / iter->second->m_efficiency : 0.f;
 			m_pAsicMultiplicity->get<TH1F>()->Fill( multiplicity );
 			m_pStackedMultiplicityMap->get<TH2F>()->Fill(x, y, multiplicity / m_nActiveLayers);
 

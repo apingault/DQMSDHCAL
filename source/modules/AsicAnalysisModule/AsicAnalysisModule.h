@@ -199,6 +199,8 @@ private:
 
 private:
 
+	std::string 														m_moduleLogStr;
+
 	// algorithm contents
 	caloobject::CaloLayerMap                 m_caloLayerMap;
 	AsicMap                                  m_asicMap;
