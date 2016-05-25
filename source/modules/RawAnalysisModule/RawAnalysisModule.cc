@@ -21,7 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with DQMSDHCAL.  If not, see <http://www.gnu.org/licenses/>.
  *
- * @author Remi Ete, Arnaud Steen
+ * @author Remi Ete, Laurent Mirabito, Antoine Pingault
  * @copyright CNRS , IPNL
  */
 
@@ -104,6 +104,8 @@ dqm4hep::StatusCode RawAnalysisModule::initModule()
   m_eventParameters.timeLastSpill = 0;
   m_eventParameters.nTriggerInSpill = 0;
   m_moduleLogStr = "[RawAnalysisModule]";
+  m_hitTimeMin = 99999999;
+  m_hitTimeMax = 0;
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -434,7 +436,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
     return dqm4hep::STATUS_CODE_SUCCESS;
   }
 
-  LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Processing Trigger event no " << pLCEvent->getEventNumber() << " runNumber no " << pLCEvent->getRunNumber() << " ..." );
+  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Processing Trigger event no " << pLCEvent->getEventNumber() << " runNumber no " << pLCEvent->getRunNumber() << " ..." );
   LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Time Stamp: " << pLCEvent->getTimeStamp() );
 
   // process Streamout if needed
@@ -445,7 +447,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
   THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->performOutputDataConversion(pLCEvent));
 
   RawCaloHitObject::RawCaloHitList rawCaloHitList;
-  m_hitTimeMin = 99999999.;
+  m_hitTimeMin = 99999999;
   m_hitTimeMax = 0;
   m_asicMap.clear();
 
@@ -464,7 +466,11 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
     //Find Triggers and NewSpill
     StatusCode status = m_pEventHelper->findTrigger<EVENT::RawCalorimeterHit>(pRawCalorimeterHitCollection, m_eventParameters);
     if (dqm4hep::STATUS_CODE_SUCCESS != status)
+    {
+      LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - findTrigger for Trigger event " << pLCEvent->getEventNumber() << " failed with status : " << status);
+      LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Going to next Trigger event ");
       return dqm4hep::STATUS_CODE_SUCCESS;
+    }
 
     // Loop over hits in this event & Fill the rawCaloHitCollection
     for (unsigned int h = 0 ; h < pRawCalorimeterHitCollection->getNumberOfElements() ; ++h)
@@ -493,10 +499,6 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
       RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pElectronicsMapping->electronicsToPosition(electronics, position));
       RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pElectronicsMapping->electronicstoCell(electronics, cell));
 
-      unsigned int difId = electronics.m_difId;
-      unsigned int asicId = electronics.m_asicId;
-      unsigned int chanId = electronics.m_channelId;
-
       if ( cell.m_layer >= m_nActiveLayers )
       {
         LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong number of layer in your configuration file!");
@@ -506,29 +508,29 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
 
       RawCaloHitObject *pRawCaloHitObject = new RawCaloHitObject(
         position,
-        chanId,
-        asicId,
-        difId,
+        electronics.m_channelId,
+        electronics.m_asicId,
+        electronics.m_difId,
         cell.m_layer,
         hitThresh,
         hitTime,
         globalHitShift);
 
       // TODO: There is regularly hits with timeStamp 4294967295=858.993s. Not physical && don't know why
-      if (hitTime > m_eventParameters.eventIntegratedTime + 1) // +1== Lost of trigger have Physics hits at m_eventParameters.eventIntegratedTime+1
+      if (hitTime > m_eventParameters.eventIntegratedTime + 1)
       {
         LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - hitTime > m_eventParameters.eventIntegratedTime!");
         LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Amplitude: " << hitThresh
                        << "\t Layer : " << cell.m_layer
-                       << "\t dif : " << difId
-                       << "\t asic : " << asicId
-                       << "\t chan : " << chanId
+                       << "\t dif : " << electronics.m_difId
+                       << "\t asic : " << electronics.m_asicId
+                       << "\t chan : " << electronics.m_channelId
                        << "\t I : " << cell.m_iCell
                        << "\t J : " << cell.m_jCell
                        << "\t time : " << hitTime
-                       << "\t time (s): " << hitTime * m_DAQ_BC_Period
+                       << "\t time (s): " << hitTime * m_pEventHelper->getDAQ_BC_Period()
                        << "\t m_eventParameters.eventIntegratedTime : " << m_eventParameters.eventIntegratedTime
-                       << "\t m_eventParameters.eventIntegratedTime (s) : " << m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period
+                       << "\t m_eventParameters.eventIntegratedTime (s) : " << m_eventParameters.eventIntegratedTime * m_pEventHelper->getDAQ_BC_Period()
                      );
         continue;
       }
@@ -538,7 +540,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
 
       if (hitThresh <= 0 || hitThresh > 3)
       {
-        LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << difId << " had:" << asicId << ":" << chanId << ":" << hitTime << ":" << hitThresh);
+        LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << electronics.m_difId << " had:" << electronics.m_asicId << ":" << electronics.m_channelId << ":" << hitTime << ":" << hitThresh);
         continue;
       }
       bool thr[3];
@@ -548,30 +550,30 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
       thr[2] = (hitThresh == 3);  // Third Threshold
 
       // ---------- Fill /Layer/DIF
-      TH1* h_asicHit1 = m_layerElementMap[cell.m_layer].m_difElementMap[difId].m_pAsicHits1->get<TH1>();
-      TH1* h_asicHit2 = m_layerElementMap[cell.m_layer].m_difElementMap[difId].m_pAsicHits2->get<TH1>();
-      TH1* h_asicHit3 = m_layerElementMap[cell.m_layer].m_difElementMap[difId].m_pAsicHits3->get<TH1>();
+      TH1* h_asicHit1 = m_layerElementMap[cell.m_layer].m_difElementMap[electronics.m_difId].m_pAsicHits1->get<TH1>();
+      TH1* h_asicHit2 = m_layerElementMap[cell.m_layer].m_difElementMap[electronics.m_difId].m_pAsicHits2->get<TH1>();
+      TH1* h_asicHit3 = m_layerElementMap[cell.m_layer].m_difElementMap[electronics.m_difId].m_pAsicHits3->get<TH1>();
 
       if (thr[0])
       {
-        h_asicHit1->SetBinContent((asicId - 1) * m_nChanPerAsic + chanId + 1, h_asicHit1->GetBinContent((asicId - 1) * m_nChanPerAsic + chanId + 1) + 1);
+        h_asicHit1->SetBinContent((electronics.m_asicId - 1) * m_nChanPerAsic + electronics.m_channelId + 1, h_asicHit1->GetBinContent((electronics.m_asicId - 1) * m_nChanPerAsic + electronics.m_channelId + 1) + 1);
         m_layerElementMap[cell.m_layer].m_pChamberHitsMap1->get<TH2>()->Fill(cell.m_iCell, cell.m_jCell);
       }
       if (thr[1])
       {
-        h_asicHit2->SetBinContent((asicId - 1) * m_nChanPerAsic + chanId + 1, h_asicHit2->GetBinContent((asicId - 1) * m_nChanPerAsic + chanId + 1) + 1);
-        m_layerElementMap[cell.m_layer].m_pChamberHitsMap2->get<TH2S>()->Fill(cell.m_iCell, cell.m_jCell);
+        h_asicHit2->SetBinContent((electronics.m_asicId - 1) * m_nChanPerAsic + electronics.m_channelId + 1, h_asicHit2->GetBinContent((electronics.m_asicId - 1) * m_nChanPerAsic + electronics.m_channelId + 1) + 1);
+        m_layerElementMap[cell.m_layer].m_pChamberHitsMap2->get<TH2>()->Fill(cell.m_iCell, cell.m_jCell);
       }
       if (thr[2])
       {
-        h_asicHit3->SetBinContent((asicId - 1) * m_nChanPerAsic + chanId + 1, h_asicHit3->GetBinContent((asicId - 1) * m_nChanPerAsic + chanId + 1) + 1);
+        h_asicHit3->SetBinContent((electronics.m_asicId - 1) * m_nChanPerAsic + electronics.m_channelId + 1, h_asicHit3->GetBinContent((electronics.m_asicId - 1) * m_nChanPerAsic + electronics.m_channelId + 1) + 1);
         m_layerElementMap[cell.m_layer].m_pChamberHitsMap3->get<TH2>()->Fill(cell.m_iCell, cell.m_jCell);
       }
 
-      m_layerElementMap[cell.m_layer].m_difElementMap[difId].m_pAsicEventTime->get<TH1>()->Fill(hitTime);
-      m_layerElementMap[cell.m_layer].m_difElementMap[difId].m_pAsicEventTimeZoom->get<TH1>()->Fill(hitTime);
+      m_layerElementMap[cell.m_layer].m_difElementMap[electronics.m_difId].m_pAsicEventTime->get<TH1>()->Fill(hitTime);
+      m_layerElementMap[cell.m_layer].m_difElementMap[electronics.m_difId].m_pAsicEventTimeZoom->get<TH1>()->Fill(hitTime);
 
-      m_pHitFrequencyMap->get<TH2>()->SetBinContent(difId + 1, asicId, m_pHitFrequencyMap->get<TH2>()->GetBinContent(difId + 1, asicId) + 1);
+      m_pHitFrequencyMap->get<TH2>()->SetBinContent(electronics.m_difId + 1, electronics.m_asicId, m_pHitFrequencyMap->get<TH2>()->GetBinContent(electronics.m_difId + 1, electronics.m_asicId) + 1);
 
       RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, fillAsicOccupancyMap(pRawCaloHitObject));
       rawCaloHitList.push_back(pRawCaloHitObject);
@@ -599,25 +601,31 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
       }
     }
 
-    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " m_hitTimeMin : " << m_hitTimeMin << "\t m_hitTimeMax : " << m_hitTimeMax << "\t eventIntegratedTime (s): " << m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period << "s\t spillIntegratedTime (s): " << m_eventParameters.spillIntegratedTime * m_DAQ_BC_Period << "s\t totalIntegratedTime (s) : " << m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period << "s");
+    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " m_hitTimeMin : " << m_hitTimeMin << "\t m_hitTimeMax : " << m_hitTimeMax << "\t eventIntegratedTime (s): " << m_eventParameters.eventIntegratedTime * m_pEventHelper->getDAQ_BC_Period() << "s\t spillIntegratedTime (s): " << m_eventParameters.spillIntegratedTime * m_pEventHelper->getDAQ_BC_Period() << "s\t totalIntegratedTime (s) : " << m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period() << "s");
 
-    RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, doAsicStudy());
+    RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, doAsicOccupancyStudy());
 
     // Analyse rawCaloHits
     //
     // RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, doDIFStudy(pCalorimeterHitCollection));
     // RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, doAsicStudy(pCalorimeterHitCollection));
     // RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, doNoiseStudy(pCalorimeterHitCollection));
+    for_each(rawCaloHitList.begin(), rawCaloHitList.end(), [] (RawCaloHitObject * pRawCaloHit) { delete pRawCaloHit; });
+    rawCaloHitList.clear();
   }
   catch (EVENT::DataNotAvailableException &exception)
   {
     LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught EVENT::DataNotAvailableException : " << exception.what() );
     LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Skipping event" );
+    for_each(rawCaloHitList.begin(), rawCaloHitList.end(), [] (RawCaloHitObject * pRawCaloHit) { delete pRawCaloHit; });
+    rawCaloHitList.clear();
     return dqm4hep::STATUS_CODE_SUCCESS;
   }
   catch (...)
   {
     LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " Caught unknown exception !");
+    for_each(rawCaloHitList.begin(), rawCaloHitList.end(), [] (RawCaloHitObject * pRawCaloHit) { delete pRawCaloHit; });
+    rawCaloHitList.clear();
     return dqm4hep::STATUS_CODE_FAILURE;
   }
   m_eventParameters.nTriggerProcessed++;
@@ -648,7 +656,7 @@ dqm4hep::StatusCode RawAnalysisModule::fillAsicOccupancyMap( RawCaloHitObject * 
 }
 
 //-------------------------------------------------------------------------------------------------
-dqm4hep::StatusCode RawAnalysisModule::doAsicStudy()
+dqm4hep::StatusCode RawAnalysisModule::doAsicOccupancyStudy()
 {
   for (std::map<int, int>::iterator asicIter = m_asicMap.begin(); asicIter != m_asicMap.end(); asicIter++)
   {
@@ -656,15 +664,17 @@ dqm4hep::StatusCode RawAnalysisModule::doAsicStudy()
     unsigned int difId = (asicIter->first >> 8) & 0xFF;
     unsigned int asicId = (asicIter->first) & 0xFF;
 
-    TH1F* hAsicOccupancyDIF = m_pAsicOccupancyDIF->get<TH1F>();
-    TH1F* hAsicOccupancyChamber = m_pAsicOccupancyChamber->get<TH1F>();
+    TH1* hAsicOccupancyDIF = m_pAsicOccupancyDIF->get<TH1>();
+    TH1* hAsicOccupancyChamber = m_pAsicOccupancyChamber->get<TH1>();
 
-    m_DAQ_BC_Period = m_pEventHelper->getDAQ_BC_Period();
-    m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancyNumber->get<TH1F>()->SetBinContent(asicId, asicIter->second);
-    m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancy->get<TH1F>()->SetBinContent(asicId, asicIter->second / (m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period));
+    float DAQ_BC_Period = m_pEventHelper->getDAQ_BC_Period();
+    m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancyNumber->get<TH1>()->SetBinContent(asicId, asicIter->second);
 
-    m_pAsicOccupancyAll->get<TH1F>()->SetBinContent(difId * m_nAsicPerDif + asicId, asicIter->second / (m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period));
-    float fOccupancy = asicIter->second / (m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period);
+    m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancy->get<TH1>()->SetBinContent(asicId, asicIter->second / (m_eventParameters.eventIntegratedTime * DAQ_BC_Period));
+
+    m_pAsicOccupancyAll->get<TH1>()->SetBinContent(difId * m_nAsicPerDif + asicId, asicIter->second / (m_eventParameters.eventIntegratedTime * DAQ_BC_Period));
+
+    float fOccupancy = asicIter->second / (m_eventParameters.eventIntegratedTime * DAQ_BC_Period);
 
     if (fOccupancy > hAsicOccupancyChamber->GetBinContent(layerId)) hAsicOccupancyChamber->SetBinContent(layerId, fOccupancy);
     if (fOccupancy > hAsicOccupancyDIF->GetBinContent(difId)) hAsicOccupancyDIF->SetBinContent(difId, fOccupancy);
@@ -700,7 +710,8 @@ dqm4hep::StatusCode RawAnalysisModule::startOfRun(dqm4hep::DQMRun * const pRun)
 
 dqm4hep::StatusCode RawAnalysisModule::endOfRun(dqm4hep::DQMRun * const pRun)
 {
-  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Run lasted " << m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period << "s : " << floor(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period / 3600) << "h " << floor(fmod(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period / 60, 60)) << "min " << fmod(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period, 60) <<  "s");
+  float DAQ_BC_Period = m_pEventHelper->getDAQ_BC_Period();
+  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Run lasted " << m_eventParameters.totalIntegratedTime * DAQ_BC_Period << "s : " << floor(m_eventParameters.totalIntegratedTime * DAQ_BC_Period / 3600) << "h " << floor(fmod(m_eventParameters.totalIntegratedTime * DAQ_BC_Period / 60, 60)) << "min " << fmod(m_eventParameters.totalIntegratedTime * DAQ_BC_Period, 60) <<  "s");
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
 

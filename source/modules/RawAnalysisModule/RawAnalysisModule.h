@@ -53,6 +53,7 @@ namespace dqm4hep { class TiXmlElement; class TiXmlHandle; }
 namespace dqm_sdhcal
 {
 
+// Reimplementation of CaloSoftware CaloHitObject for rawCaloHit
 class RawCaloHitObject
 {
 public:
@@ -105,7 +106,7 @@ private:
 
   dqm4hep::StatusCode doDIFStudy(RawCaloHitObject * const pRawCaloHitObject);
   dqm4hep::StatusCode fillAsicOccupancyMap( RawCaloHitObject * const pRawCaloHitObject);
-  dqm4hep::StatusCode doAsicStudy();
+  dqm4hep::StatusCode doAsicOccupancyStudy();
   int createAsicKey(int chanId, int difId, int asicId);
   void resetElements();
 
@@ -116,19 +117,21 @@ private:
   dqm4hep::StringVector                      m_recCollectionNames;
   dqm4hep::StringVector                      m_rawDataConverterNames;
   std::vector< CaloHitCollectionConverter *> m_dataConverters;
-  unsigned short                             m_amplitudeBitRotation;
+  // unsigned short                             m_amplitudeBitRotation;
+
   // electronicsMapping parameters
   dqm4hep::DQMElectronicsMapping            *m_pElectronicsMapping;
   dqm4hep::DQMCartesianVector                m_cellReferencePosition;
   float m_cellSize0;
   float m_cellSize1;
+
   // Geometry parameters
   Geometry                                   m_geometry;
   DifMapping                                 m_difMapping;
 
-private:
-  EventHelper                                  *m_pEventHelper;
-  EventHelper::EventParameters                  m_eventParameters;
+  // EventHelper parameters
+  EventHelper                               *m_pEventHelper;
+  EventHelper::EventParameters               m_eventParameters;
 
 
 private:
@@ -149,7 +152,6 @@ private:
 
   unsigned long long                       m_hitTimeMin;
   unsigned long long                       m_hitTimeMax;
-  float                                    m_DAQ_BC_Period;
 
   // Cuts
   int                                      m_skipEvent;
