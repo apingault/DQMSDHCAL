@@ -45,6 +45,7 @@
 #include "IMPL/LCCollectionVec.h"
 #include "IMPL/LCFlagImpl.h"
 #include "IMPL/RawCalorimeterHitImpl.h"
+#include "IMPL/CalorimeterHitImpl.h"
 
 // -- std headers
 #include <bitset>
@@ -202,7 +203,7 @@ void SDHCALDifHelper::fillDifTriggerInfo(DIFPtr *pDifPtr, dqm4hep::IntVector &tr
 
 //-------------------------------------------------------------------------------------------------
 
-void SDHCALDifHelper::setLCFlag(IMPL::LCFlagImpl &lcFlag)
+void SDHCALDifHelper::setRawCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
 {
 	EVENT::LCIO bitinfo;
 	lcFlag.setBit( bitinfo.RCHBIT_LONG );  // raw calorimeter data -> format long
@@ -254,7 +255,7 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 	}
 
 	IMPL::LCFlagImpl chFlag(0);
-	SDHCALDifHelper::setLCFlag(chFlag);
+	SDHCALDifHelper::setRawCaloHitLCFlag(chFlag);
 
 	IMPL::LCCollectionVec *pOutputCollection = new IMPL::LCCollectionVec(EVENT::LCIO::RAWCALORIMETERHIT);
 	pLCEvent->addCollection( pOutputCollection, m_outputCollectionName );
@@ -413,7 +414,7 @@ dqm4hep::StatusCode CherenkovShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 	}
 
 	IMPL::LCFlagImpl chFlag(0);
-	SDHCALDifHelper::setLCFlag(chFlag);
+	SDHCALDifHelper::setRawCaloHitLCFlag(chFlag);
 
 	IMPL::LCCollectionVec *pOutputCollection = new IMPL::LCCollectionVec(EVENT::LCIO::RAWCALORIMETERHIT);
 	pLCEvent->addCollection( pOutputCollection, m_outputCollectionName );
@@ -510,6 +511,167 @@ dqm4hep::StatusCode CherenkovShmProcessor::readSettings(const dqm4hep::TiXmlHand
 			"CherenkovTimeShift", m_cherenkovTimeShift));
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+
+SiWECalShmProcessor::SiWECalShmProcessor() :
+		m_positionShift(0.f, 0.f, 0.f)
+{
+	/* nop */
+}
+
+//-------------------------------------------------------------------------------------------------
+
+SiWECalShmProcessor::~SiWECalShmProcessor()
+{
+
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode SiWECalShmProcessor::startOfRun(dqm4hep::DQMRun *const pRun)
+{
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode SiWECalShmProcessor::endOfRun(const dqm4hep::DQMRun *const pRun)
+{
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, uint32_t key, const std::vector<levbdim::buffer*> &bufferList)
+{
+	IMPL::LCEventImpl *pLCEvent = dynamic_cast<IMPL::LCEventImpl *>(pEvent->getEvent<EVENT::LCEvent>() );
+
+	if( ! pLCEvent )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Wrong event type ! Expecting EVENT::LCEvent type !" );
+		return dqm4hep::STATUS_CODE_FAILURE;
+	}
+
+	IMPL::LCFlagImpl chFlag(0);
+	SiWECalShmProcessor::setCaloHitLCFlag(chFlag);
+
+	IMPL::LCCollectionVec *pOutputCollection = new IMPL::LCCollectionVec(EVENT::LCIO::RAWCALORIMETERHIT);
+	pLCEvent->addCollection( pOutputCollection, m_outputCollectionName );
+	pOutputCollection->setFlag( chFlag.getFlag() );
+
+	// loop over dif raw buffers
+	// decode hits one by one
+	// convert to calorimeter hits
+	for(auto bufIter = bufferList.begin(), endBufIter = bufferList.end() ;
+			endBufIter != bufIter ; ++bufIter)
+	{
+		levbdim::buffer *pBuffer = *bufIter;
+
+		// check for correct detector id
+		if( pBuffer->detectorId() != m_detectorId )
+			continue;
+
+		SiWECalRawHit *rawHit = 0;
+
+		unsigned char *pRawBuffer = (unsigned char*) pBuffer->ptr();
+		uint32_t bufferSize = pBuffer->size();
+
+		if(0 == bufferSize)
+			continue;
+
+		int32_t invalidBuffer = ( bufferSize - sizeof(struct SiWECalHeader) ) % sizeof(struct SiWECalRawHit);
+
+		if(invalidBuffer)
+		{
+			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Invalid SiWECal DIF ptr : Invalid buffer size = " << bufferSize );
+			continue;
+		}
+
+		const unsigned int nECalHits(( bufferSize - sizeof(struct SiWECalHeader) ) / sizeof(struct SiWECalRawHit));
+
+		unsigned int difId (0);
+		unsigned int difSpill(0);
+
+		for(unsigned int i=0 ; i<nECalHits ; ++i)
+		{
+			rawHit = (SiWECalRawHit *) (pRawBuffer + sizeof(struct SiWECalHeader) + i*sizeof(struct SiWECalRawHit));
+
+			if(0 == i)
+			{
+				difId = rawHit->m_difId;
+				difSpill = rawHit->m_spillId;
+			}
+
+			IMPL::CalorimeterHitImpl *pECalCaloHit = new IMPL::CalorimeterHitImpl();
+
+			float position[3] = {
+					rawHit->m_x + m_positionShift.getX(),
+					rawHit->m_y + m_positionShift.getY(),
+					rawHit->m_z + m_positionShift.getZ() };
+
+			int cellID0 = 0;
+			cellID0 += rawHit->m_difId;
+			cellID0 += rawHit->m_asicId << 8;
+			cellID0 += rawHit->m_channelId << 16;
+
+			int cellID1 = 0;
+			cellID0 += rawHit->m_iCell;
+			cellID0 += rawHit->m_jCell << 8;
+			cellID0 += rawHit->m_layer << 16;
+
+			// TODO add adc to energy conversion here !
+			float energy = static_cast<float>(rawHit->m_adcCount);
+			float time = static_cast<float>(rawHit->m_bcid);
+
+			pECalCaloHit->setCellID0(cellID0);
+			pECalCaloHit->setCellID1(cellID1);
+			pECalCaloHit->setPosition(position);
+			pECalCaloHit->setTime(time);
+			pECalCaloHit->setEnergy(energy);
+
+			pOutputCollection->addElement(pECalCaloHit);
+		}
+
+		std::stringstream ss;
+		ss << "SIWECAL_DIF" << difId << "_Spill";
+
+		pOutputCollection->parameters().setValue(ss.str(), static_cast<int>(difSpill));
+	}
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode SiWECalShmProcessor::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
+{
+	m_detectorId = 1100;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"DetectorId", m_detectorId));
+
+	m_outputCollectionName = "SiWECal";
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"OutputCollectionName", m_outputCollectionName));
+
+	m_positionShift.setValues(0.f, 0.f, 0.f);
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"PositionShift", m_positionShift));
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void SiWECalShmProcessor::setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
+{
+	EVENT::LCIO bitinfo;
+	lcFlag.setBit( bitinfo.RCHBIT_LONG );  // calorimeter data -> format long (position)
+	lcFlag.setBit( bitinfo.RCHBIT_BARREL ); // barrel
+	lcFlag.setBit( bitinfo.RCHBIT_ID1 ); // cell ID 1
+	lcFlag.setBit( bitinfo.RCHBIT_TIME ); // time
 }
 
 } 

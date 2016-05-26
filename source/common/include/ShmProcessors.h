@@ -31,6 +31,7 @@
 
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
+#include "dqm4hep/DQMCartesianVector.h"
 #include "dqm4hep/evb/DQMShmProcessor.h"
 
 // -- levbdim headers
@@ -109,7 +110,7 @@ public:
 
 	/** Fill the lc flag for a sdhcal raw calorimeter hit collection
 	 */
-	static void setLCFlag(IMPL::LCFlagImpl &lcFlag);
+	static void setRawCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag);
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -200,6 +201,81 @@ private:
 	unsigned int                           m_cherenkovDifId;
 	int                                    m_cherenkovTimeShift;
 	std::string                            m_outputCollectionName;
+};
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+
+/** SiWECalHeader struct
+ */
+struct SiWECalHeader
+{
+	uint32_t       m_detectorId;
+	uint32_t       m_sourceId;
+	uint32_t       m_eventId;
+	uint64_t       m_bcid;
+};
+
+/** SiWECalRawHit struct
+ */
+struct SiWECalRawHit
+{
+	uint8_t        m_difId;
+	uint8_t        m_asicId;
+	uint8_t        m_channelId;
+	uint8_t        m_iCell;
+	uint8_t        m_jCell;
+	uint8_t        m_layer;
+	float          m_x;
+	float          m_y;
+	float          m_z;
+	uint64_t       m_bcid;     ///< The time frame from trigger time
+	uint32_t       m_spillId;  ///< The spill id from SOR
+	double         m_recTime;  ///< Reconstructed time (unit seconds)
+	uint16_t       m_adcCount;
+	double         m_energy;
+};
+
+/** SiWECalShmProcessor class
+ */
+class SiWECalShmProcessor : public dqm4hep::DQMShmProcessor
+{
+public:
+	/** Constructor
+	 */
+	SiWECalShmProcessor();
+
+	/** Destructor
+	 */
+	~SiWECalShmProcessor();
+
+	/** Call back function on start of run
+	 */
+	dqm4hep::StatusCode startOfRun(dqm4hep::DQMRun *const pRun);
+
+	/** Call back function on end of run
+	 */
+	dqm4hep::StatusCode endOfRun(const dqm4hep::DQMRun *const pRun);
+
+	/** Called when an event is reconstructed.
+	 *  The key is a unique identifier for the event.
+	 *  The buffer list is the reconstructed list of buffers for the target key
+	 *  of the different sources
+	 */
+	dqm4hep::StatusCode processEvent(dqm4hep::DQMEvent *pEvent, uint32_t key, const std::vector<levbdim::buffer*> &bufferList);
+
+	/** Read settings from xml handle
+	 */
+	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
+
+	/** Fill the lc flag for a ecal calorimeter hit collection
+	 */
+	static void setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag);
+
+private:
+	unsigned int                           m_detectorId;
+	std::string                            m_outputCollectionName;
+	dqm4hep::DQMCartesianVector            m_positionShift;
 };
 
 } 
