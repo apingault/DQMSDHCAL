@@ -85,9 +85,17 @@ dqm4hep::StatusCode HoughTransformModule::userInitModule()
 
 dqm4hep::StatusCode HoughTransformModule::userReadSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
-	m_inputCollectionName = "SDHCAL_HIT";
+	m_ecalCollectionName = "SiWECalHits";
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"InputCollectionName", m_inputCollectionName));
+			"m_ecalCollectionName", m_ecalCollectionName));
+
+	m_hcalCollectionName = "SDHCAL_HIT";
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"HcalCollectionName", m_hcalCollectionName));
+
+	m_nECalLayers = 6;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NECalLayers", m_nECalLayers));
 
 	m_pNRecTracks = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
@@ -124,44 +132,34 @@ dqm4hep::StatusCode HoughTransformModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 	try
 	{
-		EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(m_inputCollectionName);
-		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(pCalorimeterHitCollection);
-
 		std::vector<caloobject::CaloHit*> caloHitList;
 		std::map<unsigned int, std::vector<caloobject::CaloHit*> > caloHitMap;
 
-		CLHEP::Hep3Vector globalHitShift(0, 0, 0);
-
 		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating wrapper hits");
 
-		// loop over hits in this event
-		for(unsigned int h=0 ; h<pCalorimeterHitCollection->getNumberOfElements() ; h++)
+		try
 		{
-			EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit*>(pCalorimeterHitCollection->getElementAt(h));
-
-			if(NULL == pCaloHit)
-				continue;
-
-			int cellID[3];
-			cellID[0] = cellIDDecoder(pCaloHit)["I"];
-			cellID[1] = cellIDDecoder(pCaloHit)["J"];
-			cellID[2] = cellIDDecoder(pCaloHit)["K-1"];
-
-			CLHEP::Hep3Vector positionVector(
-					pCaloHit->getPosition()[0],
-					pCaloHit->getPosition()[1],
-					pCaloHit->getPosition()[2] );
-
-			caloobject::CaloHit *pWrapperHit = new caloobject::CaloHit(
-					cellID,
-					positionVector,
-					pCaloHit->getEnergy(),
-					pCaloHit->getTime(),
-					globalHitShift);
-
-			caloHitMap[ cellID[2] ].push_back(pWrapperHit);
-			caloHitList.push_back( pWrapperHit );
+			EVENT::LCCollection *pECalCollection = pLCEvent->getCollection(m_ecalCollectionName);
+			this->createCaloHits(pECalCollection, 0, caloHitList, caloHitMap);
 		}
+		catch(EVENT::DataNotAvailableException &exception)
+		{
+			LOG4CXX_WARN( dqm4hep::dqmMainLogger , "Caught EVENT::DataNotAvailableException : " << exception.what() );
+		}
+
+		try
+		{
+			EVENT::LCCollection *pHCalCollection = pLCEvent->getCollection(m_ecalCollectionName);
+			this->createCaloHits(pHCalCollection, m_nECalLayers, caloHitList, caloHitMap);
+		}
+		catch(EVENT::DataNotAvailableException &exception)
+		{
+			LOG4CXX_WARN( dqm4hep::dqmMainLogger , "Caught EVENT::DataNotAvailableException : " << exception.what() );
+		}
+
+		// no hit -> no processing
+		if(caloHitList.empty())
+			return dqm4hep::STATUS_CODE_SUCCESS;
 
 		// algorithms
 		algorithm::Cluster clusteringAlgorithm;
@@ -217,6 +215,43 @@ dqm4hep::StatusCode HoughTransformModule::processEvent(EVENT::LCEvent *pLCEvent)
 	}
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void HoughTransformModule::createCaloHits(EVENT::LCCollection *pLCCollection, unsigned int layerShift,
+		std::vector<caloobject::CaloHit*> &caloHitList, std::map<unsigned int, std::vector<caloobject::CaloHit*> > &caloHitMap)
+{
+	CLHEP::Hep3Vector globalHitShift(0, 0, 0);
+	UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(pLCCollection);
+
+	for(unsigned int h=0 ; h<pLCCollection->getNumberOfElements() ; h++)
+	{
+		EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit*>(pLCCollection->getElementAt(h));
+
+		if(NULL == pCaloHit)
+			continue;
+
+		int cellID[3];
+		cellID[0] = cellIDDecoder(pCaloHit)["I"];
+		cellID[1] = cellIDDecoder(pCaloHit)["J"];
+		cellID[2] = cellIDDecoder(pCaloHit)["K-1"] + layerShift;
+
+		CLHEP::Hep3Vector positionVector(
+				pCaloHit->getPosition()[0],
+				pCaloHit->getPosition()[1],
+				pCaloHit->getPosition()[2]);
+
+		caloobject::CaloHit *pWrapperHit = new caloobject::CaloHit(
+				cellID,
+				positionVector,
+				pCaloHit->getEnergy(),
+				pCaloHit->getTime(),
+				globalHitShift);
+
+		caloHitMap[ cellID[2] ].push_back(pWrapperHit);
+		caloHitList.push_back( pWrapperHit );
+	}
 }
 
 //-------------------------------------------------------------------------------------------------

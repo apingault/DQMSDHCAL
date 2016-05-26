@@ -38,7 +38,7 @@
 
 #include "DQMTriventModule.h"
 
-namespace caloobject { class CaloTrack; }
+namespace caloobject { class CaloTrack; class CaloHit; }
 
 namespace dqm_sdhcal
 {
@@ -67,12 +67,19 @@ public:
 	dqm4hep::StatusCode endModule();
 
 private:
+	/**
+	 */
+	void createCaloHits(EVENT::LCCollection *pLCCollection, unsigned int layerShift,
+			std::vector<caloobject::CaloHit*> &caloHitList, std::map<unsigned int, std::vector<caloobject::CaloHit*> > &caloHitMap);
+
 	/** Analyze tracks and fill monitor elements
 	 */
 	dqm4hep::StatusCode analyzeTracks( const std::vector<caloobject::CaloTrack*> &tracks );
 
 private:
-	std::string                           m_inputCollectionName;
+	std::string                           m_ecalCollectionName;
+	std::string                           m_hcalCollectionName;
+	unsigned int                          m_nECalLayers;
 
 	dqm4hep::DQMMonitorElementPtr         m_pNRecTracks;
 	dqm4hep::DQMMonitorElementPtr         m_pTrackChi2;
