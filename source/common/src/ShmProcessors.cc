@@ -32,6 +32,7 @@
 
 // -- dqm4hep headers
 #include "dqm4hep/DQMPlugin.h"
+#include "dqm4hep/DQMPluginManager.h"
 #include "dqm4hep/DQMXmlHelper.h"
 #include "dqm4hep/DQMRun.h"
 #include "dqm4hep/DQMEvent.h"
@@ -46,6 +47,7 @@
 #include "IMPL/LCFlagImpl.h"
 #include "IMPL/RawCalorimeterHitImpl.h"
 #include "IMPL/CalorimeterHitImpl.h"
+#include "UTIL/CellIDEncoder.h"
 
 // -- std headers
 #include <bitset>
@@ -56,7 +58,7 @@ namespace dqm_sdhcal
 DQM_PLUGIN_DECL( EventInfoShmProcessor , "EventInfoShmProcessor" )
 DQM_PLUGIN_DECL( SDHCALShmProcessor    , "SDHCALShmProcessor"    )
 DQM_PLUGIN_DECL( CherenkovShmProcessor , "CherenkovShmProcessor" )
-DQM_PLUGIN_DECL( SiWECalShmProcessor , "SiWECalShmProcessor" )
+DQM_PLUGIN_DECL( SiWECalShmProcessor   , "SiWECalShmProcessor"   )
 
 EventInfoShmProcessor::EventInfoShmProcessor() :
 		m_eventNumber(0),
@@ -146,43 +148,6 @@ DIFPtr *SDHCALDifHelper::createDIFPtr(levbdim::buffer *pBuffer, unsigned int xda
 
 //-------------------------------------------------------------------------------------------------
 
-IMPL::RawCalorimeterHitImpl *SDHCALDifHelper::createRawCalorimeterHit(DIFPtr *pDifPtr, uint32_t frame, uint32_t channel)
-{
-	std::bitset<6> channelBitSet(channel);
-	unsigned long int cellID0(0);
-	unsigned long int cellID1(0);
-	unsigned long module(0);  // 0 for beam tests
-
-	unsigned short difId        = (((unsigned short) pDifPtr->getID()) & 0xFF);
-	unsigned short asicId       = (((unsigned short) pDifPtr->getFrameAsicHeader(frame)<<8)&0xFF00);
-	unsigned long int channelId = ((channelBitSet.to_ulong()<<16)&0x3F0000);
-	unsigned long int barrelEndcapModule = ((module <<22)&0xFC00000);
-	unsigned long int timeStamp = (unsigned long int)(pDifPtr->getFrameTimeToTrigger(frame));
-
-	cellID0 += (unsigned long int) difId;
-	cellID0 += (unsigned long int) asicId;
-	cellID0 += (unsigned long int) channelId;
-	cellID0 += (unsigned long int) barrelEndcapModule;
-	cellID1  = (unsigned long int) pDifPtr->getFrameBCID(frame);
-
-	std::bitset<3> threshold;
-	threshold[0] = pDifPtr->getFrameLevel(frame, channel, 0);
-	threshold[1] = pDifPtr->getFrameLevel(frame, channel, 1);
-	threshold[2] = false; // not synchronized
-
-	// create raw calorimeter hit
-	IMPL::RawCalorimeterHitImpl *pCaloHit = new IMPL::RawCalorimeterHitImpl();
-
-	pCaloHit->setCellID0(cellID0);
-	pCaloHit->setCellID1(cellID1);
-	pCaloHit->setAmplitude(threshold.to_ulong());
-	pCaloHit->setTimeStamp(timeStamp);
-
-	return pCaloHit;
-}
-
-//-------------------------------------------------------------------------------------------------
-
 bool SDHCALDifHelper::isEmptyPad(DIFPtr *pDifPtr, uint32_t frame, uint32_t channel)
 {
 	return ( ! ( pDifPtr->getFrameLevel(frame, channel, 0) || pDifPtr->getFrameLevel(frame, channel, 1) ) );
@@ -204,7 +169,7 @@ void SDHCALDifHelper::fillDifTriggerInfo(DIFPtr *pDifPtr, dqm4hep::IntVector &tr
 
 //-------------------------------------------------------------------------------------------------
 
-void SDHCALDifHelper::setRawCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
+void SDHCALDifHelper::setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
 {
 	EVENT::LCIO bitinfo;
 	lcFlag.setBit( bitinfo.RCHBIT_LONG );  // raw calorimeter data -> format long
@@ -256,11 +221,13 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 	}
 
 	IMPL::LCFlagImpl chFlag(0);
-	SDHCALDifHelper::setRawCaloHitLCFlag(chFlag);
+	SDHCALDifHelper::setCaloHitLCFlag(chFlag);
 
-	IMPL::LCCollectionVec *pOutputCollection = new IMPL::LCCollectionVec(EVENT::LCIO::RAWCALORIMETERHIT);
+	IMPL::LCCollectionVec *pOutputCollection = new IMPL::LCCollectionVec(EVENT::LCIO::CALORIMETERHIT);
 	pLCEvent->addCollection( pOutputCollection, m_outputCollectionName );
 	pOutputCollection->setFlag( chFlag.getFlag() );
+
+	UTIL::CellIDEncoder<IMPL::CalorimeterHitImpl> cellIDEncoder( m_cellIDEncoderString , pOutputCollection );
 
 	bool isFirstRU = true;
 	bool reachedNoiseLimit = false;
@@ -309,7 +276,11 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 				if ( SDHCALDifHelper::isEmptyPad(pDifPtr, f, ch) )
 					continue;
 
-				EVENT::RawCalorimeterHit *pCaloHit = SDHCALDifHelper::createRawCalorimeterHit(pDifPtr, f, ch);
+				EVENT::CalorimeterHit *pCaloHit = this->createCalorimeterHit(cellIDEncoder, pDifPtr, f, ch);
+
+				if(0 == pCaloHit)
+					continue;
+
 				pOutputCollection->addElement(pCaloHit);
 
 				if (pOutputCollection->getNumberOfElements() > m_noiseLimit)
@@ -337,8 +308,136 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 
 //-------------------------------------------------------------------------------------------------
 
+IMPL::CalorimeterHitImpl *SDHCALShmProcessor::createCalorimeterHit(UTIL::CellIDEncoder<IMPL::CalorimeterHitImpl> &cellIDEncoder, DIFPtr *pDifPtr, uint32_t frame, uint32_t channel)
+{
+	std::bitset<6> channelBitSet(channel);
+	unsigned long int cellID0(0);
+	unsigned long int cellID1(0);
+	unsigned long module(0);  // 0 for beam tests
+
+	unsigned short difId        = (((unsigned short) pDifPtr->getID()) & 0xFF);
+	unsigned short asicId       = (((unsigned short) pDifPtr->getFrameAsicHeader(frame)<<8)&0xFF00);
+	unsigned long int channelId = ((channelBitSet.to_ulong()<<16)&0x3F0000);
+	unsigned long int barrelEndcapModule = ((module <<22)&0xFC00000);
+
+	const float timeStamp = static_cast<float>(pDifPtr->getFrameTimeToTrigger(frame));
+
+	cellID0 += (unsigned long int) difId;
+	cellID0 += (unsigned long int) asicId;
+	cellID0 += (unsigned long int) channelId;
+	cellID0 += (unsigned long int) barrelEndcapModule;
+	cellID1  = (unsigned long int) pDifPtr->getFrameBCID(frame);
+
+	std::bitset<3> threshold;
+	threshold[0] = pDifPtr->getFrameLevel(frame, channel, 0);
+	threshold[1] = pDifPtr->getFrameLevel(frame, channel, 1);
+	threshold[2] = false; // not synchronized
+
+	float shift;
+	const float amplitude( static_cast<float>( threshold.to_ulong() & m_amplitudeBitRotation ) );
+
+    if( amplitude > 2.5 )
+		shift = 0;         // 3rd threshold
+    else if( amplitude > 1.5 )
+		shift = -1;        // 2nd threshold
+	else
+		shift = +1;        // 1rst Threshold
+
+    const float energy(amplitude + shift);
+
+    dqm4hep::DQMElectronicsMapping::Electronics electronics;
+
+    electronics.m_difId = difId;
+    electronics.m_asicId = asicId;
+    electronics.m_channelId = channelId;
+
+	// perform conversion to cell ids and absolute position
+	dqm4hep::DQMCartesianVector position(0.f, 0.f, 0.f);
+	dqm4hep::DQMElectronicsMapping::Cell cell;
+
+	try
+	{
+		THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pElectronicsMapping->electronicsToPosition(electronics, position));
+		THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pElectronicsMapping->electronicstoCell(electronics, cell));
+	}
+	catch(dqm4hep::StatusCodeException &exception)
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Couldn't decode hit using electronics mapping : " << exception.toString() );
+		return 0;
+	}
+
+	// set the cell id
+	cellIDEncoder[ m_ijkEncoding.at(0) ] = cell.m_iCell;
+	cellIDEncoder[ m_ijkEncoding.at(1) ] = cell.m_jCell;
+	cellIDEncoder[ m_ijkEncoding.at(2) ] = cell.m_layer;
+
+    if( m_encodeDifAsicChannel )
+	{
+		cellIDEncoder[ m_difAsicChannelEncoding.at(0) ] = electronics.m_difId;
+		cellIDEncoder[ m_difAsicChannelEncoding.at(1) ] = electronics.m_asicId;
+		cellIDEncoder[ m_difAsicChannelEncoding.at(2) ] = electronics.m_channelId;
+	}
+
+	float positionArray [3] = { position.getX() , position.getY() , position.getZ() };
+
+	// create the calorimeter hit
+	IMPL::CalorimeterHitImpl *pCaloHit = new IMPL::CalorimeterHitImpl();
+
+	pCaloHit->setCellID0(cellID0);
+	pCaloHit->setPosition( positionArray );
+	pCaloHit->setEnergy(energy);
+	cellIDEncoder.setCellID( pCaloHit );
+	pCaloHit->setTime(timeStamp);
+
+	return pCaloHit;
+}
+
+//-------------------------------------------------------------------------------------------------
+
 dqm4hep::StatusCode SDHCALShmProcessor::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
+	dqm4hep::TiXmlElement *pMappingXmlElement = xmlHandle.FirstChild("electronicsMapping").Element();
+
+	if( ! pMappingXmlElement )
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+
+	std::string plugin;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::getAttribute(pMappingXmlElement, "plugin", plugin));
+
+	// query electronics mapping plugin instance and configure
+	m_pElectronicsMapping = dqm4hep::DQMPluginManager::instance()->createPluginClass<dqm4hep::DQMElectronicsMapping>(plugin);
+
+	dqm4hep::TiXmlHandle mappingHandle(pMappingXmlElement);
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pElectronicsMapping->readSettings(mappingHandle));
+
+	m_amplitudeBitRotation = 3;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"AmplitudeBitRotation", m_amplitudeBitRotation));
+
+	m_encodeDifAsicChannel = true;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"EncodeDifAsicChannel", m_encodeDifAsicChannel));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
+			"IJKEncoding", m_ijkEncoding, [&] (const dqm4hep::StringVector &vec) {
+		return vec.size() == 3;
+	}));
+
+	m_cellIDEncoderString = "M:3,S-1:3,I:9,J:9,K-1:6";
+
+	if( m_encodeDifAsicChannel )
+	{
+		m_cellIDEncoderString = "I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6";
+
+		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
+				"DifAsicChannelEncoding", m_difAsicChannelEncoding, [&] (const dqm4hep::StringVector &vec) {
+			return vec.size() == 3;
+		}));
+	}
+
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"CellIDEncoderString", m_cellIDEncoderString));
+
 	m_skipFullAsics = true;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"SkipFullAsics", m_skipFullAsics));
@@ -415,7 +514,7 @@ dqm4hep::StatusCode CherenkovShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 	}
 
 	IMPL::LCFlagImpl chFlag(0);
-	SDHCALDifHelper::setRawCaloHitLCFlag(chFlag);
+	SDHCALDifHelper::setCaloHitLCFlag(chFlag);
 
 	IMPL::LCCollectionVec *pOutputCollection = new IMPL::LCCollectionVec(EVENT::LCIO::RAWCALORIMETERHIT);
 	pLCEvent->addCollection( pOutputCollection, m_outputCollectionName );
@@ -455,18 +554,18 @@ dqm4hep::StatusCode CherenkovShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 				if ( SDHCALDifHelper::isEmptyPad(pDifPtr, f, ch) )
 					continue;
 
-				IMPL::RawCalorimeterHitImpl *pCaloHit = SDHCALDifHelper::createRawCalorimeterHit(pDifPtr, f, ch);
-				int timeStamp = pCaloHit->getTimeStamp();
+				IMPL::CalorimeterHitImpl *pCaloHit = this->createCalorimeterHit(pDifPtr, f, ch);
+				float timeStamp = pCaloHit->getTime();
 
 				// apply cherenkov time stamp shift
 				if(m_cherenkovTimeShift < 0 && timeStamp < abs(m_cherenkovTimeShift) )
 				{
 					LOG4CXX_WARN( dqm4hep::dqmMainLogger , "Reconstructed cherenkov hit with timeStamp = " << timeStamp << ", adding shift of " << m_cherenkovTimeShift << " resulting in negative time stamp !!" );
 					LOG4CXX_WARN( dqm4hep::dqmMainLogger , "Setting time stamp of cherenkov hit to 0 !" );
-					pCaloHit->setTimeStamp(0);
+					pCaloHit->setTime(0.f);
 				}
 				else
-					pCaloHit->setTimeStamp( timeStamp + m_cherenkovTimeShift );
+					pCaloHit->setTime( timeStamp + m_cherenkovTimeShift );
 
 				pOutputCollection->addElement(pCaloHit);
 			}
@@ -485,6 +584,58 @@ dqm4hep::StatusCode CherenkovShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 	}
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+IMPL::CalorimeterHitImpl *CherenkovShmProcessor::createCalorimeterHit(DIFPtr *pDifPtr, uint32_t frame, uint32_t channel)
+{
+	std::bitset<6> channelBitSet(channel);
+	unsigned long int cellID0(0);
+	unsigned long int cellID1(0);
+	unsigned long module(0);  // 0 for beam tests
+
+	unsigned short difId        = (((unsigned short) pDifPtr->getID()) & 0xFF);
+	unsigned short asicId       = (((unsigned short) pDifPtr->getFrameAsicHeader(frame)<<8)&0xFF00);
+	unsigned long int channelId = ((channelBitSet.to_ulong()<<16)&0x3F0000);
+	unsigned long int barrelEndcapModule = ((module <<22)&0xFC00000);
+
+	const float timeStamp = static_cast<float>(pDifPtr->getFrameTimeToTrigger(frame));
+
+	cellID0 += (unsigned long int) difId;
+	cellID0 += (unsigned long int) asicId;
+	cellID0 += (unsigned long int) channelId;
+	cellID0 += (unsigned long int) barrelEndcapModule;
+	cellID1  = (unsigned long int) pDifPtr->getFrameBCID(frame);
+
+	std::bitset<3> threshold;
+	threshold[0] = pDifPtr->getFrameLevel(frame, channel, 0);
+	threshold[1] = pDifPtr->getFrameLevel(frame, channel, 1);
+	threshold[2] = false; // not synchronized
+
+	float shift;
+	const float amplitude( static_cast<float>( threshold.to_ulong() & m_amplitudeBitRotation ) );
+
+    if( amplitude > 2.5 )
+		shift = 0;         // 3rd threshold
+    else if( amplitude > 1.5 )
+		shift = -1;        // 2nd threshold
+	else
+		shift = +1;        // 1rst Threshold
+
+    const float energy(amplitude + shift);
+
+	float positionArray [3] = {0};
+
+	// create the calorimeter hit
+	IMPL::CalorimeterHitImpl *pCaloHit = new IMPL::CalorimeterHitImpl();
+
+	pCaloHit->setCellID0(cellID0);
+	pCaloHit->setPosition(positionArray);
+	pCaloHit->setEnergy(energy);
+	pCaloHit->setTime(timeStamp);
+
+	return pCaloHit;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -510,6 +661,10 @@ dqm4hep::StatusCode CherenkovShmProcessor::readSettings(const dqm4hep::TiXmlHand
 	m_cherenkovTimeShift = 0;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"CherenkovTimeShift", m_cherenkovTimeShift));
+
+	m_amplitudeBitRotation = 3;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"AmplitudeBitRotation", m_amplitudeBitRotation));
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -563,6 +718,8 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 	pLCEvent->addCollection( pOutputCollection, m_outputCollectionName );
 	pOutputCollection->setFlag( chFlag.getFlag() );
 
+	UTIL::CellIDEncoder<IMPL::CalorimeterHitImpl> cellIDEncoder( m_cellIDEncoderString , pOutputCollection );
+
 	// loop over dif raw buffers
 	// decode hits one by one
 	// convert to calorimeter hits
@@ -613,22 +770,19 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 					rawHit->m_y + m_positionShift.getY(),
 					rawHit->m_z + m_positionShift.getZ() };
 
-			int cellID0 = 0;
-			cellID0 += rawHit->m_difId;
-			cellID0 += rawHit->m_asicId << 8;
-			cellID0 += rawHit->m_channelId << 16;
-
-			int cellID1 = 0;
-			cellID0 += rawHit->m_iCell;
-			cellID0 += rawHit->m_jCell << 8;
-			cellID0 += rawHit->m_layer << 16;
+			// set the cell id
+			cellIDEncoder[ m_ijkEncoding.at(0) ] = rawHit->m_iCell;
+			cellIDEncoder[ m_ijkEncoding.at(1) ] = rawHit->m_jCell;
+			cellIDEncoder[ m_ijkEncoding.at(2) ] = rawHit->m_layer;
+			cellIDEncoder[ m_difAsicChannelEncoding.at(0) ] = rawHit->m_difId;
+			cellIDEncoder[ m_difAsicChannelEncoding.at(1) ] = rawHit->m_asicId;
+			cellIDEncoder[ m_difAsicChannelEncoding.at(2) ] = rawHit->m_channelId;
 
 			// TODO add adc to energy conversion here !
 			float energy = static_cast<float>(rawHit->m_adcCount);
 			float time = static_cast<float>(rawHit->m_bcid);
 
-			pECalCaloHit->setCellID0(cellID0);
-			pECalCaloHit->setCellID1(cellID1);
+			cellIDEncoder.setCellID( pECalCaloHit );
 			pECalCaloHit->setPosition(position);
 			pECalCaloHit->setTime(time);
 			pECalCaloHit->setEnergy(energy);
@@ -647,6 +801,17 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 
 //-------------------------------------------------------------------------------------------------
 
+void SiWECalShmProcessor::setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
+{
+	EVENT::LCIO bitinfo;
+	lcFlag.setBit( bitinfo.RCHBIT_LONG );  // calorimeter data -> format long (position)
+	lcFlag.setBit( bitinfo.RCHBIT_BARREL ); // barrel
+	lcFlag.setBit( bitinfo.RCHBIT_ID1 ); // cell ID 1
+	lcFlag.setBit( bitinfo.RCHBIT_TIME ); // time
+}
+
+//-------------------------------------------------------------------------------------------------
+
 dqm4hep::StatusCode SiWECalShmProcessor::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
 	m_detectorId = 1100;
@@ -661,19 +826,24 @@ dqm4hep::StatusCode SiWECalShmProcessor::readSettings(const dqm4hep::TiXmlHandle
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"PositionShift", m_positionShift));
 
+	m_cellIDEncoderString = "I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6";
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"CellIDEncoderString", m_cellIDEncoderString));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
+			"IJKEncoding", m_ijkEncoding, [&] (const dqm4hep::StringVector &vec) {
+		return vec.size() == 3;
+	}));
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
+			"DifAsicChannelEncoding", m_difAsicChannelEncoding, [&] (const dqm4hep::StringVector &vec) {
+		return vec.size() == 3;
+	}));
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
-//-------------------------------------------------------------------------------------------------
 
-void SiWECalShmProcessor::setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
-{
-	EVENT::LCIO bitinfo;
-	lcFlag.setBit( bitinfo.RCHBIT_LONG );  // calorimeter data -> format long (position)
-	lcFlag.setBit( bitinfo.RCHBIT_BARREL ); // barrel
-	lcFlag.setBit( bitinfo.RCHBIT_ID1 ); // cell ID 1
-	lcFlag.setBit( bitinfo.RCHBIT_TIME ); // time
-}
 
 } 
 

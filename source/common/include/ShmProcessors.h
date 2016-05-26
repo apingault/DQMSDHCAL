@@ -32,12 +32,14 @@
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMCartesianVector.h"
+#include "dqm4hep/DQMElectronicsMapping.h"
 #include "dqm4hep/evb/DQMShmProcessor.h"
 
 // -- levbdim headers
 #include "buffer.hh"
 
-namespace IMPL { class LCFlagImpl; class RawCalorimeterHitImpl; }
+namespace IMPL { class LCFlagImpl; class CalorimeterHitImpl; }
+namespace UTIL { template <typename T> class CellIDEncoder; }
 
 namespace dqm_sdhcal
 {
@@ -96,9 +98,9 @@ public:
 	 */
 	static DIFPtr *createDIFPtr(levbdim::buffer *pBuffer, unsigned int xdaqShift);
 
-	/** Create a raw calorimeter hit from the dif ptr at a target frame and channel
-	 */
-	static IMPL::RawCalorimeterHitImpl *createRawCalorimeterHit(DIFPtr *pDifPtr, uint32_t frame, uint32_t channel);
+//	/** Create a calorimeter hit from the dif ptr at a target frame and channel
+//	 */
+//	static IMPL::CalorimeterHitImpl *createCalorimeterHit(DIFPtr *pDifPtr, uint32_t frame, uint32_t channel);
 
 	/** Whether the pad has been fired in the dif
 	 */
@@ -108,9 +110,9 @@ public:
 	 */
 	static void fillDifTriggerInfo(DIFPtr *pDifPtr, dqm4hep::IntVector &vector);
 
-	/** Fill the lc flag for a sdhcal raw calorimeter hit collection
+	/** Fill the lc flag for a sdhcal calorimeter hit collection
 	 */
-	static void setRawCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag);
+	static void setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag);
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -151,13 +153,24 @@ public:
 	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
 
 private:
+	/** Create a calorimeter hit from the dif ptr at a target frame and channel
+	 */
+	IMPL::CalorimeterHitImpl *createCalorimeterHit(UTIL::CellIDEncoder<IMPL::CalorimeterHitImpl> &cellIDEncoder, DIFPtr *pDifPtr, uint32_t frame, uint32_t channel);
+
+private:
 	bool                                   m_skipFullAsics;
 	bool                                   m_dropFirstRU;
+	bool                                   m_encodeDifAsicChannel;
 	unsigned int                           m_xdaqShift;
 	unsigned int                           m_detectorId;
 	unsigned int                           m_noiseLimit;
+	unsigned int                           m_amplitudeBitRotation;
 	std::string                            m_outputCollectionName;
+	dqm4hep::StringVector                  m_ijkEncoding;
+	std::string                            m_cellIDEncoderString;
+	dqm4hep::StringVector                  m_difAsicChannelEncoding;
 	UIntSet                                m_difMaskList;
+	dqm4hep::DQMElectronicsMapping        *m_pElectronicsMapping;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -196,9 +209,15 @@ public:
 	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
 
 private:
+	/** Create a calorimeter hit from the dif ptr at a target frame and channel
+	 */
+	IMPL::CalorimeterHitImpl *createCalorimeterHit(DIFPtr *pDifPtr, uint32_t frame, uint32_t channel);
+
+private:
 	unsigned int                           m_detectorId;
 	unsigned int                           m_xdaqShift;
 	unsigned int                           m_cherenkovDifId;
+	unsigned int                           m_amplitudeBitRotation;
 	int                                    m_cherenkovTimeShift;
 	std::string                            m_outputCollectionName;
 };
@@ -275,6 +294,9 @@ public:
 private:
 	unsigned int                           m_detectorId;
 	std::string                            m_outputCollectionName;
+	std::string                            m_cellIDEncoderString;
+	dqm4hep::StringVector                  m_ijkEncoding;
+	dqm4hep::StringVector                  m_difAsicChannelEncoding;
 	dqm4hep::DQMCartesianVector            m_positionShift;
 };
 
