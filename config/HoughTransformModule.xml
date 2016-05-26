@@ -19,44 +19,16 @@
     <module type="HoughTransformModule" name="SDHCALTracking">
         
         <Trivent>
-        	<parameter name="RawCollectionNames"> DHCALRawHits </parameter>
-        	<parameter name="RecCollectionNames"> SDHCAL_HIT </parameter>
-        	
-        	<!-- Lookup in the same order as RawCollectionNames and RecCollectionNames -->
-        	<RawDataConverters>
-        		<converter plugin="SDHCALCaloHitConverter">
-        		
-        			<electronicsMapping plugin="SDHCALElectronicsMapping">
-        			
-        				<parameter name="CellReferencePosition"> 0 0 0 </parameter>
-        				<parameter name="CellSize0"> 10.408f </parameter>
-        				<parameter name="CellSize1"> 10.408f </parameter>
-        				<parameter name="ReadFromDB"> true </parameter>
-        				<parameter name="Host"> localhost </parameter>
-        				<parameter name="User"> rete </parameter>
-        				<parameter name="Password"> Manoucheries1 </parameter>
-        				<parameter name="Database"> GEOMETRY </parameter>
-        				<parameter name="BeamTest"> SPS_08_2012 </parameter>
-        				<parameter name="GeometryFileName"> geometry_SPS_08_2012.xml </parameter>
-        			
-        			</electronicsMapping>
-        			
-        			<parameter name="AmplitudeBitRotation"> 3 </parameter>
-        			<parameter name="EncodeDifAsicChannel"> true </parameter>
-        			<parameter name="IJKEncoding"> I J K-1 </parameter>
-        			<parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter>
-        			<parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
-        			
-        		</converter>
-        	</RawDataConverters>
-        	
+        	<parameter name="HitCollectionNames"> SDHCAL_HIT SiWECalHits </parameter>
         	<parameter name="TimeWindow"> 2 </parameter>
         	<parameter name="MinPeakSize"> 10 </parameter>
         	<parameter name="MinElements"> 10 </parameter>
         	<parameter name="MaxElements"> 100000 </parameter>
         </Trivent>
         
-        <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
+        <parameter name="ECalCollectionName"> SiWECalHits </parameter>
+        <parameter name="HCalCollectionName"> SDHCAL_HIT </parameter>
+        <parameter name="NECalLayers"> 6 </parameter>
         
 		<monitorElement ID="NRecTracks"
 			name="NRecTracks" path="/" type="TH1I" title="N reconstructed tracks" 
