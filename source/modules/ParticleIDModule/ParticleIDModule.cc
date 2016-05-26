@@ -77,7 +77,7 @@ dqm4hep::StatusCode ParticleIDModule::userInitModule()
 dqm4hep::StatusCode ParticleIDModule::userReadSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
-			"InputCollectionNames", m_inputCollectionNames));
+			"CaloHitCollectionNames", m_caloHitCollectionNames));
 
 	/*------ Monitor element booking ------*/
 	m_pParticleIDSummary = NULL;
@@ -219,7 +219,7 @@ dqm4hep::StatusCode ParticleIDModule::getNHits(EVENT::LCEvent *pLCEvent, unsigne
 {
 	try
 	{
-		for(auto iter = m_inputCollectionNames.begin(), endIter = m_inputCollectionNames.end() ;
+		for(auto iter = m_caloHitCollectionNames.begin(), endIter = m_caloHitCollectionNames.end() ;
 				endIter != iter ; ++iter)
 		{
 			EVENT::LCCollection *pLCCollection = pLCEvent->getCollection(*iter);

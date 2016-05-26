@@ -72,7 +72,7 @@ private:
 
 private:
 	EventClassifier                      *m_pEventClassifier;
-	dqm4hep::StringVector                 m_inputCollectionNames;
+	dqm4hep::StringVector                 m_caloHitCollectionNames;
 
 	dqm4hep::DQMMonitorElementPtr         m_pParticleIDSummary;
 	dqm4hep::DQMMonitorElementPtr         m_pNHitNoise;
