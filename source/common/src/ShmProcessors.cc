@@ -56,6 +56,7 @@ namespace dqm_sdhcal
 DQM_PLUGIN_DECL( EventInfoShmProcessor , "EventInfoShmProcessor" )
 DQM_PLUGIN_DECL( SDHCALShmProcessor    , "SDHCALShmProcessor"    )
 DQM_PLUGIN_DECL( CherenkovShmProcessor , "CherenkovShmProcessor" )
+DQM_PLUGIN_DECL( SiWECalShmProcessor , "SiWECalShmProcessor" )
 
 EventInfoShmProcessor::EventInfoShmProcessor() :
 		m_eventNumber(0),
