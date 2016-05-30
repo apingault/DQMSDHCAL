@@ -19,7 +19,7 @@
     <module type="ParticleIDModule" name="SDHCALParticleID">
         
         <Trivent>
-        	<parameter name="HitCollectionNames"> SDHCAL_HIT SiWECalHits </parameter>
+        	<parameter name="CaloHitCollectionNames"> SDHCAL_HIT SiWECalHits </parameter>
         	<parameter name="TimeWindow"> 2 </parameter>
         	<parameter name="MinPeakSize"> 10 </parameter>
         	<parameter name="MinElements"> 10 </parameter>
