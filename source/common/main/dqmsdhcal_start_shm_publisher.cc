@@ -32,6 +32,10 @@
 #include "dqm4hep/DQMLogging.h"
 #include "dqm4hep/DQMCoreTool.h"
 
+// -- dqmsdhcal headers
+#include "DIF.h"
+#include "DIFUnpacker.h"
+ 
 // -- tclap headers
 #include "tclap/CmdLine.h"
 #include "tclap/Arg.h"
@@ -46,7 +50,7 @@
 #include "EVENT/LCCollection.h"
 #include "IMPL/LCGenericObjectImpl.h"
 #include "IO/LCReader.h"
-#include "IOIMPL/LCFactory.h"
+#include "IOIMPL/LCFactory.h" 
 
 namespace local_namespace
 {
@@ -59,7 +63,7 @@ public:
 
 }
 
-void copyRuContent( local_namespace::LMGeneric *pLMGeneric , levbdim::buffer *pBuffer );
+void copyRuContent( local_namespace::LMGeneric *pLMGeneric , levbdim::buffer *pBuffer, unsigned int detectorId, unsigned int xdaqShift );
 void publishBufferContent( levbdim::buffer *pBuffer , const std::string &directory );
 
 
@@ -70,6 +74,8 @@ int main(int argc, char* argv[])
 	std::string cmdLineFooter = "Please report bug to <rete@ipnl.in2p3.fr>";
 	TCLAP::CmdLine *pCommandLine = new TCLAP::CmdLine(cmdLineFooter, ' ', DQM4HEP_VERSION_STR);
 	std::string log4cxx_file = std::string(DQMCore_DIR) + "/conf/defaultLoggerConfig.xml";
+	unsigned int detId=0;	
+	unsigned int xdaqShift=0;
 
 	TCLAP::ValueArg<std::string> collectionNameArg(
 				  "c"
@@ -145,6 +151,24 @@ int main(int argc, char* argv[])
 				 , "string");
 	pCommandLine->add(lcioFileNamesArg);
 
+	TCLAP::ValueArg<unsigned int> simulateDetectorIdArg(
+				  "i"
+				 , "detector-id"
+				 , "Simulate a detectorID, to use with old (before 2016) slcio files (SDHCAL=100)"
+				 , false
+				 , 0
+				 , "unsigned int");
+	pCommandLine->add(simulateDetectorIdArg);
+
+	TCLAP::ValueArg<unsigned int> xdaqShiftArg(
+				  "x"
+				 , "xdaqshift"
+				 , "XDaqShift to apply to recover pLoad informations ('old'(2014-2015) data=24, new(>2016)data = 20 "
+				 , false
+				 , 0
+				 , "unsigned int");
+	pCommandLine->add(xdaqShiftArg);
+
 	// parse command line
 	pCommandLine->parse(argc, argv);
 
@@ -167,12 +191,25 @@ int main(int argc, char* argv[])
 	if( skipNEventsArg.getValue() )
 	   pLCReader->skipNEvents( skipNEventsArg.getValue() );
 
+ 	if(simulateDetectorIdArg.getValue())
+		detId = simulateDetectorIdArg.getValue();
+ 	if(xdaqShiftArg.getValue())
+		xdaqShift = xdaqShiftArg.getValue();
+   
+  if (detId != 0 || xdaqShift != 0) 
+		if (detId == 0 || xdaqShift == 0) 
+			{
+				LOG4CXX_FATAL( dqm4hep::dqmMainLogger , "If using detectorId or xdaqShift option, both needs to be defined");
+				return 0;
+			}
+
 	// global buffer to publish data
 	levbdim::buffer buffer(0x20000);
 
 	EVENT::LCEvent *pLCEvent = NULL;
 
 	int ret(0);
+	int processedEvents = 0;
 
 	while( ( pLCEvent = pLCReader->readNextEvent() ) )
 	{
@@ -200,12 +237,14 @@ int main(int argc, char* argv[])
 			}
 
 
-			copyRuContent( pLMGeneric , &buffer );
+			copyRuContent( pLMGeneric , &buffer, detId, xdaqShift);
 			publishBufferContent( &buffer , monitoringDirectoryArg.getValue() );
 		}
 
 		dqm4hep::DQMCoreTool::sleep( std::chrono::milliseconds( sleepTimeArg.getValue() ) );
+		++processedEvents;
 	}
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "Reached end of file - processed " << processedEvents << " events");
 
 	delete pCommandLine;
 	delete pLCReader;
@@ -216,7 +255,7 @@ int main(int argc, char* argv[])
 
 
 
-void copyRuContent( local_namespace::LMGeneric *pLMGeneric , levbdim::buffer *pBuffer )
+void copyRuContent( local_namespace::LMGeneric *pLMGeneric , levbdim::buffer *pBuffer, const unsigned int detectorId, const unsigned int xdaqShift )
 {
 	// get raw buffer and size
 	int *pRawBuffer = & pLMGeneric->getIntVector()[0];
@@ -225,6 +264,22 @@ void copyRuContent( local_namespace::LMGeneric *pLMGeneric , levbdim::buffer *pB
 
 	// copy ru to buffer
 	memcpy( pBuffer->ptr(), RawBufferUChar, bufferSize );
+	// pBuffer->dumpInfo();
+	
+	if (detectorId !=0 && xdaqShift !=0 )
+	{	
+		// Recover difInformation
+		uint32_t idstart = dqm_sdhcal::DIFUnpacker::getStartOfDIF(RawBufferUChar, bufferSize, xdaqShift);
+		unsigned char* tcdif=&RawBufferUChar[idstart];
+		dqm_sdhcal::DIFPtr* pDifPtr= new dqm_sdhcal::DIFPtr(tcdif,bufferSize-idstart+1);
+	
+		// Replace correct information inside the levbdim buffer
+		pBuffer->setDetectorId(detectorId);
+		pBuffer->setDataSourceId(pDifPtr->getID());
+		pBuffer->setEventId(pDifPtr->getGTC());
+		pBuffer->setBxId(pDifPtr->getBCID());
+		// pBuffer->dumpInfo();
+	}
 	pBuffer->setPayloadSize( bufferSize - 3*sizeof(uint32_t) - sizeof(uint64_t) );
 }
 
