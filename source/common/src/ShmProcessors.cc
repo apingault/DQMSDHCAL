@@ -310,28 +310,19 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 
 IMPL::CalorimeterHitImpl *SDHCALShmProcessor::createCalorimeterHit(UTIL::CellIDEncoder<IMPL::CalorimeterHitImpl> &cellIDEncoder, DIFPtr *pDifPtr, uint32_t frame, uint32_t channel)
 {
-	std::bitset<6> channelBitSet(channel);
-	unsigned long int cellID0(0);
-	unsigned long int cellID1(0);
-	unsigned long module(0);  // 0 for beam tests
+	// dif - asic - channel
+	unsigned short difId        = pDifPtr->getID();
+	unsigned short asicId       = pDifPtr->getFrameAsicHeader(frame);
+	unsigned long int channelId = channel;
 
-	unsigned short difId        = (((unsigned short) pDifPtr->getID()) & 0xFF);
-	unsigned short asicId       = (((unsigned short) pDifPtr->getFrameAsicHeader(frame)<<8)&0xFF00);
-	unsigned long int channelId = ((channelBitSet.to_ulong()<<16)&0x3F0000);
-	unsigned long int barrelEndcapModule = ((module <<22)&0xFC00000);
+	// time stamp  - unit = bin of 200 ns from trigger
+	const float timeStamp       = static_cast<float>(pDifPtr->getFrameTimeToTrigger(frame));
 
-	const float timeStamp = static_cast<float>(pDifPtr->getFrameTimeToTrigger(frame));
-
-	cellID0 += (unsigned long int) difId;
-	cellID0 += (unsigned long int) asicId;
-	cellID0 += (unsigned long int) channelId;
-	cellID0 += (unsigned long int) barrelEndcapModule;
-	cellID1  = (unsigned long int) pDifPtr->getFrameBCID(frame);
-
+	// get the SDHCAL threshold
 	std::bitset<3> threshold;
 	threshold[0] = pDifPtr->getFrameLevel(frame, channel, 0);
 	threshold[1] = pDifPtr->getFrameLevel(frame, channel, 1);
-	threshold[2] = false; // not synchronized
+	threshold[2] = false;
 
 	float shift;
 	const float amplitude( static_cast<float>( threshold.to_ulong() & m_amplitudeBitRotation ) );
@@ -345,13 +336,12 @@ IMPL::CalorimeterHitImpl *SDHCALShmProcessor::createCalorimeterHit(UTIL::CellIDE
 
     const float energy(amplitude + shift);
 
+	// perform conversion to cell ids and absolute position
     dqm4hep::DQMElectronicsMapping::Electronics electronics;
-
     electronics.m_difId = difId;
     electronics.m_asicId = asicId;
     electronics.m_channelId = channelId;
 
-	// perform conversion to cell ids and absolute position
 	dqm4hep::DQMCartesianVector position(0.f, 0.f, 0.f);
 	dqm4hep::DQMElectronicsMapping::Cell cell;
 
@@ -366,24 +356,31 @@ IMPL::CalorimeterHitImpl *SDHCALShmProcessor::createCalorimeterHit(UTIL::CellIDE
 		return 0;
 	}
 
-	// set the cell id
-	cellIDEncoder[ m_ijkEncoding.at(0) ] = cell.m_iCell;
-	cellIDEncoder[ m_ijkEncoding.at(1) ] = cell.m_jCell;
-	cellIDEncoder[ m_ijkEncoding.at(2) ] = cell.m_layer;
-
-    if( m_encodeDifAsicChannel )
+	try
 	{
-		cellIDEncoder[ m_difAsicChannelEncoding.at(0) ] = electronics.m_difId;
-		cellIDEncoder[ m_difAsicChannelEncoding.at(1) ] = electronics.m_asicId;
-		cellIDEncoder[ m_difAsicChannelEncoding.at(2) ] = electronics.m_channelId;
+		// set the cell id
+		cellIDEncoder[ m_ijkEncoding.at(0) ] = cell.m_iCell;
+		cellIDEncoder[ m_ijkEncoding.at(1) ] = cell.m_jCell;
+		cellIDEncoder[ m_ijkEncoding.at(2) ] = cell.m_layer;
+
+	    if( m_encodeDifAsicChannel )
+		{
+			cellIDEncoder[ m_difAsicChannelEncoding.at(0) ] = electronics.m_difId;
+			cellIDEncoder[ m_difAsicChannelEncoding.at(1) ] = electronics.m_asicId;
+			cellIDEncoder[ m_difAsicChannelEncoding.at(2) ] = electronics.m_channelId;
+		}
+	}
+	catch(EVENT::Exception &e)
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "While encoding hits, EVENT::Exception caught : " << e.what() );
+		return 0;
 	}
 
+    // set the position
 	float positionArray [3] = { position.getX() , position.getY() , position.getZ() };
 
 	// create the calorimeter hit
 	IMPL::CalorimeterHitImpl *pCaloHit = new IMPL::CalorimeterHitImpl();
-
-	pCaloHit->setCellID0(cellID0);
 	pCaloHit->setPosition( positionArray );
 	pCaloHit->setEnergy(energy);
 	cellIDEncoder.setCellID( pCaloHit );

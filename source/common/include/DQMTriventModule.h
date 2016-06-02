@@ -31,7 +31,6 @@
 
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMAnalysisModule.h"
-// #include "dqm4hep/DQMDataConverter.h"
 
 // -- trivent headers
 #include "Trivent.h"
@@ -68,18 +67,12 @@ private:
 	dqm4hep::StatusCode processEvent(dqm4hep::DQMEvent *const pEvent);
 	void processReconstructedEvent(EVENT::LCEvent *pLCEvent);    // from trivent
 	dqm4hep::StatusCode convertEvent(EVENT::LCEvent *pLCEvent, trivent::Event &event);
-	// dqm4hep::StatusCode performOutputDataConversion(EVENT::LCEvent *pLCEvent);
 
 private:
-	// typedef dqm4hep::DQMDataConverter<EVENT::LCCollection, EVENT::LCCollection> CaloHitCollectionConverter;
-
 	trivent::Trivent                             *m_pTrivent;
 	trivent::Trivent::Parameters                  m_triventParameters;
 	dqm4hep::StringVector                         m_caloHitCollectionNames;
-	// dqm4hep::StringVector                         m_rawCollectionNames;
-	// dqm4hep::StringVector                         m_recCollectionNames;
-	// dqm4hep::StringVector                         m_rawDataConverterNames;
-	// std::map<std::vector<std::string>, CaloHitCollectionConverter *> m_dataConverters;
+	dqm4hep::StringVector                         m_rawCaloHitCollectionNames;
 }; 
 
 } 
