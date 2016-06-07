@@ -32,10 +32,12 @@
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMLogging.h"
+#include "dqm4hep/DQMElectronicsMapping.h"
 
 // -- lcio headers
 #include "EVENT/LCEvent.h"
 #include "EVENT/LCCollection.h"
+#include "EVENT/CalorimeterHit.h"
 
 // -- calo software headers
 #include "CaloObject/Asic.h"
@@ -64,12 +66,17 @@ public:
 	{
 		dqm4hep::dqm_uint                        eventIntegratedTime;
 		dqm4hep::dqm_uint                        spillIntegratedTime;
+		dqm4hep::dqm_uint                        lastSpillIntegratedTime;
 		dqm4hep::dqm_uint                        totalIntegratedTime;
 		dqm4hep::dqm_uint                        timeTrigger;
+		dqm4hep::dqm_uint                        timeSpill;
 		dqm4hep::dqm_uint                        timeLastTrigger;
 		dqm4hep::dqm_uint                        timeLastSpill;
 		dqm4hep::dqm_uint                  		   nTriggerInSpill;
+		dqm4hep::dqm_uint                  		   nTriggerLastSpill;
 		dqm4hep::dqm_uint                  		   nTriggerProcessed;
+		dqm4hep::dqm_bool                  		   newSpill;
+		dqm4hep::dqm_bool                  		   newTrigger;
 	};
 
 public:
@@ -91,11 +98,10 @@ public:
 
 	// inline EventParameters getEventParameters() {return m_evtParameters;}
 
-	template <typename CaloHitType>
-	unsigned int getThreshold( const CaloHitType &pInputCaloHit )
+	unsigned int getThreshold( const EVENT::CalorimeterHit *pInputCaloHit )
 	{
 		int shift;
-		const float amplitude( static_cast<float>( pInputCaloHit->getAmplitude() & m_amplitudeBitRotation ) );
+		const float amplitude( pInputCaloHit->getEnergy());
 
 		if ( amplitude > 2.5 )
 			shift = 0;         // 3rd threshold
@@ -113,95 +119,24 @@ public:
 
 	/**
 	 * decode lcio parameters from the triggerEvent
- *
 	 */
-	template <typename CaloHitType>
-	dqm4hep::StatusCode decodeEventParameter(EVENT::LCCollection *pLCCollection, EventParameters &m_evtParameters)
-	{
-		CaloHitType *pCaloHit;
-		unsigned int difId = 0;
-		if ( pLCCollection->getNumberOfElements() != 0)
-		{
-			try {pCaloHit = dynamic_cast<CaloHitType*> (pLCCollection->getElementAt(0));}
-			catch (std::exception e)
-			{
-				return dqm4hep::STATUS_CODE_FAILURE;
-			}
-
-			if (NULL == pCaloHit)
-				return dqm4hep::STATUS_CODE_FAILURE;
-
-			difId = this->getDifId(pCaloHit->getCellID0());
-		}
-
-		// Find Trigger information & Extract abolute bcid
-		std::vector<int> vTrigger;
-		std::stringstream pname("");
-		pname << "DIF" << difId << "_Triggers";
-
-		pLCCollection->getParameters().getIntVals(pname.str(), vTrigger);
-
-		if (vTrigger.size() != 0)
-		{
-			m_evtParameters.eventIntegratedTime = vTrigger[2];
-			dqm4hep::dqm_uint m_bcid1 = vTrigger[4];
-			dqm4hep::dqm_uint m_bcid2 = vTrigger[3];
-
-			// Shift the value from the 24 first bits
-			unsigned long long theBCID_ = m_bcid1 * m_shiftBCID + m_bcid2;
-
-			m_evtParameters.timeTrigger = theBCID_ ;
-		}
-		return dqm4hep::STATUS_CODE_SUCCESS;
-	}
+	dqm4hep::StatusCode decodeEventParameter(EVENT::LCCollection *pLCCollection, EventParameters &m_evtParameters);
 
 	/**
 	 * find trigger information in the triggerEvent
 	 */
-	template <typename CaloHitType>
-	dqm4hep::StatusCode findTrigger(EVENT::LCCollection * pLCCollection, EventParameters &m_evtParameters)
-	{
-		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->decodeEventParameter<CaloHitType>(pLCCollection, m_evtParameters));
-
-		double timeDif = m_evtParameters.timeTrigger - m_evtParameters.timeLastTrigger;
-
-		if (timeDif > 1E12) // prevent 'negative' time when rewinding a lcio file
-		{
-			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , " [EventHelper] - I'm Late! I'm Late! I'm Late! : " << timeDif * m_DAQ_BC_Period << "s");
-			return dqm4hep::STATUS_CODE_SUCCESS;
-		}
-
-		if (timeDif * m_DAQ_BC_Period > m_newSpillTimeCut) // New Spill
-		{
-			LOG4CXX_INFO( dqm4hep::dqmMainLogger , " [EventHelper] - New Spill -  time since last startOfSpill : " <<  (m_evtParameters.timeTrigger - m_evtParameters.timeLastSpill) * m_DAQ_BC_Period << " s.  Last spill Stat: Length : " << m_evtParameters.spillIntegratedTime * m_DAQ_BC_Period << "s\t triggers : " << m_evtParameters.nTriggerInSpill);
-
-			m_evtParameters.timeLastSpill = m_evtParameters.timeTrigger;
-			m_evtParameters.nTriggerInSpill = 0;
-			m_evtParameters.spillIntegratedTime = 0;
-		}
-
-		// timeDif is not meaningful for the first event
-		if (m_evtParameters.nTriggerProcessed != 0)
-		{
-			m_evtParameters.totalIntegratedTime += timeDif;
-			if (m_evtParameters.nTriggerInSpill != 0)
-				m_evtParameters.spillIntegratedTime += timeDif;
-		}
-
-		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , " [EventHelper] - New Trigger at time : " << m_evtParameters.timeTrigger * m_DAQ_BC_Period << "s - time since previous trigger : " << timeDif * m_DAQ_BC_Period << "s\t spillIntegratedTime : " << m_evtParameters.spillIntegratedTime * m_DAQ_BC_Period << "s");
-
-		m_evtParameters.nTriggerInSpill = 1;
-		m_evtParameters.timeLastTrigger = m_evtParameters.timeTrigger;
-
-		return dqm4hep::STATUS_CODE_SUCCESS;
-	}
+	dqm4hep::StatusCode findTrigger(EVENT::LCCollection * pLCCollection, EventParameters &m_evtParameters);
 
 private:
 	EventParameters					m_evtParameters;
 	float										m_DAQ_BC_Period;
 	float										m_newSpillTimeCut;
 	unsigned long long			m_shiftBCID;
-	unsigned short					m_amplitudeBitRotation;
+	unsigned int 						m_nStartLayerShift;
+	std::string 						m_cellIDDecoderString;
+	std::string 						m_moduleLogStr;
+	
+  dqm4hep::DQMElectronicsMapping            *m_pElectronicsMapping;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -309,6 +244,7 @@ protected:
 private:
 	unsigned int                     m_confidenceLevel;
 	EventType                        m_eventType;
+	std::string                      m_moduleLogStr;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -387,6 +323,8 @@ private:
 	float                                        m_showerMinNHitOverNTouchedLayers;
 	unsigned int                                 m_electronMaxNTouchedLayers;
 	unsigned int                                 m_electronMaxStartingLayer;
+	
+	std::string 																 m_moduleLogStr;
 };
 
 }

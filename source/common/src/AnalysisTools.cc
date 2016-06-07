@@ -32,6 +32,10 @@
 #include "dqm4hep/DQMPlugin.h"
 #include "dqm4hep/DQMLogging.h"
 #include "dqm4hep/DQMXmlHelper.h"
+#include "dqm4hep/DQMPluginManager.h"
+
+// -- dqmsdhcal headers
+#include "ElectronicsMapping.h"
 
 // -- lcio headers
 #include "UTIL/CellIDDecoder.h"
@@ -46,7 +50,8 @@ DQM_PLUGIN_DECL( SDHCALEventClassifier , "SDHCALEventClassifier" )
 DQM_PLUGIN_DECL( EventHelper , "SDHCALEventHelper" )
 
 
-EventHelper::EventHelper()
+EventHelper::EventHelper():
+	m_moduleLogStr("[EventHelper]")
 {
 	/* nop */
 }
@@ -62,14 +67,40 @@ EventHelper::~EventHelper()
 
 dqm4hep::StatusCode EventHelper::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
-	m_amplitudeBitRotation = 3;
-	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-	                        "AmplitudeBitRotation", m_amplitudeBitRotation));
 	m_shiftBCID = 16777216ULL;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 	                        "BCIDShift", m_shiftBCID));
 
-	m_newSpillTimeCut = 10;
+	m_cellIDDecoderString = "M:3,S-1:3,I:9,J:9,K-1:6";
+ 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+	     "CellIDDecoderString", m_cellIDDecoderString));
+	 
+	 dqm4hep::TiXmlElement *pElecMapElement = xmlHandle.FirstChild("electronicsMapping").Element();
+
+	  if ( ! pElecMapElement )
+	  {
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Couldn't find xml element electronicsMapping !" );
+	    return dqm4hep::STATUS_CODE_NOT_FOUND;
+	  }
+
+	  std::string plugin;
+	  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::getAttribute(pElecMapElement, "plugin", plugin));
+
+	  m_pElectronicsMapping = dqm4hep::DQMPluginManager::instance()->createPluginClass<dqm4hep::DQMElectronicsMapping>(plugin);
+
+	  if ( ! m_pElectronicsMapping )
+	  {
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Couldn't find electronicsMapping plugin called : " << plugin );
+	    return dqm4hep::STATUS_CODE_NOT_FOUND;
+	  }
+
+	  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pElectronicsMapping->readSettings(dqm4hep::TiXmlHandle(pElecMapElement)));
+	  
+	 m_nStartLayerShift = 0;
+   RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+	                   "NStartLayerShift", m_nStartLayerShift));
+   
+ 	m_newSpillTimeCut = 10;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 	                 "SpillLength", m_newSpillTimeCut));
 
@@ -81,6 +112,112 @@ dqm4hep::StatusCode EventHelper::readSettings(const dqm4hep::TiXmlHandle xmlHand
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
+dqm4hep::StatusCode EventHelper::decodeEventParameter(EVENT::LCCollection *pLCCollection, EventParameters &m_evtParameters)
+{
+	EVENT::CalorimeterHit *pCaloHit;
+	unsigned int difId = 0;
+	if ( pLCCollection->getNumberOfElements() != 0)
+	{
+		try {pCaloHit = dynamic_cast<EVENT::CalorimeterHit*> (pLCCollection->getElementAt(0));}
+		catch (std::exception e)
+		{
+			return dqm4hep::STATUS_CODE_FAILURE;
+		}
+
+		if (NULL == pCaloHit)
+			return dqm4hep::STATUS_CODE_FAILURE;
+		
+		// CellIDDecoder
+		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(m_cellIDDecoderString);
+    dqm4hep::DQMElectronicsMapping::Electronics electronics;
+		dqm4hep::DQMElectronicsMapping::Cell cell;
+
+    cell.m_iCell = cellIDDecoder(pCaloHit)["I"];
+    cell.m_jCell = cellIDDecoder(pCaloHit)["J"];
+    cell.m_layer = cellIDDecoder(pCaloHit)["K-1"] + m_nStartLayerShift;
+		     
+    if(dqm4hep::STATUS_CODE_SUCCESS != m_pElectronicsMapping->cellToElectronics(cell, electronics))
+			return dqm4hep::STATUS_CODE_FAILURE;
+
+		difId = electronics.m_difId;
+	}
+	
+	// Find Trigger information & Extract abolute bcid
+	std::vector<int> vTrigger;
+	std::stringstream pname("");
+	pname << "DIF" << difId << "_Triggers";
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << " - pname : " << pname.str() );
+
+	pLCCollection->getParameters().getIntVals(pname.str(), vTrigger);
+
+	if (vTrigger.size() == 0)
+			return dqm4hep::STATUS_CODE_FAILURE;
+
+	m_evtParameters.eventIntegratedTime = vTrigger[2];
+	dqm4hep::dqm_uint m_bcid1 = vTrigger[4];
+	dqm4hep::dqm_uint m_bcid2 = vTrigger[3];
+
+	// Shift the value from the 24 first bits
+	unsigned long long theBCID_ = m_bcid1 * m_shiftBCID + m_bcid2;
+
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - timeTrigger : " << m_evtParameters.timeTrigger );
+	m_evtParameters.timeTrigger = theBCID_ ;
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - timeTrigger : " << m_evtParameters.timeTrigger );
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - timeLastTrigger : " << m_evtParameters.timeLastTrigger );
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+dqm4hep::StatusCode EventHelper::findTrigger(EVENT::LCCollection * pLCCollection, EventParameters &m_evtParameters)
+{
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->decodeEventParameter(pLCCollection, m_evtParameters));
+	m_evtParameters.newSpill = false;
+	m_evtParameters.newTrigger = false;
+	double timeDif = m_evtParameters.timeTrigger - m_evtParameters.timeLastTrigger;
+	
+	if (timeDif == 0) // Not a new Trigger
+		return dqm4hep::STATUS_CODE_SUCCESS;
+	
+	
+	m_evtParameters.newTrigger = true;
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - timeTrigger : " << m_evtParameters.timeTrigger );
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - timeLastTrigger : " << m_evtParameters.timeLastTrigger );
+	m_evtParameters.timeLastTrigger = m_evtParameters.timeTrigger;
+	
+	if (timeDif > 1E12) // prevent 'negative' time (when rewinding a lcio file for example)
+	{
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - I'm Late! I'm Late! I'm Late! : " << timeDif * m_DAQ_BC_Period << "s");
+		return dqm4hep::STATUS_CODE_FAILURE;
+	}
+
+	if (timeDif * m_DAQ_BC_Period > m_newSpillTimeCut) // New Spill
+	{
+		LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - New Spill -  time since last startOfSpill : " <<  (m_evtParameters.timeTrigger - m_evtParameters.timeLastSpill) * m_DAQ_BC_Period << " s.  Last spill Stat: Length : " << m_evtParameters.spillIntegratedTime * m_DAQ_BC_Period << "s\t triggers : " << m_evtParameters.nTriggerInSpill);
+		
+		m_evtParameters.newSpill = true;
+		m_evtParameters.lastSpillIntegratedTime = m_evtParameters.spillIntegratedTime;
+		m_evtParameters.nTriggerLastSpill = m_evtParameters.nTriggerInSpill;
+		m_evtParameters.timeLastSpill = m_evtParameters.timeSpill;
+
+		m_evtParameters.timeSpill = m_evtParameters.timeTrigger;
+		m_evtParameters.nTriggerInSpill = 0;
+		m_evtParameters.spillIntegratedTime = 0;
+	}
+
+	// timeDif is not meaningful for the first event
+	if (m_evtParameters.nTriggerProcessed != 0)
+	{
+		m_evtParameters.totalIntegratedTime += timeDif;
+		if (m_evtParameters.nTriggerInSpill != 0)
+			m_evtParameters.spillIntegratedTime += timeDif;
+	}
+
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - New Trigger at time : " << m_evtParameters.timeTrigger * m_DAQ_BC_Period << "s - time since previous trigger : " << timeDif * m_DAQ_BC_Period << "s\t spillIntegratedTime : " << m_evtParameters.spillIntegratedTime * m_DAQ_BC_Period << "s");
+
+	++m_evtParameters.nTriggerInSpill;
+	++m_evtParameters.nTriggerProcessed;
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
@@ -90,7 +227,8 @@ dqm4hep::StatusCode EventHelper::readSettings(const dqm4hep::TiXmlHandle xmlHand
 
 EventClassifier::EventClassifier() :
 	m_eventType(UNDEFINED_EVENT),
-	m_confidenceLevel(0)
+	m_confidenceLevel(0),
+	m_moduleLogStr("[EventClassifier]")
 {
 	/* nop */
 }
@@ -202,14 +340,14 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 		if ( nHits < m_noiseMinNHit )
 		{
 			this->setEventType( EventClassifier::GROUNDING_NOISE_EVENT , 100 );
-			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "SDHCALEventClassifier::processEvent: Found noise event (Min N Hit) !" );
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processEvent: Found noise event (Min N Hit) !" );
 			return dqm4hep::STATUS_CODE_SUCCESS;
 		}
 
 		if ( touchedLayers.size() < m_noiseMinTouchedLayers )
 		{
 			this->setEventType( EventClassifier::GROUNDING_NOISE_EVENT , 100 );
-			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "SDHCALEventClassifier::processEvent: Found noise event (N touched layers) !" );
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processEvent: Found noise event (N touched layers) !" );
 			return dqm4hep::STATUS_CODE_SUCCESS;
 		}
 
@@ -223,7 +361,7 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 
 		try
 		{
-			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating wrapper hits");
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Creating wrapper hits");
 
 			// loop over hits in this event
 			for (unsigned int h = 0 ; h < pLCCollection->getNumberOfElements() ; h++)
@@ -254,7 +392,7 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 				hits.push_back(pWrapperHit);
 			}
 
-			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Creating intra layer clusters");
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Creating intra layer clusters");
 
 			for (CaloHitMap::iterator iter = caloHitMap.begin(), endIter = caloHitMap.end() ;
 			     iter != endIter ; ++iter)
@@ -262,7 +400,7 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 
 			std::sort(clusters.begin(), clusters.end(), algorithm::ClusteringHelper::SortClusterByLayer);
 
-			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Filter non isolated clusters");
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Filter non isolated clusters");
 
 			CaloClusterList trackingClusters;
 
@@ -271,7 +409,7 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 				if ( ! m_clusteringHelper.IsIsolatedCluster(*iter, clusters) )
 					trackingClusters.push_back(*iter);
 
-			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Run tracking algorithm");
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Run tracking algorithm");
 
 			caloobject::CaloTrack *pTrack = NULL;
 			m_trackingAlgorithm.Run(clusters, pTrack);
@@ -280,7 +418,7 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 			{
 				tracks.push_back(pTrack);
 
-				LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Run interaction finder");
+				LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Run interaction finder");
 
 				bool isInteraction = m_interactionFinderAlgorithm.Run(clusters, pTrack->getTrackParameters());
 				const float cosThetaTrack(pTrack->getCosTheta());
@@ -289,12 +427,12 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 				{
 					if ( cosThetaTrack < m_muonMaxCosmicCosTheta )
 					{
-						LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "SDHCALEventClassifier::processEvent: Found cosmic muon !" );
+						LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processEvent: Found cosmic muon !" );
 						this->setEventType( EventClassifier::COSMIC_MUON_EVENT , 100 );
 					}
 					else
 					{
-						LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "SDHCALEventClassifier::processEvent: Found beam muon !" );
+						LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processEvent: Found beam muon !" );
 						this->setEventType( EventClassifier::BEAM_MUON_EVENT , 100 );
 					}
 				}
@@ -316,7 +454,7 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 				// flag neutral hadrons
 				if ( isNeutralHadron )
 				{
-					LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "SDHCALEventClassifier::processEvent: Found neutral hadron !" );
+					LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processEvent: Found neutral hadron !" );
 					this->setEventType( EventClassifier::NEUTRAL_HAD_SHOWER_EVENT, 100 );
 					throw dqm4hep::StatusCodeException(dqm4hep::STATUS_CODE_SUCCESS);
 				}
@@ -325,19 +463,19 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 				if ( touchedLayers.size() < m_electronMaxNTouchedLayers
 				     && startingLayer < m_electronMaxStartingLayer )
 				{
-					LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "SDHCALEventClassifier::processEvent: Found EM shower !" );
+					LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processEvent: Found EM shower !" );
 					this->setEventType( EventClassifier::CHARGED_EM_SHOWER_EVENT, 100 );
 					throw dqm4hep::StatusCodeException(dqm4hep::STATUS_CODE_SUCCESS);
 				}
 				else
 				{
-					LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "SDHCALEventClassifier::processEvent: Found charged hadron !" );
+					LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processEvent: Found charged hadron !" );
 					this->setEventType( EventClassifier::CHARGED_HAD_SHOWER_EVENT, 100 );
 					throw dqm4hep::StatusCodeException(dqm4hep::STATUS_CODE_SUCCESS);
 				}
 			}
 
-			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "SDHCALEventClassifier::processEvent: Found nothing ! Setting event type to undefined !" );
+			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processEvent: Found nothing ! Setting event type to undefined !" );
 			throw dqm4hep::StatusCodeException(dqm4hep::STATUS_CODE_SUCCESS);
 		}
 		catch (dqm4hep::StatusCodeException &exception)
@@ -346,25 +484,25 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 
 			if (dqm4hep::STATUS_CODE_SUCCESS != exception.getStatusCode() )
 			{
-				LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  "Caught StatusCodeException : " << exception.toString() << ". Skipping event ..." );
+				LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught StatusCodeException : " << exception.toString() << ". Skipping event ..." );
 				return exception.getStatusCode();
 			}
 		}
 		catch (...)
 		{
 			this->clearEventContents(hits, clusters, tracks);
-			LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  "Caught unknown exception !" );
+			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught unknown exception !" );
 			return dqm4hep::STATUS_CODE_FAILURE;
 		}
 	}
 	catch (EVENT::DataNotAvailableException &exception)
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "SDHCALEventClassifier::processEvent: Collection " << m_inputCollectionName << " is not available !" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processEvent: Collection " << m_inputCollectionName << " is not available !" );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 	catch (dqm4hep::StatusCodeException &exception)
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "SDHCALEventClassifier::processEvent: Caught status code exception : " << exception.toString() );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processEvent: Caught status code exception : " << exception.toString() );
 		return exception.getStatusCode();
 	}
 
