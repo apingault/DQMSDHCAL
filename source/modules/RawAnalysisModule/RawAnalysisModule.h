@@ -33,7 +33,6 @@
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMAnalysisModule.h"
 #include "dqm4hep/DQMElectronicsMapping.h"
-#include "dqm4hep/DQMDataConverter.h"
 
 // -- dqm sdhcal headers
 #include "Geometry.h"
@@ -41,7 +40,7 @@
 
 // -- lcio headers
 #include "lcio.h"
-#include "EVENT/RawCalorimeterHit.h"
+#include "EVENT/CalorimeterHit.h"
 
 // -- std headers
 #include <string>
@@ -50,37 +49,13 @@
 
 namespace dqm4hep { class TiXmlElement; class TiXmlHandle; }
 
+namespace caloobject
+{
+  typedef std::vector<CaloHit *> CaloHitList;
+}
+
 namespace dqm_sdhcal
 {
-
-// Reimplementation of CaloSoftware CaloHitObject for rawCaloHit
-class RawCaloHitObject
-{
-public:
-  RawCaloHitObject(dqm4hep::DQMCartesianVector vec, int chanId, int asicId, int difId, int layerId, int threshold, int time, dqm4hep::DQMCartesianVector posShift);
-  // algorithms assume that the zero is located at the middle of the first layer.
-
-  ~RawCaloHitObject() {;}
-
-  inline const dqm4hep::DQMCartesianVector getPosition() {return m_rawHitPosition;}
-  inline const int getThreshold() {return m_threshold;}
-  inline const float getTime() {return m_time;}
-  inline const int getChannelId() {return m_chanId;}
-  inline const int getAsicId() {return m_asicId;}
-  inline const int getDifId() {return m_difId;}
-  inline const int getLayerId() {return m_layerId;}
-
-  typedef std::vector<RawCaloHitObject *> RawCaloHitList;
-
-private:
-  int m_chanId;
-  int m_asicId;
-  int m_difId;
-  int m_layerId;
-  dqm4hep::DQMCartesianVector m_rawHitPosition;
-  float m_threshold;
-  int m_time;
-};
 
 class Streamout;
 class EventHelper;
@@ -96,7 +71,6 @@ private:
   dqm4hep::StatusCode initModule();
   dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
   dqm4hep::StatusCode processEvent(dqm4hep::DQMEvent *const pEvent);
-  dqm4hep::StatusCode performOutputDataConversion(EVENT::LCEvent *pLCEvent);
 
   dqm4hep::StatusCode startOfRun(dqm4hep::DQMRun *const pRun);
   dqm4hep::StatusCode endOfRun(dqm4hep::DQMRun *const pRun);
@@ -104,21 +78,14 @@ private:
   dqm4hep::StatusCode endOfCycle();
   dqm4hep::StatusCode endModule();
 
-  dqm4hep::StatusCode doDIFStudy(RawCaloHitObject * const pRawCaloHitObject);
-  dqm4hep::StatusCode fillAsicOccupancyMap( RawCaloHitObject * const pRawCaloHitObject);
+  dqm4hep::StatusCode doDIFStudy(caloobject::CaloHit * const pCaloHitObject);
+  // dqm4hep::StatusCode fillAsicOccupancyMap( caloobject::CaloHit * const pCaloHitObject);
+  dqm4hep::StatusCode fillAsicOccupancyMap( dqm4hep::DQMElectronicsMapping::Electronics electronics, dqm4hep::DQMElectronicsMapping::Cell cell);
   dqm4hep::StatusCode doAsicOccupancyStudy();
   int createAsicKey(int chanId, int difId, int asicId);
   void resetElements();
 
 private:
-  // converter parameters
-  typedef dqm4hep::DQMDataConverter<EVENT::LCCollection, EVENT::LCCollection> CaloHitCollectionConverter;
-  dqm4hep::StringVector                      m_rawCollectionNames;
-  dqm4hep::StringVector                      m_recCollectionNames;
-  dqm4hep::StringVector                      m_rawDataConverterNames;
-  std::vector< CaloHitCollectionConverter *> m_dataConverters;
-  // unsigned short                             m_amplitudeBitRotation;
-
   // electronicsMapping parameters
   dqm4hep::DQMElectronicsMapping            *m_pElectronicsMapping;
   dqm4hep::DQMCartesianVector                m_cellReferencePosition;
@@ -131,14 +98,10 @@ private:
 
   // EventHelper parameters
   EventHelper                               *m_pEventHelper;
-  EventHelper::EventParameters               m_eventParameters;
+  EventHelper::EventParameters               m_eventParameters = {};
 
 
 private:
-  // module parameters
-  bool                                     m_shouldProcessStreamout;
-  Streamout                               *m_pStreamout;
-
   std::string                              m_inputCollectionName;
   std::string                              m_cellIDDecoderString;
   std::string                              m_moduleLogStr;
