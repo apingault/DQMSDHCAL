@@ -122,12 +122,12 @@ private:
 	unsigned int 													   m_nMipInLayer;
 
   EventHelper															*m_pEventHelper;
-  EventHelper::EventParameters             m_eventParameters;
-  double 																	 m_eventIntegratedTime;
-  double 																	 m_timeLastTrigger;
-  double 																	 m_timeLastSpill;
-  double 																	 m_spillIntegratedTime;
-  double 																	 m_totalIntegratedTime;
+  EventHelper::EventParameters             m_eventParameters={};
+  // double 																	 m_eventIntegratedTime;
+  // double 																	 m_timeLastTrigger;
+  // double 																	 m_timeLastSpill;
+  // double 																	 m_spillIntegratedTime;
+  // double 																	 m_totalIntegratedTime;
 	int 																		 m_nTrigger;
 	int 																		 m_nSpill;
 
