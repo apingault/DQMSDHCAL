@@ -41,7 +41,7 @@
 
 //-- lcio headers
 #include <EVENT/LCCollection.h>
-#include <IMPL/RawCalorimeterHitImpl.h>
+#include <IMPL/CalorimeterHitImpl.h>
 
 using namespace dqm4hep;
 
@@ -64,13 +64,6 @@ BeamAnalysisModule::~BeamAnalysisModule()
 //-------------------------------------------------------------------------------------------------
 dqm4hep::StatusCode BeamAnalysisModule::initModule()
 {
-  m_eventParameters.nTriggerProcessed = 0;
-  m_eventParameters.eventIntegratedTime = 0;
-  m_eventParameters.spillIntegratedTime = 0;
-  m_eventParameters.totalIntegratedTime = 0;
-  m_eventParameters.timeLastTrigger = 0;
-  m_eventParameters.timeLastSpill = 0;
-  m_eventParameters.nTriggerInSpill = 0;
   m_moduleLogStr = "[BeamAnalysisModule]";
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -104,7 +97,6 @@ dqm4hep::StatusCode BeamAnalysisModule::readSettings(const dqm4hep::TiXmlHandle 
   // ------ General ME ------
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "TimeDiffSpill", m_pTimeDiffSpill));
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "TimeDiffTrigger", m_pTimeDiffTrigger));
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "TimeDiffTriggerToSpill", m_pTimeDiffTriggerToSpill));
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "SpillLength", m_pSpillLength));
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "TriggerPerSpill", m_pTriggerPerSpill));
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "TriggerLastSpill", m_pTriggerLastSpill));
@@ -152,21 +144,37 @@ dqm4hep::StatusCode BeamAnalysisModule::processEvent(dqm4hep::DQMEvent * const p
 
   try
   {
-    EVENT::LCCollection *pRawCalorimeterHitCollection = pLCEvent->getCollection(m_inputCollectionName);
-    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " NumberOfHits in trigger : " << pRawCalorimeterHitCollection->getNumberOfElements() );
+    EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(m_inputCollectionName);
+    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " NumberOfHits in trigger : " << pCalorimeterHitCollection->getNumberOfElements() );
 
-    if (NULL == pRawCalorimeterHitCollection)
+    if (NULL == pCalorimeterHitCollection)
     {
       LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " NULL Pointer: pCalorimeterHitCollection pointer " );
       return dqm4hep::STATUS_CODE_SUCCESS;
     }
 
     //Find Triggers and NewSpill
-    StatusCode status = m_pEventHelper->findTrigger<EVENT::RawCalorimeterHit>(pRawCalorimeterHitCollection, m_eventParameters);
-    if (dqm4hep::STATUS_CODE_SUCCESS != status)
-      return dqm4hep::STATUS_CODE_SUCCESS;
+    RETURN_RESULT_IF( dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->findTrigger(pCalorimeterHitCollection, m_eventParameters));
 
     m_DAQ_BC_Period = m_pEventHelper->getDAQ_BC_Period();
+    
+    // Fill Spill infos
+    if ( m_eventParameters.nTriggerInSpill == 1 )
+    {  
+      m_pSpillLength->get<TH1>()->Fill((m_eventParameters.lastSpillIntegratedTime) * m_DAQ_BC_Period );
+      LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - lastSpillIntegratedTime" << (m_eventParameters.lastSpillIntegratedTime) * m_DAQ_BC_Period  );
+      LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - m_totalIntegratedTime - lastSpillIntegratedTime" << (m_eventParameters.totalIntegratedTime - m_eventParameters.spillIntegratedTime) * m_DAQ_BC_Period);
+      m_pTimeDiffSpill->get<TH1>()->Fill((m_eventParameters.timeSpill - m_eventParameters.timeLastSpill) * m_DAQ_BC_Period);
+      m_pTriggerLastSpill->get<dqm4hep::TScalarString>()->Set(std::to_string(m_eventParameters.nTriggerLastSpill));
+      m_pTriggerPerSpill->get<TH1>()->Fill(m_eventParameters.nTriggerLastSpill);
+    }
+    
+    // Fill Trigger info
+    
+     // m_pTimeDiffTrigger->get<TH1>()->Fill(timeDif);
+      LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - eventIntegratedTime: " << m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period);
+     m_pAcquisitionTime->get<TH1F>()->Fill((m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period));
+ 
     LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - eventIntegratedTime (s): " << m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period << "s\t spillIntegratedTime (s): " << m_eventParameters.spillIntegratedTime * m_DAQ_BC_Period << "s\t totalIntegratedTime (s) : " << m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period << "s");
   }
   catch (EVENT::DataNotAvailableException &exception)
@@ -231,7 +239,6 @@ void BeamAnalysisModule::resetElements()
 {
   m_pTimeDiffSpill->reset();
   m_pTimeDiffTrigger->reset();
-  m_pTimeDiffTriggerToSpill->reset();
   m_pSpillLength->reset();
   m_pAcquisitionTime->reset();
 }

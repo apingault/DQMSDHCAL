@@ -73,7 +73,7 @@ private:
 
 private:
   EventHelper                             *m_pEventHelper;
-  EventHelper::EventParameters             m_eventParameters;
+  EventHelper::EventParameters             m_eventParameters={};
 
   std::string                              m_inputCollectionName;
   std::string                              m_moduleLogStr;
