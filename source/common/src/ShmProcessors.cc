@@ -62,7 +62,8 @@ DQM_PLUGIN_DECL( SiWECalShmProcessor   , "SiWECalShmProcessor"   )
 
 EventInfoShmProcessor::EventInfoShmProcessor() :
 		m_eventNumber(0),
-		m_runNumber(0)
+		m_runNumber(0),
+		m_moduleLogStr("[EventInfoShmProcessor]")
 {
 	/* nop */
 }
@@ -82,7 +83,7 @@ dqm4hep::StatusCode EventInfoShmProcessor::startOfRun(dqm4hep::DQMRun *const pRu
 	m_detectorName = pRun->getDetectorName();
 	m_eventNumber = 0;
 
-	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "===== Starting new run " << m_runNumber << " , detector name : " << m_detectorName << " ====" );
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - ===== Starting new run " << m_runNumber << " , detector name : " << m_detectorName << " ====" );
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -91,8 +92,8 @@ dqm4hep::StatusCode EventInfoShmProcessor::startOfRun(dqm4hep::DQMRun *const pRu
 
 dqm4hep::StatusCode EventInfoShmProcessor::endOfRun(const dqm4hep::DQMRun *const pRun)
 {
-	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "===== Ending run " << pRun->getRunNumber() << " , detector name : " << m_detectorName << " ====" );
-	LOG4CXX_INFO( dqm4hep::dqmMainLogger , "===== N processed events : " << m_eventNumber );
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - ===== Ending run " << pRun->getRunNumber() << " , detector name : " << m_detectorName << " ====" );
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - ===== N processed events : " << m_eventNumber );
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -105,18 +106,18 @@ dqm4hep::StatusCode EventInfoShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 
 	if( ! pLCEvent )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Wrong event type ! Expecting EVENT::LCEvent type !" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong event type ! Expecting EVENT::LCEvent type !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
 	pLCEvent->setEventNumber( m_eventNumber );
 	pLCEvent->setRunNumber( m_runNumber );
 	pLCEvent->setDetectorName( m_detectorName );
-	pLCEvent->setTimeStamp(key);
 
 	// set event creation time is parameters
 	time_t currentTime = std::chrono::system_clock::to_time_t(dqm4hep::DQMCoreTool::now());
 	pLCEvent->parameters().setValue( m_creationTimeParameterName , static_cast<int>(currentTime) );
+	pLCEvent->setTimeStamp(currentTime);
 
 	m_eventNumber++;
 
@@ -182,7 +183,8 @@ void SDHCALDifHelper::setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
 
-SDHCALShmProcessor::SDHCALShmProcessor()
+SDHCALShmProcessor::SDHCALShmProcessor():
+		m_moduleLogStr("[SDHCALShmProcessor]")
 {
 	/* nop */
 }
@@ -216,9 +218,10 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 
 	if( ! pLCEvent )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Wrong event type ! Expecting EVENT::LCEvent type !" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong event type ! Expecting EVENT::LCEvent type !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - newLCEvent...with key '"<<key<<"' and creationTime: '"<<pLCEvent->getTimeStamp()<<"'" );
 
 	IMPL::LCFlagImpl chFlag(0);
 	SDHCALDifHelper::setCaloHitLCFlag(chFlag);
@@ -243,7 +246,10 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 
 		// check for correct detector id
 		if( pBuffer->detectorId() != m_detectorId )
+		{
+			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong detectorID : pBuffer->detectorId(): " <<pBuffer->detectorId()<< " != m_detectorId " << m_detectorId );
 			continue;
+		}
 
 		if( isFirstRU && m_dropFirstRU )
 		{
@@ -256,6 +262,8 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 
 		// check for dif mask
 		unsigned int difId = pDifPtr->getID();
+		// Change timeStamp to the trigger timeStamp
+		pLCEvent->setTimeStamp(pDifPtr->getBCID());
 
 		if( m_difMaskList.find(difId) != m_difMaskList.end() )
 		{
@@ -316,7 +324,12 @@ IMPL::CalorimeterHitImpl *SDHCALShmProcessor::createCalorimeterHit(UTIL::CellIDE
 	unsigned long int channelId = channel;
 
 	// time stamp  - unit = bin of 200 ns from trigger
-	const float timeStamp       = static_cast<float>(pDifPtr->getFrameTimeToTrigger(frame));
+	const float timeStamp  = static_cast<float>(pDifPtr->getFrameTimeToTrigger(frame));
+	
+	if ( timeStamp - pDifPtr->getBCID() > 0) 
+	{
+ 		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, m_moduleLogStr << " - Funny hitTimestamp : " << (unsigned long int)(pDifPtr->getFrameTimeToTrigger(frame)) << "\t BCID : " << pDifPtr->getBCID() << "\t ABCID : " << (pDifPtr->getAbsoluteBCID()&0xFFFFFF));
+	}
 
 	// get the SDHCAL threshold
 	std::bitset<3> threshold;
@@ -327,20 +340,20 @@ IMPL::CalorimeterHitImpl *SDHCALShmProcessor::createCalorimeterHit(UTIL::CellIDE
 	float shift;
 	const float amplitude( static_cast<float>( threshold.to_ulong() & m_amplitudeBitRotation ) );
 
-    if( amplitude > 2.5 )
+  if( amplitude > 2.5 )
 		shift = 0;         // 3rd threshold
-    else if( amplitude > 1.5 )
+  else if( amplitude > 1.5 )
 		shift = -1;        // 2nd threshold
 	else
 		shift = +1;        // 1rst Threshold
 
-    const float energy(amplitude + shift);
+  const float energy(amplitude + shift);
 
-	// perform conversion to cell ids and absolute position
-    dqm4hep::DQMElectronicsMapping::Electronics electronics;
-    electronics.m_difId = difId;
-    electronics.m_asicId = asicId;
-    electronics.m_channelId = channelId;
+  // perform conversion to cell ids and absolute position
+  dqm4hep::DQMElectronicsMapping::Electronics electronics;
+  electronics.m_difId = difId;
+  electronics.m_asicId = asicId;
+  electronics.m_channelId = channelId;
 
 	dqm4hep::DQMCartesianVector position(0.f, 0.f, 0.f);
 	dqm4hep::DQMElectronicsMapping::Cell cell;
@@ -352,7 +365,12 @@ IMPL::CalorimeterHitImpl *SDHCALShmProcessor::createCalorimeterHit(UTIL::CellIDE
 	}
 	catch(dqm4hep::StatusCodeException &exception)
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Couldn't decode hit using electronics mapping : " << exception.toString() );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, m_moduleLogStr << " - Couldn't decode hit using electronics mapping : " << exception.toString() );
+		return 0;
+	}
+	catch(...)
+	{
+		LOG4CXX_FATAL( dqm4hep::dqmMainLogger, m_moduleLogStr << " - Caught Unknown exception " );
 		return 0;
 	}
 
@@ -372,7 +390,7 @@ IMPL::CalorimeterHitImpl *SDHCALShmProcessor::createCalorimeterHit(UTIL::CellIDE
 	}
 	catch(EVENT::Exception &e)
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "While encoding hits, EVENT::Exception caught : " << e.what() );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, m_moduleLogStr << " - While encoding hits, EVENT::Exception caught : " << e.what() );
 		return 0;
 	}
 
@@ -396,7 +414,10 @@ dqm4hep::StatusCode SDHCALShmProcessor::readSettings(const dqm4hep::TiXmlHandle 
 	dqm4hep::TiXmlElement *pMappingXmlElement = xmlHandle.FirstChild("electronicsMapping").Element();
 
 	if( ! pMappingXmlElement )
+  {
+    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " -  Couldn't find xml element electronicsMapping !" );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
+  }
 
 	std::string plugin;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::getAttribute(pMappingXmlElement, "plugin", plugin));
@@ -472,7 +493,8 @@ dqm4hep::StatusCode SDHCALShmProcessor::readSettings(const dqm4hep::TiXmlHandle 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
 
-CherenkovShmProcessor::CherenkovShmProcessor()
+CherenkovShmProcessor::CherenkovShmProcessor() :
+		m_moduleLogStr("[CherenkovShmProcessor]")
 {
 	/* nop */
 }
@@ -506,7 +528,7 @@ dqm4hep::StatusCode CherenkovShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 
 	if( ! pLCEvent )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Wrong event type ! Expecting EVENT::LCEvent type !" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong event type ! Expecting EVENT::LCEvent type !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
@@ -557,8 +579,8 @@ dqm4hep::StatusCode CherenkovShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 				// apply cherenkov time stamp shift
 				if(m_cherenkovTimeShift < 0 && timeStamp < abs(m_cherenkovTimeShift) )
 				{
-					LOG4CXX_WARN( dqm4hep::dqmMainLogger , "Reconstructed cherenkov hit with timeStamp = " << timeStamp << ", adding shift of " << m_cherenkovTimeShift << " resulting in negative time stamp !!" );
-					LOG4CXX_WARN( dqm4hep::dqmMainLogger , "Setting time stamp of cherenkov hit to 0 !" );
+					LOG4CXX_WARN( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Reconstructed cherenkov hit with timeStamp = " << timeStamp << ", adding shift of " << m_cherenkovTimeShift << " resulting in negative time stamp !!" );
+					LOG4CXX_WARN( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Setting time stamp of cherenkov hit to 0 !" );
 					pCaloHit->setTime(0.f);
 				}
 				else
@@ -670,7 +692,8 @@ dqm4hep::StatusCode CherenkovShmProcessor::readSettings(const dqm4hep::TiXmlHand
 //-------------------------------------------------------------------------------------------------
 
 SiWECalShmProcessor::SiWECalShmProcessor() :
-		m_positionShift(0.f, 0.f, 0.f)
+		m_positionShift(0.f, 0.f, 0.f),
+		m_moduleLogStr("[SiWECalShmProcessor]")
 {
 	/* nop */
 }
@@ -704,7 +727,7 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 
 	if( ! pLCEvent )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Wrong event type ! Expecting EVENT::LCEvent type !" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong event type ! Expecting EVENT::LCEvent type !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
@@ -741,7 +764,7 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 
 		if(invalidBuffer)
 		{
-			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Invalid SiWECal DIF ptr : Invalid buffer size = " << bufferSize );
+			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Invalid SiWECal DIF ptr : Invalid buffer size = " << bufferSize );
 			continue;
 		}
 

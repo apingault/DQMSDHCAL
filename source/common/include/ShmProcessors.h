@@ -84,6 +84,7 @@ private:
 	unsigned int                      m_runNumber;
 	std::string                       m_detectorName;
 	std::string                       m_creationTimeParameterName;
+	std::string                       m_moduleLogStr;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -171,6 +172,7 @@ private:
 	dqm4hep::StringVector                  m_difAsicChannelEncoding;
 	UIntSet                                m_difMaskList;
 	dqm4hep::DQMElectronicsMapping        *m_pElectronicsMapping;
+	std::string                     		   m_moduleLogStr;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -220,6 +222,7 @@ private:
 	unsigned int                           m_amplitudeBitRotation;
 	int                                    m_cherenkovTimeShift;
 	std::string                            m_outputCollectionName;
+	std::string                     		   m_moduleLogStr;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -298,6 +301,7 @@ private:
 	dqm4hep::StringVector                  m_ijkEncoding;
 	dqm4hep::StringVector                  m_difAsicChannelEncoding;
 	dqm4hep::DQMCartesianVector            m_positionShift;
+	std::string                  			     m_moduleLogStr;
 };
 
 } 
