@@ -92,6 +92,7 @@ private:
 	float                       m_layerThickness;
 
 	bool                        m_isInitialized;
+	std::string                 m_moduleLogStr;
 }; 
 
 } 

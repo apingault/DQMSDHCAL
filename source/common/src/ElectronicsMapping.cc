@@ -128,7 +128,8 @@ SDHCALElectronicsMapping::SDHCALElectronicsMapping() :
 		m_isInitialized(false),
 		m_cellReferencePosition(0.f, 0.f, 0.f),
 		m_cellSize0(10.408f),
-		m_cellSize1(10.408f)
+		m_cellSize1(10.408f),
+		m_moduleLogStr("[SDHCALElectronicsMapping]")
 {
 	/* nop */
 }
@@ -158,7 +159,7 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToElectronics( const dqm4hep::
 
 	if( m_geometry.end() == iter )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't find layer id " << cell.m_layer << " in SDHCALElectronicsMapping maps" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - cellToElectronics : Couldn't find layer id " << cell.m_layer << " in SDHCALElectronicsMapping maps" );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 
@@ -169,7 +170,7 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToElectronics( const dqm4hep::
 
 	if( iter->second.m_difList.end() == iter2 )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't find dif with shift " << difShiftY << " in SDHCALElectronicsMapping maps" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - cellToElectronics : Couldn't find dif with shift " << difShiftY << " in SDHCALElectronicsMapping maps" );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 
@@ -180,7 +181,7 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToElectronics( const dqm4hep::
 
 	if(indexAsicI >= 12 || indexAsicJ >=4 )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Index asic index for cell to electronics conversion !" )
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, m_moduleLogStr << " - cellToElectronics : Wrong asic index for cell to electronics conversion ! - indexAsicI: " << indexAsicI << " (expected <12) \t indexAsicJ: "  << indexAsicJ << " (expected <4)" )
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
@@ -191,7 +192,7 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToElectronics( const dqm4hep::
 
 	if(indexChannelI >= 8 || indexChannelJ >=8 )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Index channel index for cell to electronics conversion !" )
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, m_moduleLogStr << " - cellToElectronics : Wrong channel index for cell to electronics conversion ! - indexChannelI: " << indexChannelI << "(expected <8) \t indexChannelJ: "  << indexChannelJ << "(expected <8)" )
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
@@ -215,7 +216,7 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::electronicstoCell( const dqm4hep::
 
 	if( m_difMapping.end() == iter )
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't find dif id " << electronics.m_difId << " in SDHCALElectronicsMapping map" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - electronicstoCell : Couldn't find dif id " << electronics.m_difId << " in SDHCALElectronicsMapping map" );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 
@@ -242,15 +243,20 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::positionToCell(const dqm4hep::DQMC
 	const float jCellFloat = (position.getY() - m_cellReferencePosition.getY()) / m_cellSize1;
 
 	if( iCellFloat < 0.f || jCellFloat < 0.f )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, m_moduleLogStr << " - positionToCell : Wrong cell index for position to cell conversion ! - iCellFloat: " << iCellFloat << "(expected >=0) \t jCellFloat: "  << jCellFloat << "(expected >=0)" )
 		return dqm4hep::STATUS_CODE_FAILURE;
+	}
 
 	cell.m_iCell = round(iCellFloat);
 	cell.m_jCell = round(jCellFloat);
 
 	if(cell.m_iCell < 1 || cell.m_iCell > 96
 	|| cell.m_jCell < 1 || cell.m_jCell > 96)
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, m_moduleLogStr << " - positionToCell : Wrong cell index for position to cell conversion ! - cell.m_iCell: " << cell.m_iCell << " (expected >=1 <=96) \t cell.m_jCell: "  << cell.m_jCell << " (expected >=1 <=96)" )
 		return dqm4hep::STATUS_CODE_FAILURE;
-
+	} 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -264,7 +270,10 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToPosition(const dqm4hep::DQME
 	Geometry::iterator iter = m_geometry.find(cell.m_layer);
 
 	if( m_geometry.end() == iter )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - cellToPosition : Couldn't find layer id " << cell.m_layer << " in SDHCALElectronicsMapping maps" );
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
 
 	const float x = cell.m_iCell * m_cellSize0 + m_cellReferencePosition.getX();
 	const float y = cell.m_jCell * m_cellSize1 + m_cellReferencePosition.getY();

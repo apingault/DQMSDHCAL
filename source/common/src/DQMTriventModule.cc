@@ -49,7 +49,8 @@ namespace dqm_sdhcal
 
 DQMTriventModule::DQMTriventModule() :
 		DQMAnalysisModule(),
-		LCTriventListener()
+		LCTriventListener(),
+		m_moduleLogStr("[DQMTriventModule]")
 {
 	m_pTrivent = new trivent::Trivent();
 	m_pTrivent->addListener(this);
@@ -81,7 +82,7 @@ dqm4hep::StatusCode DQMTriventModule::readSettings(const dqm4hep::TiXmlHandle xm
 
 	if(m_caloHitCollectionNames.empty() && m_rawCaloHitCollectionNames.empty())
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "At least one hit collection type mustn't be empty !" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger, m_moduleLogStr << " - At least one hit collection type mustn't be empty !" );
 		return dqm4hep::STATUS_CODE_INVALID_PARAMETER;
 	}
 
@@ -134,31 +135,34 @@ dqm4hep::StatusCode DQMTriventModule::processEvent(dqm4hep::DQMEvent *const pEve
 	if(NULL == pLCEvent)
 		return dqm4hep::STATUS_CODE_FAILURE;
 
-	LOG4CXX_INFO( dqm4hep::dqmMainLogger, "Processing dqm event no " << pLCEvent->getEventNumber() );
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger, m_moduleLogStr << " - Processing dqm event no " << pLCEvent->getEventNumber() << " with collections: ");
+	for (uint32_t iCol =0; iCol< pLCEvent->getCollectionNames()->size(); ++iCol)
+		LOG4CXX_INFO( dqm4hep::dqmMainLogger, "\t\t'" << pLCEvent->getCollectionNames()->at( iCol ) << "'" );
+
 
 	try
 	{
 		trivent::Event triventEvent;
 
-		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "DQMTriventModule : converting event" );
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, m_moduleLogStr << " - converting event..." );
 		THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->convertEvent(pLCEvent, triventEvent));
 
-		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "DQMTriventModule : processing trivent algorithm" );
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, m_moduleLogStr << " - processing trivent algorithm" );
 		m_pTrivent->processEvent(triventEvent);
 	}
 	catch(dqm4hep::StatusCodeException &exception)
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught StatusCodeException : " << exception.toString() );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught StatusCodeException : " << exception.toString() );
 		return exception.getStatusCode();
 	}
 	catch(EVENT::DataNotAvailableException &exception)
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught EVENT::DataNotAvailableException : " << exception.what() );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught EVENT::DataNotAvailableException : " << exception.what() );
 		return dqm4hep::STATUS_CODE_SUCCESS;
 	}
 	catch(...)
 	{
-		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught unknown exception !" );
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught unknown exception !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
@@ -178,7 +182,7 @@ dqm4hep::StatusCode DQMTriventModule::convertEvent(EVENT::LCEvent *pLCEvent, tri
 		}
 		catch(EVENT::DataNotAvailableException &exception)
 		{
-			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught EVENT::DataNotAvailableException : " << exception.what() );
+			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught EVENT::DataNotAvailableException : " << exception.what() );
 			continue;
 		}
 	}
@@ -192,7 +196,7 @@ dqm4hep::StatusCode DQMTriventModule::convertEvent(EVENT::LCEvent *pLCEvent, tri
 		}
 		catch(EVENT::DataNotAvailableException &exception)
 		{
-			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Caught EVENT::DataNotAvailableException : " << exception.what() );
+			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught EVENT::DataNotAvailableException : " << exception.what() );
 			continue;
 		}
 	}
@@ -206,11 +210,9 @@ dqm4hep::StatusCode DQMTriventModule::convertEvent(EVENT::LCEvent *pLCEvent, tri
 
 void DQMTriventModule::processReconstructedEvent(EVENT::LCEvent *pLCEvent)
 {
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "DQMTriventModule::processReconstructedEvent : event no " << pLCEvent->getEventNumber() );
-
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "Processing physics event ..." );
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, m_moduleLogStr << " - processReconstructedEvent : event no " << pLCEvent->getEventNumber() );
 	THROW_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->processEvent(pLCEvent));
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, "Processing physics event ... OK" );
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger, m_moduleLogStr << " - processReconstructedEvent... OK" );
 }
 
 }

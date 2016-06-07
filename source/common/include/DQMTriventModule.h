@@ -73,6 +73,7 @@ private:
 	trivent::Trivent::Parameters                  m_triventParameters;
 	dqm4hep::StringVector                         m_caloHitCollectionNames;
 	dqm4hep::StringVector                         m_rawCaloHitCollectionNames;
+	std::string 				                          m_moduleLogStr;
 }; 
 
 } 
