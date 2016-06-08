@@ -6,23 +6,42 @@
         <runcontrol type="DimRunControlClient" name="SDHCALRunControl" />
 
         <eventcollector type="DimEventClient">
-        	<parameter name="collectorName"> sdhcal_event_collector </parameter>
+        	<parameter name="collectorName"> event_collector </parameter>
         	<parameter name="maxQueueSize"> 100 </parameter>
         	<parameter name="streamerName"> LCIOStreamer </parameter>
         </eventcollector>
 
-        <monitorelementcollector name="sdhcal_me_collector"/>
+        <monitorelementcollector name="me_collector"/>
     </network>
 
     <cycle type="TimerCycle" value="10" timeout="5" />
 
     <module type="BeamAnalysisModule" name="BeamAnalysisModule">
-        <parameter name="InputCollectionName"> DHCALRawHits </parameter>
 
-        <!-- spillLength in seconds -->
-        <parameter name="SpillLength">  10 </parameter>
-        <!-- ClockFrameLength in ns -->
-        <parameter name="ClockFrameLength">  200 </parameter>
+        <eventHelper plugin="SDHCALEventHelper">
+            <electronicsMapping plugin="SDHCALElectronicsMapping">
+                        <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+                        <parameter name="CellSize0"> 10.408 </parameter>
+                        <parameter name="CellSize1"> 10.408 </parameter>
+                        <parameter name="ReadFromDB"> true </parameter>
+                        <parameter name="Host">  </parameter>
+                        <parameter name="User">  </parameter>
+                        <parameter name="Password">  </parameter>
+                        <parameter name="Database"> GEOMETRY </parameter>
+                        <parameter name="BeamTest"> SPS_04_2015 </parameter>
+                        <parameter name="GeometryFileName"> geometry_SPS_04_2015.xml </parameter>
+            </electronicsMapping>
+            <parameter name="CellIDDecoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+            <parameter name="AmplitudeBitRotation"> 3 </parameter>
+            <parameter name="BCIDShift"> 16777216ULL </parameter>
+            <!-- spillLength in seconds -->
+            <parameter name="SpillLength"> 10 </parameter>
+            <!-- ClockFrameLength in ns -->
+            <parameter name="ClockFrameLength"> 200 </parameter>
+        </eventHelper>
+
+        <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
+        <parameter name="CellIDDecoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
         <parameter name="NumberOfEventToSkip">  -1 </parameter>
 
         <!-- Timing -->
@@ -34,11 +53,6 @@
         <monitorElement ID="TimeDiffTrigger"
                 name="TimeDiffTrigger" path="." type="TH1F" title="Time (s) between two start time of trigger"
                 nBins="500" min="0" max="100E-2"
-                resetPolicy="EndOfRun"/>
-
-        <monitorElement ID="TimeDiffTriggerToSpill"
-                name="TimeDiffTriggerToSpill" path="." type="TH1F" title="Time (s) between start time of new spill and start time of last trigger of previous Spill"
-                nBins="500" min="0" max="100"
                 resetPolicy="EndOfRun"/>
 
         <monitorElement ID="SpillLength"

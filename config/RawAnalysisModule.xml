@@ -19,39 +19,6 @@
     <module type="RawAnalysisModule" name="RawAnalysisModule">
 
         <parameter name="ShouldProcessStreamout">  false </parameter>
-          <Streamout>
-              <parameter name="InputCollectionName">  RU_XDAQ </parameter>
-              <parameter name="OutputCollectionName">  DHCALRawHits </parameter>
-              <parameter name="XDaqShift">  24 </parameter>
-          </Streamout>
-
-        <parameter name="RawCollectionNames"> DHCALRawHits </parameter>
-        <parameter name="RecCollectionNames"> SDHCAL_HIT </parameter>
-            <RawDataConverters>
-                <converter plugin="SDHCALCaloHitConverter">
-                    <electronicsMapping plugin="SDHCALElectronicsMapping">
-                        <parameter name="CellReferencePosition"> 0 0 0 </parameter>
-                        <parameter name="CellSize0"> 10.408 </parameter>
-                        <parameter name="CellSize1"> 10.408 </parameter>
-                        <parameter name="ReadFromDB"> true </parameter>
-                        <parameter name="Host"> localhost </parameter>
-                        <parameter name="User"> antoine </parameter>
-                        <parameter name="Password"> plop </parameter>
-                        <parameter name="Database"> GEOMETRY </parameter>
-                        <parameter name="BeamTest"> SPS_10_2015 </parameter>
-                        <parameter name="GeometryFileName"> geometry_SPS_10_2015.xml </parameter>
-                    </electronicsMapping>
-
-                    <parameter name="AmplitudeBitRotation"> 3 </parameter>
-                    <parameter name="EncodeDifAsicChannel"> true </parameter>
-                    <parameter name="IJKEncoding"> I J K-1 </parameter>
-                    <parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter>
-                    <parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
-                </converter>
-            </RawDataConverters>
-
-        <parameter name="AmplitudeBitRotation"> 3 </parameter>
-
         <!-- The following electronicsMapping handle is here only for geometry dependent Histogram Booking -->
         <!-- Ensure the GeometryFileName is the same as in the converter settings -->
         <electronicsMapping plugin="SDHCALElectronicsMapping">
@@ -59,27 +26,44 @@
            <parameter name="CellSize0"> 10.408 </parameter>
            <parameter name="CellSize1"> 10.408 </parameter>
            <parameter name="ReadFromDB"> true </parameter>
-           <parameter name="Host"> localhost </parameter>
-           <parameter name="User"> antoine </parameter>
-           <parameter name="Password"> plop </parameter>
+           <parameter name="Host">  </parameter>
+           <parameter name="User">  </parameter>
+           <parameter name="Password">  </parameter>
            <parameter name="Database"> GEOMETRY </parameter>
-           <parameter name="BeamTest"> SPS_10_2015 </parameter>
-           <parameter name="GeometryFileName"> geometry_SPS_10_2015.xml </parameter>
+           <parameter name="BeamTest"> SPS_04_2015 </parameter>
+           <parameter name="GeometryFileName"> geometry_SPS_04_2015.xml </parameter>
         </electronicsMapping>
 
-        <parameter name="InputCollectionName"> DHCALRawHits </parameter>
-        <parameter name="NActiveLayers">  51 </parameter>
+        <eventHelper plugin="SDHCALEventHelper">
+            <electronicsMapping plugin="SDHCALElectronicsMapping">
+               <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+               <parameter name="CellSize0"> 10.408 </parameter>
+               <parameter name="CellSize1"> 10.408 </parameter>
+               <parameter name="ReadFromDB"> true </parameter>
+               <parameter name="Host">  </parameter>
+               <parameter name="User">  </parameter>
+               <parameter name="Password">  </parameter>
+               <parameter name="Database"> GEOMETRY </parameter>
+               <parameter name="BeamTest"> SPS_04_2015 </parameter>
+               <parameter name="GeometryFileName"> geometry_SPS_04_2015.xml </parameter>
+            </electronicsMapping>
+            <parameter name="CellIDDecoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+            <parameter name="AmplitudeBitRotation"> 3 </parameter>
+            <parameter name="BCIDShift"> 16777216ULL </parameter>
+            <!-- spillLength in seconds -->
+            <parameter name="SpillLength"> 10 </parameter>
+            <!-- ClockFrameLength in ns -->
+            <parameter name="ClockFrameLength"> 200 </parameter>
+        </eventHelper>
+
+        <parameter name="InputCollectionName"> SDHCAL_HIT </parameter>
+        <parameter name="CellIDDecoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+        <parameter name="NActiveLayers">  49 </parameter>
         <parameter name="NAsicPerDif">  48 </parameter>
         <parameter name="NChanPerAsic">  64 </parameter>
-        <parameter name="AmplitudeBitRotation"> 3 </parameter>
-
-        <!-- spillLength in seconds -->
-        <parameter name="SpillLength">  10 </parameter>
-        <!-- ClockFrameLength in ns -->
-        <parameter name="ClockFrameLength">  200 </parameter>
         <parameter name="NumberOfEventToSkip">  -1 </parameter>
 
-
+        <parameter name="DumpMEStructure"> true </parameter>
         <!-- AsicOccupancy -->
         <monitorElement ID="AsicOccupancyAll"
             name="AsicOccupancyAll" path="." type="TH1F" title="Occupancy per Asic / integrated time (in s)"
@@ -97,14 +81,6 @@
             nBins="255" min="0" max="255"
             resetPolicy="EndOfRun"/>
 
-
-
-        <monitorElement ID="AcquisitionTime"
-                name="AcquisitionTime" path="." type="TH1F" title="Acquisition Time" decription=""
-                nBins="2000" min="0" max="0.5"
-                resetPolicy="EndOfRun"/>
-
-
         <!-- Raw Hit Study -->
         <monitorElement ID="HitFrequencyMap"
             name="HitFrequencyMap" path="." type="TH2F" title="HitMap DIF vs Asic"
@@ -113,70 +89,70 @@
 
         <!-- Raw Hit Study / Per Layer-->
         <monitorElement ID="ChamberHitsMap1"
-            name="ChamberHitsMap1" path="." type="TH2S" title="HitMap in Layer threshold 1"
+            name="ChamberHitsMap1_layer${layerId}" path="/Noise/Layer${layerId}" type="TH2I" title="HitMap threshold 1 in Layer ${layerId} "
             nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
             drawOption="colz" resetPolicy="EndOfRun"/>
 
         <monitorElement ID="ChamberHitsMap2"
-            name="ChamberHitsMap2" path="." type="TH2S" title="HitMap in Layer threshold 2"
+            name="ChamberHitsMap2_layer${layerId}" path="/Noise/Layer${layerId}" type="TH2I" title="HitMap threshold 2 in Layer ${layerId}"
             nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
             drawOption="colz" resetPolicy="EndOfRun"/>
 
         <monitorElement ID="ChamberHitsMap3"
-            name="ChamberHitsMap3" path="." type="TH2S" title="HitMap in Layer threshold 3"
+            name="ChamberHitsMap3_layer${layerId}" path="/Noise/Layer${layerId}" type="TH2I" title="HitMap threshold 3 in Layer ${layerId}"
             nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
             drawOption="colz" resetPolicy="EndOfRun"/>
 
         <!-- Raw Hit Study / Per Layer & Per Dif-->
         <monitorElement ID="AsicOccupancy"
-            name="AsicOccupancy" path="." type="TH1F" title="Occupancy per Asic over integrated time (in s)"
+            name="AsicOccupancy_dif${difId}_layer${layerId}" path="/Noise/Layer${layerId}/DIF${difId}" type="TH1F" title="Occupancy per Asic over integrated time (in s) in Dif ${difId} [layer ${layerId}]"
             nBins="48" min="0" max="47"
             resetPolicy="EndOfRun"/>
 
         <monitorElement ID="AsicOccupancyNumber"
-            name="AsicOccupancyNumber" path="." type="TH1F" title="Raw Occupancy per Asic"
+            name="AsicOccupancyNumber_dif${difId}_layer${layerId}" path="/Noise/Layer${layerId}/DIF${difId}" type="TH1F" title="Raw Occupancy per Asic in Dif ${difId} [layer ${layerId}]"
             nBins="48" min="0" max="47"
             resetPolicy="EndOfRun"/>
 
         <!-- 3072 = 48*64 = Asic * Pad -->
 		<monitorElement ID="AsicHits1"
-            name="AsicHits1" path="." type="TH1F" title="Hits per pad and asic threshold 1"
+            name="AsicHits1_dif${difId}_layer${layerId}" path="/Noise/Layer${layerId}/DIF${difId}" type="TH1F" title="Hits per pad and asic threshold 1 in Dif ${difId} [layer ${layerId}]"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
         <monitorElement ID="AsicHits2"
-            name="AsicHits2" path="." type="TH1F" title="Hits per pad and asic threshold 2"
+            name="AsicHits2_dif${difId}_layer${layerId}" path="/Noise/Layer${layerId}/DIF${difId}" type="TH1F" title="Hits per pad and asic threshold 2 in Dif ${difId} [layer ${layerId}]"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
         <monitorElement ID="AsicHits3"
-            name="AsicHits3" path="." type="TH1F" title="Hits per pad and asic threshold 3"
+            name="AsicHits3_dif${difId}_layer${layerId}" path="/Noise/Layer${layerId}/DIF${difId}" type="TH1F" title="Hits per pad and asic threshold 3 in Dif ${difId} [layer ${layerId}]"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
         <!-- Asic Frequency = asichit/integratedTime -->
         <monitorElement ID="AsicFrequency1"
-            name="AsicFrequency1" path="." type="TH1F" title="Frequency per pad and asic threshold 1"
+            name="AsicFrequency1_dif${difId}_layer${layerId}" path="/Noise/Layer${layerId}/DIF${difId}" type="TH1F" title="Frequency per pad and asic threshold 1 in Dif ${difId} [layer ${layerId}]"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
         <monitorElement ID="AsicFrequency2"
-            name="AsicFrequency2" path="." type="TH1F" title="Frequency per pad and asic threshold 2"
+            name="AsicFrequency2_dif${difId}_layer${layerId}" path="/Noise/Layer${layerId}/DIF${difId}" type="TH1F" title="Frequency per pad and asic threshold 2 in Dif ${difId} [layer ${layerId}]"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
         <monitorElement ID="AsicFrequency3"
-            name="AsicFrequency3" path="." type="TH1F" title="Frequency per pad and asic threshold 3"
+            name="AsicFrequency3_dif${difId}_layer${layerId}" path="/Noise/Layer${layerId}/DIF${difId}" type="TH1F" title="Frequency per pad and asic threshold 3 in Dif ${difId} [layer ${layerId}]"
             nBins="3072" min="0" max="3071"
             resetPolicy="EndOfRun"/>
 
         <monitorElement ID="AsicEventTime"
-            name="EventTime" path="." type="TH1F" title="Hit time distribution"
+            name="EventTime_dif${difId}_layer${layerId}" path="/Noise/Layer${layerId}/DIF${difId}" type="TH1F" title="Hit time distribution in Dif ${difId} [layer ${layerId}]"
             nBins="10001" min="0" max="1E6"
             resetPolicy="EndOfRun"/>
 
         <monitorElement ID="AsicEventTimeZoom"
-            name="EventTimeZoom" path="." type="TH1F" title="Zoom on hit time distribution"
+            name="EventTimeZoom_dif${difId}_layer${layerId}" path="/Noise/Layer${layerId}/DIF${difId}" type="TH1F" title="Zoom on hit time distribution in Dif ${difId} [layer ${layerId}]"
             nBins="10001" min="0" max="10000"
             resetPolicy="EndOfRun"/>
     </module>
