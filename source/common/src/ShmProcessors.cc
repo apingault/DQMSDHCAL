@@ -788,7 +788,8 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 			float position[3] = {
 					rawHit->m_x + m_positionShift.getX(),
 					rawHit->m_y + m_positionShift.getY(),
-					rawHit->m_z + m_positionShift.getZ() };
+					// ATTN : beam axis rotated for ecal !!!
+					-1.f * rawHit->m_z + m_positionShift.getZ() };
 
 			// set the cell id
 			cellIDEncoder[ m_ijkEncoding.at(0) ] = rawHit->m_iCell;
