@@ -223,27 +223,24 @@ dqm4hep::StatusCode RawAnalysisModule::readSettings(const dqm4hep::TiXmlHandle x
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "HitFrequencyMap", m_pHitFrequencyMap));
 
   // ------ PerLayer ME ------
+  DQMParameters parameters;
+  for (auto layerId=0; layerId<m_nActiveLayers; ++layerId)
+  {    
+    parameters["layerId"]= std::to_string(layerId);
+    RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "ChamberHitsMap1", m_layerElementMap[layerId].m_pChamberHitsMap1, parameters));
+    RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "ChamberHitsMap2", m_layerElementMap[layerId].m_pChamberHitsMap2, parameters));
+    RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "ChamberHitsMap3", m_layerElementMap[layerId].m_pChamberHitsMap3, parameters));  
+  }
+
+  // // ------ PerDIF ME ------
   for (DifMapping::iterator difIter = m_difMapping.begin(), difEndIter = m_difMapping.end() ;
        difEndIter != difIter ; ++difIter)
   {
     int difId = difIter->first;
     int layerId = difIter->second.m_layerId + m_nStartLayerShift;
-    
-    DQMParameters parameters;
-    parameters["layerId"]= std::to_string(layerId);
     parameters["difId"]= std::to_string(difId);
-
-    // Create layer folder only once
-    std::string folderPath;
-    RETURN_RESULT_IF(STATUS_CODE_SUCCESS, !=, DQMXmlHelper::getAttribute(xmlHandle.FirstChild("monitorElement").Element(), "path", folderPath));
-    if (!dqm4hep::DQMModuleApi::dirExists(this, folderPath))
-    {
-      RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "ChamberHitsMap1", m_layerElementMap[layerId].m_pChamberHitsMap1, parameters));
-      RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "ChamberHitsMap2", m_layerElementMap[layerId].m_pChamberHitsMap2, parameters));
-      RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "ChamberHitsMap3", m_layerElementMap[layerId].m_pChamberHitsMap3, parameters));
-    }
-
-    // // ------ PerDIF ME ------
+    parameters["layerId"]= std::to_string(layerId);
+    
     RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "AsicOccupancy", m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancy, parameters));
 
     RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "AsicOccupancyNumber", m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancyNumber, parameters));
@@ -336,20 +333,6 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
     UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(m_cellIDDecoderString);
 
     //Find Triggers and NewSpill
-    std::cout << " event param: "
-    << "\n eventIntegratedTime: " << m_eventParameters.eventIntegratedTime
-    << "\n spillIntegratedTime: " << m_eventParameters.spillIntegratedTime
-    << "\n lastSpillIntegratedTime: " << m_eventParameters.lastSpillIntegratedTime
-    << "\n totalIntegratedTime: " << m_eventParameters.totalIntegratedTime
-    << "\n timeTrigger: " << m_eventParameters.timeTrigger
-    << "\n timeSpill: " << m_eventParameters.timeSpill
-    << "\n timeLastTrigger: " << m_eventParameters.timeLastTrigger
-    << "\n timeLastSpill: " << m_eventParameters.timeLastSpill
-    << "\n nTriggerInSpill: " << m_eventParameters.nTriggerInSpill
-    << "\n nTriggerLastSpill: " << m_eventParameters.nTriggerLastSpill
-    << "\n nTriggerProcessed: " << m_eventParameters.nTriggerProcessed
-    << "\n newSpill: " << m_eventParameters.newSpill
-    << "\n newTrigger: " << m_eventParameters.newTrigger << std::endl;
     
     LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - findTrigger for Trigger event " << pLCEvent->getEventNumber() << "...");
     StatusCode status = m_pEventHelper->findTrigger(pCalorimeterHitCollection, m_eventParameters);
