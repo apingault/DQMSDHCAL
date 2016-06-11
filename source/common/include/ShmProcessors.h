@@ -40,6 +40,7 @@
 
 namespace IMPL { class LCFlagImpl; class CalorimeterHitImpl; }
 namespace UTIL { template <typename T> class CellIDEncoder; }
+namespace IO { class LCWriter; }
 
 namespace dqm_sdhcal
 {
@@ -302,6 +303,50 @@ private:
 	dqm4hep::StringVector                  m_difAsicChannelEncoding;
 	dqm4hep::DQMCartesianVector            m_positionShift;
 	std::string                  			     m_moduleLogStr;
+};
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+
+class FileWriterShmProcessor : public dqm4hep::DQMShmProcessor
+{
+public:
+	/** Constructor
+	 */
+	FileWriterShmProcessor();
+
+	/** Destructor
+	 */
+	~FileWriterShmProcessor();
+
+	/** Call back function on start of run
+	 */
+	dqm4hep::StatusCode startOfRun(dqm4hep::DQMRun *const pRun);
+
+	/** Call back function on end of run
+	 */
+	dqm4hep::StatusCode endOfRun(const dqm4hep::DQMRun *const pRun);
+
+	/** Called when an event is reconstructed.
+	 *  The key is a unique identifier for the event.
+	 *  The buffer list is the reconstructed list of buffers for the target key
+	 *  of the different sources
+	 */
+	dqm4hep::StatusCode processEvent(dqm4hep::DQMEvent *pEvent, uint32_t key, const std::vector<levbdim::buffer*> &bufferList);
+
+	/** Read settings from xml handle
+	 */
+	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
+
+public:
+	IO::LCWriter               *m_pLCWriter;
+
+	std::string                 m_fileDirectory;
+	std::string                 m_lcioFileName;
+	int                         m_openMode;
+	int                         m_compressionLevel;
+	int                         m_currentRunNumber;
+	int                         m_currentSubRunNumber;
 };
 
 } 

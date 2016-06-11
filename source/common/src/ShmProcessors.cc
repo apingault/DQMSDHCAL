@@ -45,9 +45,12 @@
 #include "IMPL/LCEventImpl.h"
 #include "IMPL/LCCollectionVec.h"
 #include "IMPL/LCFlagImpl.h"
+#include "IMPL/LCRunHeaderImpl.h"
 #include "IMPL/RawCalorimeterHitImpl.h"
 #include "IMPL/CalorimeterHitImpl.h"
 #include "UTIL/CellIDEncoder.h"
+#include "IO/LCWriter.h"
+#include "IOIMPL/LCFactory.h"
 
 // -- std headers
 #include <bitset>
@@ -59,6 +62,7 @@ DQM_PLUGIN_DECL( EventInfoShmProcessor , "EventInfoShmProcessor" )
 DQM_PLUGIN_DECL( SDHCALShmProcessor    , "SDHCALShmProcessor"    )
 DQM_PLUGIN_DECL( CherenkovShmProcessor , "CherenkovShmProcessor" )
 DQM_PLUGIN_DECL( SiWECalShmProcessor   , "SiWECalShmProcessor"   )
+DQM_PLUGIN_DECL( FileWriterShmProcessor, "FileWriterShmProcessor")
 
 EventInfoShmProcessor::EventInfoShmProcessor() :
 		m_eventNumber(0),
@@ -864,7 +868,150 @@ dqm4hep::StatusCode SiWECalShmProcessor::readSettings(const dqm4hep::TiXmlHandle
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 
+FileWriterShmProcessor::FileWriterShmProcessor() :
+		m_openMode(1),
+		m_currentRunNumber(-1),
+		m_currentSubRunNumber(0)
+{
+	m_pLCWriter = IOIMPL::LCFactory::getInstance()->createLCWriter();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+FileWriterShmProcessor::~FileWriterShmProcessor()
+{
+	delete m_pLCWriter;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode FileWriterShmProcessor::startOfRun(dqm4hep::DQMRun *const pRun)
+{
+	const bool newRun(pRun->getRunNumber() != m_currentRunNumber);
+
+	if(newRun)
+	{
+		m_currentSubRunNumber = 0;
+		m_currentRunNumber = pRun->getRunNumber();
+	}
+	else
+	{
+		++m_currentSubRunNumber;
+	}
+
+	std::stringstream fileName;
+	fileName << m_fileDirectory << m_lcioFileName << "_I" << m_currentRunNumber << "_" << m_currentSubRunNumber << ".slcio";
+
+	try
+	{
+		m_pLCWriter->open( fileName.str() , m_openMode );
+	}
+	catch(IO::IOException &exception)
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't open slcio file  '" << fileName.str() << "' : " << std::string(exception.what()));
+		return dqm4hep::STATUS_CODE_FAILURE;
+	}
+
+	m_pLCWriter->setCompressionLevel(m_compressionLevel);
+
+	// create run header
+	IMPL::LCRunHeaderImpl *pLCRunHeader = new IMPL::LCRunHeaderImpl();
+	pLCRunHeader->setRunNumber(m_currentRunNumber);
+	pLCRunHeader->setDetectorName(pRun->getDetectorName());
+	pLCRunHeader->setDescription(pRun->getDescription());
+
+	const dqm4hep::StringVector parameterKeys(pRun->getParameterKeys());
+
+	for(dqm4hep::StringVector::const_iterator iter = parameterKeys.begin(), endIter = parameterKeys.end() ;
+			endIter != iter ; ++iter)
+	{
+		std::string parameter;
+		pRun->getParameter<std::string>(*iter, parameter);
+		pLCRunHeader->parameters().setValue(*iter, parameter);
+	}
+
+	m_pLCWriter->writeRunHeader(pLCRunHeader);
+	delete pLCRunHeader;
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode FileWriterShmProcessor::endOfRun(const dqm4hep::DQMRun *const pRun)
+{
+	try
+	{
+		m_pLCWriter->close();
+	}
+	catch(IO::IOException &exception)
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't close slcio file  : " << std::string(exception.what()));
+		return dqm4hep::STATUS_CODE_FAILURE;
+	}
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode FileWriterShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, uint32_t key, const std::vector<levbdim::buffer*> &bufferList)
+{
+	IMPL::LCEventImpl *pLCEvent = dynamic_cast<IMPL::LCEventImpl *>(pEvent->getEvent<EVENT::LCEvent>() );
+
+	if( ! pLCEvent )
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Wrong event type ! Expecting EVENT::LCEvent type !" );
+		return dqm4hep::STATUS_CODE_FAILURE;
+	}
+
+	try
+	{
+		m_pLCWriter->writeEvent(pLCEvent);
+	}
+	catch(IO::IOException &exception)
+	{
+		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "Couldn't write lcio event  : " << std::string(exception.what()));
+		return dqm4hep::STATUS_CODE_FAILURE;
+	}
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode FileWriterShmProcessor::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
+{
+	m_fileDirectory = "/tmp";
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"FileDirectory", m_fileDirectory));
+
+	if(m_fileDirectory.empty())
+		return dqm4hep::STATUS_CODE_INVALID_PARAMETER;
+
+	if( m_fileDirectory.at(m_fileDirectory.size()-1) != '/')
+		m_fileDirectory += "/";
+
+	m_lcioFileName = "DQM_SDHCAL";
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"LcioFileName", m_lcioFileName));
+
+	if(m_lcioFileName.empty())
+		return dqm4hep::STATUS_CODE_INVALID_PARAMETER;
+
+	m_openMode = 1;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"OpenMode", m_openMode));
+
+	m_compressionLevel = 1;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"CompressionLevel", m_compressionLevel));
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
 
 } 
 
