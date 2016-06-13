@@ -54,9 +54,9 @@ namespace dqm_sdhcal
 // plugin declaration
 DQM_PLUGIN_DECL( ECalAnalysisModule, "ECalAnalysisModule" )
 
-		ECalAnalysisModule::ECalAnalysisModule() :
-		DQMTriventModule(),
-		m_moduleLogStr("[ECalAnalysisModule]")
+ECalAnalysisModule::ECalAnalysisModule() :
+	DQMTriventModule(),
+	m_moduleLogStr("[ECalAnalysisModule]")
 {
 }
 
@@ -67,6 +67,7 @@ ECalAnalysisModule::~ECalAnalysisModule()
 }
 
 //-------------------------------------------------------------------------------------------------
+
 dqm4hep::StatusCode ECalAnalysisModule::userReadSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
 	m_nActiveLayers = 10;
@@ -77,7 +78,7 @@ dqm4hep::StatusCode ECalAnalysisModule::userReadSettings(const dqm4hep::TiXmlHan
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"CellIDDecoderString", m_cellIDDecoderString));
 
-	m_inputCollectionName = "SiWECalHits";
+	m_inputCollectionName = "SIWECAL_HIT";
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"InputCollectionName", m_inputCollectionName));
 

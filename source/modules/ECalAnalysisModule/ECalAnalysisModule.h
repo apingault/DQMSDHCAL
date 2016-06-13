@@ -86,23 +86,6 @@ public:
 	dqm4hep::StatusCode endModule();
 
 private:
-	/** Clear the contents related to one event
-	 */
-	void clearEventContents(caloobject::CaloHitList &hits, caloobject::CaloClusterList &clusters);
-
-	/**
-	 *
-	 */
-dqm4hep::StatusCode fillRates();
-
-
-	/** Reset the monitor element tuned on cycle
-	 *  Called at end of cycle before filling again
-	 *  efficiencies and multiplicities
-	 */
-	void resetElements();
-
-private:
 	// module parameters
 	std::string 							 m_moduleLogStr;
 	std::string                              m_inputCollectionName;

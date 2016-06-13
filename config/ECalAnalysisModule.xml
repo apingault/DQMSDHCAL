@@ -1,0 +1,104 @@
+<dqm4hep>
+
+	<archiver open="true" directory="/tmp" />
+
+	<network>
+		<runcontrol type="DimRunControlClient" name="SDHCALRunControl" />
+
+		<eventcollector type="DimEventClient">
+			<parameter name="collectorName"> sdhcal_event_collector </parameter>
+			<parameter name="maxQueueSize"> 100 </parameter>
+			<parameter name="streamerName"> LCIOStreamer </parameter>
+		</eventcollector>
+
+		<monitorelementcollector name="sdhcal_me_collector" />
+	</network>
+
+	<cycle type="TimerCycle" value="10" timeout="5" />
+
+	<module type="ECalAnalysis" name="ECalAnalysisModule">
+		<Trivent>
+			<parameter name="CaloHitCollectionNames"> SIWECAL_HIT </parameter>
+			<parameter name="TimeWindow"> 2 </parameter>
+			<parameter name="MinPeakSize"> 4 </parameter>
+			<parameter name="MinElements"> 10 </parameter>
+		</Trivent>
+
+		<parameter name="NActiveLayers"> 10 </parameter>
+		<parameter name="CellIDDecoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+		<parameter name="InputCollectionName"> SIWECAL_HIT </parameter>
+
+		<!-- ----------- Monitor elements ----------- -->
+		<monitorElement ID="NHitDistribution" name="NHit" path="/Global"
+			type="TH1F" title="NHit distribution;NHit;Counter" nBins="1000" min="0"
+			max="1000"
+			description="The number of hit distribution estimated after a time clustering. This should corresponds to particles or noise (no filtering)"
+			drawOption="B" resetPolicy="EndOfRun" />
+
+		<monitorElement ID="AdcCountDistribution" name="AdcCount"
+			path="/Global" type="TH1F" title="Hit adc counts;ADC count;Counter"
+			nBins="1000" min="0" max="1000"
+			description="The adc count distribution for all hits in 'particle' event"
+			drawOption="B" resetPolicy="EndOfRun" />
+
+		<monitorElement ID="TotalEnergyDistribution" name="TotalEnergy"
+			path="/Global" type="TH1F"
+			title="Total energy in detector (unit GeV);E_{rec} [GeV];Counter"
+			nBins="2000" min="0" max="200"
+			description="The total energy deposited in the ECal (unit GeV) per 'particle' event (no noise filter)"
+			resetPolicy="EndOfRun" />
+
+		<monitorElement ID="HitEnergyDistribution" name="HitEnergy"
+			path="/Global" type="TH1F"
+			title="Hit energy in detector (unit GeV);E_{rec} [GeV];Counter"
+			nBins="100" min="0" max="10"
+			description="The deposited energy per hit in the ECal (unit GeV) per 'particle' event (no noise filter)"
+			resetPolicy="EndOfRun" />
+
+		<monitorElement ID="LayerNumberOfHits" name="NHitLayer${layerId}"
+			path="/PerLayer/Layer${layerId}" type="TH1F"
+			title="Number hits in layer ${layerId};NHit;Counter" nBins="1025"
+			min="0" max="1024"
+			description="Number of ECal hits within the layer ${layerId} per particle event (no noise filter)"
+			resetPolicy="EndOfRun" />
+
+		<monitorElement ID="LayerTotalEnergy" name="TotalEnergyLayer${layerId}"
+			path="/PerLayer/Layer${layerId}" type="TH1F"
+			title="Total deposited energy in layer ${layerId};E_{rec} [GeV];Counter"
+			nBins="101" min="0" max="10"
+			description="Total deposited energy within the ECal layer ${layerId} per particle event (no noise filter)"
+			resetPolicy="EndOfRun" />
+
+		<monitorElement ID="LayerHitMap" name="HitMapLayer${layerId}"
+			path="/PerLayer/Layer${layerId}" type="TH2F"
+			title="Hit map in layer ${layerId};I;J;NHit" nBinsX="33" minX="0"
+			maxX="32" nBinsY="33" minY="0" maxY="32"
+			description="Accumulated hit map whitin ECal layer ${layerId}. Filled for each 'particle' event (no noise filter)"
+			drawOption="colz" resetPolicy="EndOfRun" />
+
+		<monitorElement ID="LayerEnergyMap" name="EnergyMapLayer${layerId}"
+			path="/PerLayer/Layer${layerId}" type="TH2F"
+			title="Deposited energy map in layer ${layerId};I;J;E_{rec} [GeV]"
+			nBinsX="33" minX="0" maxX="32" nBinsY="33" minY="0" maxY="32"
+			description="Accumulated hit energy map whitin ECal layer ${layerId}. Filled for each 'particle' event (no noise filter)"
+			drawOption="colz" resetPolicy="EndOfRun" />
+
+		<!-- TODO : Tune binning and histo -->
+		<monitorElement ID="NHitFromSOA" name="NHitFromSOA"
+			path="/Global" type="TH1F"
+			title="Number of hits from start of acquisition;t [n*200ns];NHit"
+			nBins="1000" min="0" max="1000"
+			description="The number of hits from a start of acquisition cycle"
+			drawOption="E0" resetPolicy="EndOfRun" />
+
+		<!-- TODO : Tune binning and histo -->
+		<monitorElement ID="NHitFromSOS" name="NHitFromSOS"
+			path="/Global" type="TH1F"
+			title="Number of hits from start of beam spill;t [n*200ns];NHit"
+			nBins="1000" min="0" max="1000"
+			description="The number of hits from a start of beam spill"
+			drawOption="E0" resetPolicy="EndOfRun" />
+
+	</module>
+
+</dqm4hep>
