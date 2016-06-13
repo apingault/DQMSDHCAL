@@ -35,6 +35,9 @@
 #include "dqm4hep/DQMElectronicsMapping.h"
 #include "dqm4hep/evb/DQMShmProcessor.h"
 
+// -- dqmsdhcal headers
+#include "ECalHelper.h"
+
 // -- levbdim headers
 #include "buffer.hh"
 
@@ -173,7 +176,7 @@ private:
 	dqm4hep::StringVector                  m_difAsicChannelEncoding;
 	UIntSet                                m_difMaskList;
 	dqm4hep::DQMElectronicsMapping        *m_pElectronicsMapping;
-	std::string                     		   m_moduleLogStr;
+	std::string                     	   m_moduleLogStr;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -223,7 +226,7 @@ private:
 	unsigned int                           m_amplitudeBitRotation;
 	int                                    m_cherenkovTimeShift;
 	std::string                            m_outputCollectionName;
-	std::string                     		   m_moduleLogStr;
+	std::string                     	   m_moduleLogStr;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -249,6 +252,7 @@ struct SiWECalRawHit
 	uint8_t        m_iCell;
 	uint8_t        m_jCell;
 	uint8_t        m_layer;
+	uint8_t        m_columnId; // TODO See with Frederic to add this field in raw data
 	float          m_x;
 	float          m_y;
 	float          m_z;
@@ -295,14 +299,27 @@ public:
 	 */
 	static void setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag);
 
+	/** Fill the lc flag for a ecal raw calorimeter hit collection
+	 */
+	static void setRawCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag);
+
 private:
+	typedef std::map<unsigned int, std::set<unsigned int> > LayerToAsicListMap;
+
+	std::string                  		   m_moduleLogStr;
+
 	unsigned int                           m_detectorId;
 	std::string                            m_outputCollectionName;
+	std::string                            m_outputRawCollectionName;
 	std::string                            m_cellIDEncoderString;
 	dqm4hep::StringVector                  m_ijkEncoding;
 	dqm4hep::StringVector                  m_difAsicChannelEncoding;
 	dqm4hep::DQMCartesianVector            m_positionShift;
-	std::string                  			     m_moduleLogStr;
+	unsigned int                           m_adcCountCut;
+	unsigned int                           m_energyMode;
+	bool                                   m_negativeAdcCountSuppression;
+
+	ECalHelper                             m_ecalHelper;
 };
 
 //-------------------------------------------------------------------------------------------------

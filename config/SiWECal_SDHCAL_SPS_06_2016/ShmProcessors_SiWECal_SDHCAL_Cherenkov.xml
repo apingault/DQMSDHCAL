@@ -215,9 +215,10 @@
 		</evbprocessor>
 
 		<!-- SiWECal lcio collection producer -->
-		<!-- Output EVENT::CalorimeterHit collection -->
+		<!-- Output EVENT::CalorimeterHit and EVENT::RawCalorimeterHit collections -->
 		<evbprocessor plugin="SiWECalShmProcessor" name="SiWECalProducer">
-			<parameter name="OutputCollectionName"> SiWECalHits </parameter>
+			<parameter name="OutputCollectionName"> SIWECAL_HIT </parameter>
+			<parameter name="OutputRawCollectionName"> SiWECalHits </parameter>
 			<parameter name="DetectorId"> 1100 </parameter>
 			<!-- * X shift = 193.2 mm (shift to ecal center) 
 				 * Y shift = 105.8 mm (shift to ecal center) 
@@ -228,12 +229,46 @@
 			<parameter name="PositionShift"> -193.2 -105.8 1195 </parameter>
 			<parameter name="IJKEncoding"> I J K-1 </parameter>
 			<parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter>
-			<parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6
-			</parameter>
+			<parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+			<parameter name="EnergyMode">2</parameter>
+			<parameter name="AdcCountCut">0</parameter>
+			<parameter name="NegativeAdcCountSuppression">true</parameter>
+			<ecalHelper>
+				<parameter name="HardwareLayerMapping"> 
+					8 0   
+					7 1   
+					6 2  
+					5 3  
+					4 4   
+					3 5   
+					2 6   
+					1 7   
+					0 8   
+					-1 9
+				</parameter>				
+				<parameter name="SlabMapping">
+				   -1 13
+					0 14
+					1 22
+					2 21
+					3 20
+					4 19
+					5 18
+					6 17
+					7 16
+					8 15
+				</parameter>
+				<parameter name="NColumns"> 15 </parameter>
+				<parameter name="PedestalShift"> 250 </parameter>
+				<parameter name="PedestalRootFileName"> /home/rete/soft/DQMSDHCAL/config/SiWECal_SDHCAL_SPS_06_2016/SiWECalPedestals/SLAB${id}.raw_pedestal.root </parameter>
+				<parameter name="CorrectedPedestalCut"> 20 </parameter>
+				<parameter name="MipCalibrationFactor"> 60 </parameter>
+				<parameter name="MipEquivalentEnergy"> 0.0012715 </parameter>
+			</ecalHelper>
 		</evbprocessor>
 
 		<!-- SDHCAL lcio collection producer -->
-		<!-- Output RawCalorimeterHit collection -->
+		<!-- Output CalorimeterHit collection -->
 		<evbprocessor plugin="SDHCALShmProcessor" name="SDHCALProducer">
 			<parameter name="OutputCollectionName"> SDHCAL_HIT </parameter>
 			<parameter name="SkipFullAsics"> true </parameter>
@@ -263,14 +298,13 @@
 				<parameter name="BeamTest"> SPS_08_2012 </parameter>
 				<!-- <parameter name="GeometryFileName"> /home/rete/soft/DQMSDHCAL/config/geometry_SPS_08_2012.xml 
 					</parameter> -->
-				<parameter name="GeometryFileName"> geometry_SPS_05_2015.xml </parameter>
+				<parameter name="GeometryFileName"> /home/rete/soft/DQMSDHCAL/config/geometry_PS_06_2015.xml </parameter>
 			</electronicsMapping>
 			<parameter name="AmplitudeBitRotation"> 3 </parameter>
 			<parameter name="EncodeDifAsicChannel"> true </parameter>
 			<parameter name="IJKEncoding"> I J K-1 </parameter>
 			<parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter>
-			<parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6
-			</parameter>
+			<parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
 		</evbprocessor>
 		
 		<!--Cherenkov lcio collection producer -->

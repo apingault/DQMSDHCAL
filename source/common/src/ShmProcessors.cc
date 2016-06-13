@@ -49,6 +49,7 @@
 #include "IMPL/RawCalorimeterHitImpl.h"
 #include "IMPL/CalorimeterHitImpl.h"
 #include "UTIL/CellIDEncoder.h"
+#include "UTIL/CellIDDecoder.h"
 #include "IO/LCWriter.h"
 #include "IOIMPL/LCFactory.h"
 
@@ -238,6 +239,7 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 
 	bool isFirstRU = true;
 	bool reachedNoiseLimit = false;
+	unsigned int nDifs(0);
 
 	// loop over dif raw buffers and convert to raw calorimeter hits
 	for(auto bufIter = bufferList.begin(), endBufIter = bufferList.end() ;
@@ -311,9 +313,20 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 		triggerParameterName << "DIF" << pDifPtr->getID() << "_Triggers";
 
 		pOutputCollection->parameters().setValues(triggerParameterName.str(), trigger);
+		++nDifs;
 
 		delete pDifPtr;
 	}
+
+	std::vector<int> difMaskList(m_difMaskList.begin(), m_difMaskList.end());
+
+	pOutputCollection->parameters().setValue("NDifs", static_cast<int>(nDifs));
+	pOutputCollection->parameters().setValue("NoiseLimitsReached", static_cast<int>(reachedNoiseLimit));
+	pOutputCollection->parameters().setValue("DropFirstRU", static_cast<int>(m_dropFirstRU));
+	pOutputCollection->parameters().setValue("NoiseLimit", static_cast<int>(m_noiseLimit));
+	pOutputCollection->parameters().setValue("XdaqShift", static_cast<int>(m_xdaqShift));
+	pOutputCollection->parameters().setValue("DetectorId", static_cast<int>(m_detectorId));
+	pOutputCollection->parameters().setValues("DifMask", difMaskList);
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -543,6 +556,8 @@ dqm4hep::StatusCode CherenkovShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 	pLCEvent->addCollection( pOutputCollection, m_outputCollectionName );
 	pOutputCollection->setFlag( chFlag.getFlag() );
 
+	int nDifs(0);
+
 	// loop over dif raw buffers
 	// find the cherenkov dif
 	// convert to raw calorimeter hits
@@ -603,8 +618,14 @@ dqm4hep::StatusCode CherenkovShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 
 		pOutputCollection->parameters().setValues(triggerParameterName.str(), trigger);
 
+		++nDifs;
+
 		delete pDifPtr;
 	}
+
+	pOutputCollection->parameters().setValue("XdaqShift", static_cast<int>(m_xdaqShift));
+	pOutputCollection->parameters().setValue("DetectorId", static_cast<int>(m_detectorId));
+	pOutputCollection->parameters().setValue("CherenkovTimeShift", m_cherenkovTimeShift);
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -735,14 +756,27 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
 
+	// Hit collection
 	IMPL::LCFlagImpl chFlag(0);
 	SiWECalShmProcessor::setCaloHitLCFlag(chFlag);
 
-	IMPL::LCCollectionVec *pOutputCollection = new IMPL::LCCollectionVec(EVENT::LCIO::RAWCALORIMETERHIT);
+	IMPL::LCCollectionVec *pOutputCollection = new IMPL::LCCollectionVec(EVENT::LCIO::CALORIMETERHIT);
 	pLCEvent->addCollection( pOutputCollection, m_outputCollectionName );
 	pOutputCollection->setFlag( chFlag.getFlag() );
 
 	UTIL::CellIDEncoder<IMPL::CalorimeterHitImpl> cellIDEncoder( m_cellIDEncoderString , pOutputCollection );
+
+	// Raw hit collection
+	IMPL::LCFlagImpl chRawFlag(0);
+	SiWECalShmProcessor::setRawCaloHitLCFlag(chRawFlag);
+
+	IMPL::LCCollectionVec *pOutputRawCollection = new IMPL::LCCollectionVec(EVENT::LCIO::RAWCALORIMETERHIT);
+	pLCEvent->addCollection( pOutputRawCollection, m_outputRawCollectionName );
+	pOutputRawCollection->setFlag( chRawFlag.getFlag() );
+
+	UTIL::CellIDEncoder<IMPL::RawCalorimeterHitImpl> cellIDRawEncoder( m_cellIDEncoderString , pOutputRawCollection );
+
+	LayerToAsicListMap layerToAsicListMap;
 
 	// loop over dif raw buffers
 	// decode hits one by one
@@ -787,7 +821,32 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 				difSpill = rawHit->m_spillId;
 			}
 
+			// Perform conversion from hardware layer to layer in beam direction
+			// This layer is stored as the 'real' layer.
+			// The hardware layer is still accessible using the dif/asic ids
+			unsigned int layer(0);
+			dqm4hep::StatusCode statusCode(m_ecalHelper.getLayer(rawHit->m_layer, layer));
+
+			if(dqm4hep::STATUS_CODE_SUCCESS != statusCode)
+			{
+				LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Couldn't find hardware layer '" << rawHit->m_layer << "'in mapping" );
+				continue;
+			}
+
+			// Store the layer and asic id in a map if the adc count is negative
+			// The corresponding asic will be suppressed from the data after the complete loop
+			if(m_negativeAdcCountSuppression && rawHit->m_adcCount < 0)
+			{
+				layerToAsicListMap[layer].insert(rawHit->m_asicId);
+				continue;
+			}
+
+			// basic cut on adc count
+			if(rawHit->m_adcCount < m_adcCountCut)
+				continue;
+
 			IMPL::CalorimeterHitImpl *pECalCaloHit = new IMPL::CalorimeterHitImpl();
+			IMPL::RawCalorimeterHitImpl *pECalRawCaloHit = new IMPL::RawCalorimeterHitImpl();
 
 			float position[3] = {
 					rawHit->m_x + m_positionShift.getX(),
@@ -796,23 +855,75 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 					-1.f * rawHit->m_z + m_positionShift.getZ() };
 
 			// set the cell id
+			// ATTN : put the corrected layer id in calorimeter hit (starting from 0 + in beam forward direction)
+			// and the hardware layer in the raw calorimeter hit (starting from -1 + in beam backward direction)
 			cellIDEncoder[ m_ijkEncoding.at(0) ] = rawHit->m_iCell;
 			cellIDEncoder[ m_ijkEncoding.at(1) ] = rawHit->m_jCell;
-			cellIDEncoder[ m_ijkEncoding.at(2) ] = rawHit->m_layer;
+			cellIDEncoder[ m_ijkEncoding.at(2) ] = layer;
 			cellIDEncoder[ m_difAsicChannelEncoding.at(0) ] = rawHit->m_difId;
 			cellIDEncoder[ m_difAsicChannelEncoding.at(1) ] = rawHit->m_asicId;
 			cellIDEncoder[ m_difAsicChannelEncoding.at(2) ] = rawHit->m_channelId;
 
-			// TODO add adc to energy conversion here !
-			float energy = static_cast<float>(rawHit->m_adcCount);
-			float time = static_cast<float>(rawHit->m_bcid);
+			cellIDRawEncoder[ m_ijkEncoding.at(0) ] = rawHit->m_iCell;
+			cellIDRawEncoder[ m_ijkEncoding.at(1) ] = rawHit->m_jCell;
+			cellIDRawEncoder[ m_ijkEncoding.at(2) ] = rawHit->m_layer;
+			cellIDRawEncoder[ m_difAsicChannelEncoding.at(0) ] = rawHit->m_difId;
+			cellIDRawEncoder[ m_difAsicChannelEncoding.at(1) ] = rawHit->m_asicId;
+			cellIDRawEncoder[ m_difAsicChannelEncoding.at(2) ] = rawHit->m_channelId;
+
+			int adcCount = static_cast<int>(rawHit->m_adcCount);
+
+			// ATTN : Conversion from uint64_t to uint32_t.
+			// Hope this will not affect data ...
+			uint32_t time = static_cast<uint32_t>(rawHit->m_bcid);
 
 			cellIDEncoder.setCellID( pECalCaloHit );
 			pECalCaloHit->setPosition(position);
-			pECalCaloHit->setTime(time);
-			pECalCaloHit->setEnergy(energy);
+			pECalCaloHit->setTime(static_cast<float>(time));
+
+			// no energy
+			if(m_energyMode == 0)
+			{
+				pECalCaloHit->setEnergy(0.f);
+			}
+			// copy energy value from raw data
+			else if(m_energyMode == 1)
+			{
+				pECalCaloHit->setEnergy(rawHit->m_energy);
+			}
+			// apply pedestals and mip calibration
+			else if(m_energyMode == 2)
+			{
+				float calibratedEnergy(0.f);
+
+				statusCode = m_ecalHelper.getCalibratedEnergy(layer, rawHit->m_asicId, rawHit->m_channelId,
+						rawHit->m_columnId, rawHit->m_adcCount, calibratedEnergy);
+
+				if(dqm4hep::STATUS_CODE_SUCCESS == statusCode)
+				{
+					pECalCaloHit->setEnergy(calibratedEnergy);
+				}
+				else
+				{
+					LOG4CXX_WARN( dqm4hep::dqmMainLogger , "Couldn't apply ecal energy calibration on hit : \n" <<
+							"  iCell = " << rawHit->m_iCell << "\n" <<
+							"  jCell = " << rawHit->m_jCell << "\n" <<
+							"  hw layer = " << rawHit->m_layer << ".\n"
+							"Setting energy to 0 !");
+
+					pECalCaloHit->setEnergy(0.f);
+				}
+			}
+
+			cellIDRawEncoder.setCellID( pECalRawCaloHit );
+			pECalRawCaloHit->setAmplitude(adcCount);
+			pECalRawCaloHit->setTimeStamp(time);
+
+			// add pointer reference to raw hit
+			pECalCaloHit->setRawHit(pECalRawCaloHit);
 
 			pOutputCollection->addElement(pECalCaloHit);
+			pOutputRawCollection->addElement(pECalRawCaloHit);
 		}
 
 		std::stringstream ss;
@@ -820,6 +931,50 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 
 		pOutputCollection->parameters().setValue(ss.str(), static_cast<int>(difSpill));
 	}
+
+	if(m_negativeAdcCountSuppression && !layerToAsicListMap.empty())
+	{
+		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder( pOutputCollection );
+
+		for(int e=0 ; e<pOutputCollection->getNumberOfElements() ; e++)
+		{
+			EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit *>(pOutputCollection->getElementAt(e));
+			EVENT::RawCalorimeterHit *pRawCaloHit = dynamic_cast<EVENT::RawCalorimeterHit *>(pOutputRawCollection->getElementAt(e));
+
+			unsigned int layer = cellIDDecoder(pCaloHit)[ m_ijkEncoding.at(2) ];
+			unsigned int asicId = cellIDDecoder(pCaloHit)[ m_difAsicChannelEncoding.at(1) ];
+
+			for(auto iter = layerToAsicListMap.begin(), endIter = layerToAsicListMap.end() ; endIter != iter ; ++iter)
+			{
+				bool found = false;
+
+				for(auto iter2 = iter->second.begin(), endIter2 = iter->second.end() ; endIter2 != iter2 ; ++iter2)
+				{
+					if(iter->first == layer && *iter2 == asicId)
+					{
+						LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Negative adc count suppres for asic : " << asicId );
+
+						delete pCaloHit;
+						delete pRawCaloHit;
+
+						pOutputCollection->removeElementAt(e);
+						pOutputRawCollection->removeElementAt(e);
+
+						e--;
+						found = true;
+					}
+				}
+
+				if(found)
+					break;
+			}
+		}
+	}
+
+	pOutputCollection->parameters().setValue("EnergyMode", static_cast<int>(m_energyMode));
+	pOutputCollection->parameters().setValue("DetectorId", static_cast<int>(m_detectorId));
+	pOutputCollection->parameters().setValue("AdcCountCut", static_cast<int>(m_adcCountCut));
+	pOutputCollection->parameters().setValue("NegativeAdcCountSuppression", static_cast<int>(m_negativeAdcCountSuppression));
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -837,15 +992,28 @@ void SiWECalShmProcessor::setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
 
 //-------------------------------------------------------------------------------------------------
 
+void SiWECalShmProcessor::setRawCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
+{
+	EVENT::LCIO bitinfo;
+	lcFlag.setBit( bitinfo.RCHBIT_ID1 ); // cell ID 1
+	lcFlag.setBit( bitinfo.RCHBIT_TIME ); // time
+}
+
+//-------------------------------------------------------------------------------------------------
+
 dqm4hep::StatusCode SiWECalShmProcessor::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
 {
 	m_detectorId = 1100;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"DetectorId", m_detectorId));
 
-	m_outputCollectionName = "SiWECal";
+	m_outputCollectionName = "SIWECAL_HIT";
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"OutputCollectionName", m_outputCollectionName));
+
+	m_outputRawCollectionName = "SiWECalHits";
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"OutputRawCollectionName", m_outputRawCollectionName));
 
 	m_positionShift.setValues(0.f, 0.f, 0.f);
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
@@ -864,6 +1032,28 @@ dqm4hep::StatusCode SiWECalShmProcessor::readSettings(const dqm4hep::TiXmlHandle
 			"DifAsicChannelEncoding", m_difAsicChannelEncoding, [&] (const dqm4hep::StringVector &vec) {
 		return vec.size() == 3;
 	}));
+
+	m_energyMode = 2;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"EnergyMode", m_energyMode, [] (unsigned int m) {return m<3;}));
+
+	m_adcCountCut = 0;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"AdcCountCut", m_adcCountCut));
+
+	m_negativeAdcCountSuppression = true;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"NegativeAdcCountSuppression", m_negativeAdcCountSuppression));
+
+	dqm4hep::TiXmlElement *pECalHelperXmlElement = xmlHandle.FirstChildElement("ecalHelper").Element();
+
+	if(!pECalHelperXmlElement)
+	{
+		LOG4CXX_ERROR(dqm4hep::dqmMainLogger, "Couldn't find configuration for ecal helper <ecalHelper>");
+		return dqm4hep::STATUS_CODE_NOT_FOUND;
+	}
+
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_ecalHelper.readSettings(dqm4hep::TiXmlHandle(pECalHelperXmlElement)));
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
