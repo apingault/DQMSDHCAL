@@ -16,7 +16,7 @@
 
 	<cycle type="TimerCycle" value="10" timeout="5" />
 
-	<module type="ECalAnalysis" name="ECalAnalysisModule">
+	<module type="ECalAnalysisModule" name="ECalAnalysis">
 		<Trivent>
 			<parameter name="CaloHitCollectionNames"> SIWECAL_HIT </parameter>
 			<parameter name="TimeWindow"> 2 </parameter>
