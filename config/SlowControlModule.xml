@@ -23,7 +23,7 @@
 			title="High voltage (V read);layer;V [V]" drawOption="ap"/>
 			
 		<monitorElement ID="VSetVReadDiff"
-			name="VSeVtReadDiff" path="/Global" type="user" ROOTClass="TGraph"
+			name="VSetVReadDiff" path="/Global" type="user" ROOTClass="TGraph"
 			title="High voltage (V set - V read);layer;V [V]" drawOption="ap"/>
 			
 		<monitorElement ID="ISet"
@@ -55,7 +55,6 @@
             <parameter name="MaxDangerousCurrent"> -10 </parameter>
         </qualitytest>
 			
-
 		<!-- LVInfo status expects 3 floats -->
 		<!-- Vset, Vread, IRead -->
 		<parameter name="LVInfo"> /DZUP/lyoilcrpi17/STATUS </parameter>
