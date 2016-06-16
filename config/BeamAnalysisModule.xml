@@ -20,7 +20,7 @@
 
         <eventHelper plugin="SDHCALEventHelper">
             <electronicsMapping plugin="SDHCALElectronicsMapping">
-                        <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+                       <parameter name="CellReferencePosition"> 518.8 597.2 1267.1 </parameter>
                         <parameter name="CellSize0"> 10.408 </parameter>
                         <parameter name="CellSize1"> 10.408 </parameter>
                         <parameter name="ReadFromDB"> true </parameter>
