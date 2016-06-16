@@ -161,7 +161,8 @@ private:
 	dqm4hep::DQMMonitorElementPtr			m_pNHit1PerLayer;
 	dqm4hep::DQMMonitorElementPtr			m_pNHit2PerLayer;
 	dqm4hep::DQMMonitorElementPtr			m_pNHitTotPerLayer;
-	dqm4hep::DQMMonitorElementPtr			m_pRateVsClusterProfile;
+  dqm4hep::DQMMonitorElementPtr     m_pRateVsClusterProfile;
+	dqm4hep::DQMMonitorElementPtr			m_pRateVsClusterProfileNoClassification;
 
 
 	struct LayerElements

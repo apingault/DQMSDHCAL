@@ -341,8 +341,11 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 	bool rejectEvent = this->shouldRejectEvent(pLCEvent);
 
 	if( rejectEvent )
-		return dqm4hep::STATUS_CODE_SUCCESS;
-
+	  {
+	    LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - rejecting noise " );
+	    return dqm4hep::STATUS_CODE_SUCCESS;
+	  }
+	
 	// content management
 	caloobject::CaloHitMap caloHitMap;
 	std::vector< caloobject::CaloHit *> hits;
@@ -356,8 +359,10 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(m_inputCollectionName);
 
 		if(NULL == pCalorimeterHitCollection)
-			return dqm4hep::STATUS_CODE_SUCCESS;
-
+		  {
+		    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - NULL caloHitCllection " );
+		    return dqm4hep::STATUS_CODE_SUCCESS;
+		  }
 		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(m_cellIDDecoderString);
 
 		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Creating wrapper hits");
@@ -368,16 +373,20 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 			EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit*>(pCalorimeterHitCollection->getElementAt(h));
 
 			if(NULL == pCaloHit)
-				continue;
-
+			  {
+			    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - rejecting nullCaoHit " ); 
+			    continue;
+			  }
 			int cellID[3];
 			cellID[0] = cellIDDecoder(pCaloHit)["I"];
 			cellID[1] = cellIDDecoder(pCaloHit)["J"];
 			cellID[2] = cellIDDecoder(pCaloHit)["K-1"] + m_nStartLayerShift;
 
 			if( cellID[2] >= m_nActiveLayers )
-				continue;
-
+			  {
+			    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - layer > max numbr of layers" );
+			    continue;
+			  }
 			CLHEP::Hep3Vector positionVector(
 					pCaloHit->getPosition()[0],
 					pCaloHit->getPosition()[1],
@@ -392,13 +401,15 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 			caloHitMap[ cellID[2] ].push_back(pWrapperHit);
 			hits.push_back(pWrapperHit);
+
+			std::cout << "Input hit : " << pWrapperHit->getPosition() << std::endl;
 		}
 
 		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Creating intra layer clusters");
 
 		for(caloobject::CaloHitMap::iterator iter = caloHitMap.begin(), endIter = caloHitMap.end() ;
 				iter != endIter ; ++iter)
-			m_clusteringAlgorithm.Run(iter->second, clusters);
+		  m_clusteringAlgorithm.Run(iter->second, clusters);
 
 		std::sort(clusters.begin(), clusters.end(), algorithm::ClusteringHelper::SortClusterByLayer);
 
@@ -406,29 +417,43 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		caloobject::CaloClusterList trackingClusters;
 
+		std::cout << "before isolation : clusters.size() = " << clusters.size() << std::endl;
 		for(std::vector<caloobject::CaloCluster*>::iterator iter = clusters.begin(), endIter = clusters.end() ;
 				endIter != iter ; ++iter)
+
 			if( ! m_clusteringHelper.IsIsolatedCluster(*iter, clusters) )
+			  {
+			    // LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Found non isolated hit " );
+			    std::cout << "Position: " << (*iter)->getPosition() << std::endl;
+			    std::cout << "Layer: " << (*iter)->getLayerID() << std::endl;
 				trackingClusters.push_back(*iter);
+			  }
+			else
+			  {
+			    std::cout << "Isol Position: " << (*iter)->getPosition() << std::endl;
+			    std::cout << "Isol Layer: " << (*iter)->getLayerID() << std::endl;
+			  }
+		
+		std::cout << "After isolation : trackingCluster.size() = " << trackingClusters.size() << std::endl;
 
 		caloobject::CaloTrack *pTrack = NULL;
 
 		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Run tracking algorithm");
 
-		m_trackingAlgorithm.Run(clusters, pTrack);
+		m_trackingAlgorithm.Run(trackingClusters, pTrack);
 
 		// stop processing if no reconstructed track
 		if( NULL == pTrack )
 		{
-			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - No track found !");
-			throw dqm4hep::StatusCodeException(dqm4hep::STATUS_CODE_SUCCESS);
+		  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - No track found !");
+		  throw dqm4hep::StatusCodeException(dqm4hep::STATUS_CODE_SUCCESS);
 		}
 
 		tracks.push_back(pTrack);
 
 		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Run interaction finder");
 
-		bool isInteraction = m_interactionFinderAlgorithm.Run(clusters, pTrack->getTrackParameters());
+		bool isInteraction = m_interactionFinderAlgorithm.Run(trackingClusters, pTrack->getTrackParameters());
 
 		// tracking on muons only
 		// stop processing if event is an interaction

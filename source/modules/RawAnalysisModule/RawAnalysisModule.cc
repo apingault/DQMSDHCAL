@@ -220,7 +220,8 @@ dqm4hep::StatusCode RawAnalysisModule::readSettings(const dqm4hep::TiXmlHandle x
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "AsicOccupancyAll", m_pAsicOccupancyAll));
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "AsicOccupancyChamber", m_pAsicOccupancyChamber));
   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "AsicOccupancyDIF", m_pAsicOccupancyDIF));
-  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "HitFrequencyMap", m_pHitFrequencyMap));
+  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "DifAsicHitMap", m_pHitMap));
+  RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle, "DifAsicHitFrequencyMap", m_pHitFrequencyMap));
 
   // ------ PerLayer ME ------
   DQMParameters parameters;
@@ -371,7 +372,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
       unsigned int hitThresh = pCaloHit->getEnergy();
       unsigned int hitTime = pCaloHit->getTime();
 
-      // TODO: There is regularly hits with timeStamp 4294967295=858.993s. Not physical && don't know why
+      // TODO: There is regularly hits with timeStamp 4294967295=858.993s~max value of uint32 = negative time
       if (hitTime > m_eventParameters.eventIntegratedTime + 1)
       {
         LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - hitTime > m_eventParameters.eventIntegratedTime!");
@@ -428,7 +429,8 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
       m_layerElementMap[cell.m_layer].m_difElementMap[electronics.m_difId].m_pAsicEventTime->get<TH1>()->Fill(hitTime);
       m_layerElementMap[cell.m_layer].m_difElementMap[electronics.m_difId].m_pAsicEventTimeZoom->get<TH1>()->Fill(hitTime);
 
-      m_pHitFrequencyMap->get<TH2>()->SetBinContent(electronics.m_difId + 1, electronics.m_asicId, m_pHitFrequencyMap->get<TH2>()->GetBinContent(electronics.m_difId + 1, electronics.m_asicId) + 1);
+      m_pHitMap->get<TH2>()->SetBinContent(electronics.m_difId + 1, electronics.m_asicId, m_pHitMap->get<TH2>()->GetBinContent(electronics.m_difId + 1, electronics.m_asicId) + 1);
+      m_pHitFrequencyMap->get<TH2>()->SetBinContent(electronics.m_difId + 1, electronics.m_asicId, m_pHitMap->get<TH2>()->GetBinContent(electronics.m_difId + 1, electronics.m_asicId) /m_eventParameters.totalIntegratedTime );
 
 
       const CLHEP::Hep3Vector positionVector(
@@ -443,8 +445,6 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
       cellID[2] = cell.m_layer;
 
       RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, fillAsicOccupancyMap(electronics, cell));
-      
-      // delete pCaloHit;
     }
 
     // Fill hit frequency
@@ -463,9 +463,9 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
 
       for (int iBin = 0; iBin < h_asicHit1->GetNbinsX(); ++iBin)
       {
-        h_asicFreq1->SetBinContent(iBin, h_asicHit1->GetBinContent(iBin) / (m_eventParameters.eventIntegratedTime));
-        h_asicFreq2->SetBinContent(iBin, h_asicHit2->GetBinContent(iBin) / (m_eventParameters.eventIntegratedTime));
-        h_asicFreq3->SetBinContent(iBin, h_asicHit3->GetBinContent(iBin) / (m_eventParameters.eventIntegratedTime));
+        h_asicFreq1->SetBinContent(iBin, h_asicHit1->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime));
+        h_asicFreq2->SetBinContent(iBin, h_asicHit2->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime));
+        h_asicFreq3->SetBinContent(iBin, h_asicHit3->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime));
       }
     }
 

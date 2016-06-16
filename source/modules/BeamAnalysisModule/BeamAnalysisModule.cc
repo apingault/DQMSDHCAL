@@ -162,17 +162,14 @@ dqm4hep::StatusCode BeamAnalysisModule::processEvent(dqm4hep::DQMEvent * const p
     if ( m_eventParameters.nTriggerInSpill == 1 )
     {  
       m_pSpillLength->get<TH1>()->Fill((m_eventParameters.lastSpillIntegratedTime) * m_DAQ_BC_Period );
-      LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - lastSpillIntegratedTime" << (m_eventParameters.lastSpillIntegratedTime) * m_DAQ_BC_Period  );
-      LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - m_totalIntegratedTime - lastSpillIntegratedTime" << (m_eventParameters.totalIntegratedTime - m_eventParameters.spillIntegratedTime) * m_DAQ_BC_Period);
+      LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - lastSpillIntegratedTime" << (m_eventParameters.lastSpillIntegratedTime) * m_DAQ_BC_Period  );
+      LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - m_totalIntegratedTime - lastSpillIntegratedTime" << (m_eventParameters.totalIntegratedTime - m_eventParameters.spillIntegratedTime) * m_DAQ_BC_Period);
       m_pTimeDiffSpill->get<TH1>()->Fill((m_eventParameters.timeSpill - m_eventParameters.timeLastSpill) * m_DAQ_BC_Period);
       m_pTriggerLastSpill->get<dqm4hep::TScalarString>()->Set(std::to_string(m_eventParameters.nTriggerLastSpill));
       m_pTriggerPerSpill->get<TH1>()->Fill(m_eventParameters.nTriggerLastSpill);
     }
     
     // Fill Trigger info
-    
-     // m_pTimeDiffTrigger->get<TH1>()->Fill(timeDif);
-      LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - eventIntegratedTime: " << m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period);
      m_pAcquisitionTime->get<TH1F>()->Fill((m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period));
  
     LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - eventIntegratedTime (s): " << m_eventParameters.eventIntegratedTime * m_DAQ_BC_Period << "s\t spillIntegratedTime (s): " << m_eventParameters.spillIntegratedTime * m_DAQ_BC_Period << "s\t totalIntegratedTime (s) : " << m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period << "s");

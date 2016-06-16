@@ -122,6 +122,10 @@ dqm4hep::StatusCode HitAnalysisModule::userReadSettings(const dqm4hep::TiXmlHand
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 	                 "RateVsClusterProfile", m_pRateVsClusterProfile));
 
+	m_pRateVsClusterProfileNoClassification = NULL;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+	                 "RateVsClusterProfile", m_pRateVsClusterProfileNoClassification));
+
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 	                 "NumberOfHits0", m_pNHit0));
 
@@ -419,8 +423,11 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 
 		// Fill Number Of Clusters vs Rate
-		if (m_eventParameters.spillIntegratedTime > 0 && m_pEventClassifier->isPhysicsEvent() && m_pEventClassifier->getEventType() != EventClassifier::COSMIC_MUON_EVENT)
-			m_pRateVsClusterProfile->get<TProfile>()->Fill(m_nParticleWithinSpill / m_eventParameters.spillIntegratedTime, clusters.size());
+		// if (m_eventParameters.spillIntegratedTime > 0 && m_pEventClassifier->isPhysicsEvent() && m_pEventClassifier->getEventType() != EventClassifier::COSMIC_MUON_EVENT)
+		if (m_eventParameters.spillIntegratedTime > 0 && m_pEventClassifier->isPhysicsEvent())
+			m_pRateVsClusterProfile->get<TProfile>()->Fill(m_nParticleWithinSpill / m_eventParameters.lastSpillIntegratedTime * m_pEventHelper->getDAQ_BC_Period(), clusters.size());
+		if (m_eventParameters.spillIntegratedTime > 0)
+			m_pRateVsClusterProfileNoClassification->get<TProfile>()->Fill(m_nParticleWithinSpill / m_eventParameters.lastSpillIntegratedTime * m_pEventHelper->getDAQ_BC_Period(), clusters.size());
 
 		int nHit0 = 0;
 		int nHit1 = 0;
@@ -572,99 +579,69 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 dqm4hep::StatusCode HitAnalysisModule::fillRates()
 {
 	std::stringstream instantRate;
-
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n1");
+	dqm4hep::dqm_uint spillIntegratedTime = m_eventParameters.lastSpillIntegratedTime * m_pEventHelper->getDAQ_BC_Period();
 	instantRate << "*****  Instant Rate  *****\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n2");
 	instantRate << "*****  Physics  *****\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n3");
-	instantRate << "Current spill Length : " << m_eventParameters.lastSpillIntegratedTime << "s\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n4");
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n4" << m_nParticleWithinSpill );
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n4" << m_eventParameters.lastSpillIntegratedTime );
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n4" << m_eventParameters.totalIntegratedTime );
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n4" << m_nSpill );
-	instantRate << " - Particles    	 : " 		<< m_nParticleWithinSpill 			<< "/spill\t" << m_nParticleWithinSpill / m_eventParameters.lastSpillIntegratedTime 			<< "/s" << "\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n5");
-	instantRate << " - Beam muons      : " 		<< m_nBeamMuonWithinSpill 			<< "/spill\t" << m_nBeamMuonWithinSpill / m_eventParameters.lastSpillIntegratedTime 			<< "/s" << "\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n6");
-	instantRate << " - Charged hadrons : " 		<< m_nChargedHadronsWithinSpill << "/spill\t" << m_nChargedHadronsWithinSpill / m_eventParameters.lastSpillIntegratedTime << "/s" << "\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n7");
-	instantRate << " - Neutral hadrons : " 		<< m_nNeutralHadronsWithinSpill << "/spill\t" << m_nNeutralHadronsWithinSpill / m_eventParameters.lastSpillIntegratedTime << "/s" << "\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n8");
-	instantRate << " - Photons         : " 		<< m_nPhotonsWithinSpill 				<< "/spill\t" << m_nPhotonsWithinSpill / m_eventParameters.lastSpillIntegratedTime 				<< "/s" << "\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n9");
-	instantRate << " - Electrons       : " 		<< m_nElectronsWithinSpill			<< "/spill\t" << m_nElectronsWithinSpill / m_eventParameters.lastSpillIntegratedTime 			<< "/s" << "\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n10");
+	instantRate << "Current spill Length : " << spillIntegratedTime << "s\n";
+	instantRate << " - Particles    	 : " 		<< m_nParticleWithinSpill 			<< "/spill\t" << m_nParticleWithinSpill / spillIntegratedTime 			<< "/s" << "\n";
+	instantRate << " - Beam muons      : " 		<< m_nBeamMuonWithinSpill 			<< "/spill\t" << m_nBeamMuonWithinSpill / spillIntegratedTime 			<< "/s" << "\n";
+	instantRate << " - Charged hadrons : " 		<< m_nChargedHadronsWithinSpill << "/spill\t" << m_nChargedHadronsWithinSpill / spillIntegratedTime << "/s" << "\n";
+	instantRate << " - Neutral hadrons : " 		<< m_nNeutralHadronsWithinSpill << "/spill\t" << m_nNeutralHadronsWithinSpill / spillIntegratedTime << "/s" << "\n";
+	instantRate << " - Photons         : " 		<< m_nPhotonsWithinSpill 				<< "/spill\t" << m_nPhotonsWithinSpill / spillIntegratedTime 				<< "/s" << "\n";
+	instantRate << " - Electrons       : " 		<< m_nElectronsWithinSpill			<< "/spill\t" << m_nElectronsWithinSpill / spillIntegratedTime 			<< "/s" << "\n";
 	instantRate << "*****  Non Physics  *****\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n11");
-	instantRate << " - Undefined       : " 		<< m_nUndefinedWithinSpill 			<< "/spill\t" << m_nUndefinedWithinSpill / m_eventParameters.lastSpillIntegratedTime 			<< "/s" << "\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n12");
-	instantRate << " - Noise           : " 		<< m_nNoiseWithinSpill					<< "/spill\t" << m_nNoiseWithinSpill / m_eventParameters.lastSpillIntegratedTime 		 			<< "/s" << "\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n13");
-	instantRate << " - Cosmic muons    : " 		<< m_nCosmicMuonsWithinSpill 		<< "/spill\t" << m_nCosmicMuonsWithinSpill / m_eventParameters.lastSpillIntegratedTime 		<< "/s" << "\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n14");
+	instantRate << " - Undefined       : " 		<< m_nUndefinedWithinSpill 			<< "/spill\t" << m_nUndefinedWithinSpill / spillIntegratedTime 			<< "/s" << "\n";
+	instantRate << " - Noise           : " 		<< m_nNoiseWithinSpill					<< "/spill\t" << m_nNoiseWithinSpill / spillIntegratedTime 		 			<< "/s" << "\n";
+	instantRate << " - Cosmic muons    : " 		<< m_nCosmicMuonsWithinSpill 		<< "/spill\t" << m_nCosmicMuonsWithinSpill / spillIntegratedTime 		<< "/s" << "\n";
 	instantRate << "*********************************";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n15");
 
 	m_pInstantRate->get< dqm4hep::TScalarString >()->Set( instantRate.str() );
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n16");
 
 	std::stringstream meanRunRate;
 
+	dqm4hep::dqm_uint totalIntegratedTime = m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period();
 	meanRunRate << "*****  Mean Run Rate  *****\n";
 	meanRunRate << "*****  Physics  *****\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n16");
-	meanRunRate << "Current run length : " << m_eventParameters.totalIntegratedTime << "s\n";
+	meanRunRate << "Current run length : " << totalIntegratedTime << "s\n";
 	meanRunRate << " - Particles    	 : " << m_nParticleWithinRun << "/Run\t"
 	            << m_nParticleWithinRun / m_nSpill << "/Spill\t"
-	            << m_nParticleWithinRun / m_eventParameters.totalIntegratedTime << "/s\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n17");
+	            << m_nParticleWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Beam muons      : " << m_nBeamMuonWithinRun 	<< "/Run\t"
 	            << m_nBeamMuonWithinRun / m_nSpill << "/Spill\t"
-	            << m_nBeamMuonWithinRun / m_eventParameters.totalIntegratedTime << "/s\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n18");
+	            << m_nBeamMuonWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Charged hadrons : " << m_nChargedHadronsWithinRun << "/Run\t"
 	            << m_nChargedHadronsWithinRun / m_nSpill << "/Spill\t"
-	            << m_nChargedHadronsWithinRun / m_eventParameters.totalIntegratedTime << "/s\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n19");
+	            << m_nChargedHadronsWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Neutral hadrons : " << m_nNeutralHadronsWithinRun << "/Run\t"
 	            << m_nNeutralHadronsWithinRun / m_nSpill << "/Spill\t"
-	            << m_nNeutralHadronsWithinRun / m_eventParameters.totalIntegratedTime << "/s\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n20");
+	            << m_nNeutralHadronsWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Photons         : " << m_nPhotonsWithinRun << "/Run\t"
 	            << m_nPhotonsWithinRun / m_nSpill << "/Spill\t"
-	            << m_nPhotonsWithinRun / m_eventParameters.totalIntegratedTime << "/s\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n21");
+	            << m_nPhotonsWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Electrons       : " << m_nElectronsWithinRun	<< "/Run\t"
 	            << m_nElectronsWithinRun / m_nSpill << "/Spill\t"
-	            << m_nElectronsWithinRun / m_eventParameters.totalIntegratedTime << "/s\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n22");
+	            << m_nElectronsWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << "*****  Non Physics  *****\n";
 	meanRunRate << " - Undefined       : " << m_nUndefinedWithinRun << "/Run\t"
 	            << m_nUndefinedWithinRun / m_nSpill << "/Spill\t"
-	            << m_nUndefinedWithinRun / m_eventParameters.totalIntegratedTime << "/s\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n23");
+	            << m_nUndefinedWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Noise           : " << m_nNoiseWithinRun	<< "/Run\t"
 	            << m_nNoiseWithinRun / m_nSpill << "/Spill\t"
-	            << m_nNoiseWithinRun / m_eventParameters.totalIntegratedTime << "/s\n";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n24");
+	            << m_nNoiseWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Cosmic muons    : " << m_nCosmicMuonsWithinRun << "/Run\t"
 	            << m_nCosmicMuonsWithinRun / m_nSpill << "/Spill\t"
-	            << m_nCosmicMuonsWithinRun / m_eventParameters.totalIntegratedTime << "/s\n";
+	            << m_nCosmicMuonsWithinRun / totalIntegratedTime << "/s\n";
 	meanRunRate << "*********************************";
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n25");
 
 	m_pMeanRunRate->get< dqm4hep::TScalarString >()->Set( meanRunRate.str() );
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "\n26");
 
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }

@@ -82,8 +82,13 @@
             resetPolicy="EndOfRun"/>
 
         <!-- Raw Hit Study -->
-        <monitorElement ID="HitFrequencyMap"
-            name="HitFrequencyMap" path="." type="TH2F" title="HitMap DIF vs Asic"
+        <monitorElement ID="DifAsicHitMap"
+            name="DifAsicHitMap" path="." type="TH2F" title="HitMap DIF vs Asic"
+            nBinsX="255" minX="0" maxX="255" nBinsY="48" minY="0" maxY="48"
+            drawOption="colz" resetPolicy="EndOfRun"/>
+
+        <monitorElement ID="DifAsicHitFrequencyMap"
+            name="DifAsicHitFrequencyMap" path="." type="TH2F" title="Frequency HitMap DIF vs Asic"
             nBinsX="255" minX="0" maxX="255" nBinsY="48" minY="0" maxY="48"
             drawOption="colz" resetPolicy="EndOfRun"/>
 
