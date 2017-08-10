@@ -42,7 +42,11 @@ FIND_PACKAGE( Trivent         REQUIRED )
 # ----- Find CaloSoftWare package -----
 FIND_PACKAGE( CaloSoftWare    REQUIRED )
 
-FOREACH( pkg DQMCore DQM4ILC Trivent CaloSoftWare )
+# Marlin>v1.10 needs CLHEP
+# ----- Find CLHEP package -----
+FIND_PACKAGE( CLHEP  				  REQUIRED )
+
+FOREACH( pkg DQMCore DQM4ILC Trivent CaloSoftWare CLHEP)
     INCLUDE_DIRECTORIES( ${${pkg}_INCLUDE_DIRS} )
     LINK_LIBRARIES( ${${pkg}_LIBRARIES} )
     ADD_DEFINITIONS ( ${${pkg}_DEFINITIONS} )
