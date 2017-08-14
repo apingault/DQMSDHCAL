@@ -39,7 +39,7 @@
                <parameter name="CellReferencePosition"> 0 0 0 </parameter>
                <parameter name="CellSize0"> 10.408 </parameter>
                <parameter name="CellSize1"> 10.408 </parameter>
-               <parameter name="ReadFromDB"> true </parameter>
+               <parameter name="ReadFromDB"> false </parameter>
                <parameter name="Host">  </parameter>
                <parameter name="User">  </parameter>
                <parameter name="Password">  </parameter>
@@ -90,17 +90,17 @@
         <!-- Raw Hit Study / Per Layer-->
         <monitorElement ID="ChamberHitsMap1"
             name="ChamberHitsMap1_layer${layerId}" path="/Noise/Layer${layerId}" type="TH2I" title="HitMap threshold 1 in Layer ${layerId} "
-            nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
+            nBinsX="96" minX="1" maxX="97" nBinsY="96" minY="1" maxY="97"
             drawOption="colz" resetPolicy="EndOfRun"/>
 
         <monitorElement ID="ChamberHitsMap2"
             name="ChamberHitsMap2_layer${layerId}" path="/Noise/Layer${layerId}" type="TH2I" title="HitMap threshold 2 in Layer ${layerId}"
-            nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
+            nBinsX="96" minX="1" maxX="97" nBinsY="96" minY="1" maxY="97"
             drawOption="colz" resetPolicy="EndOfRun"/>
 
         <monitorElement ID="ChamberHitsMap3"
             name="ChamberHitsMap3_layer${layerId}" path="/Noise/Layer${layerId}" type="TH2I" title="HitMap threshold 3 in Layer ${layerId}"
-            nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
+            nBinsX="96" minX="1" maxX="97" nBinsY="96" minY="1" maxY="97"
             drawOption="colz" resetPolicy="EndOfRun"/>
 
         <!-- Raw Hit Study / Per Layer & Per Dif-->
