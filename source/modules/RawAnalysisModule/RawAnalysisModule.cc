@@ -529,10 +529,16 @@ dqm4hep::StatusCode RawAnalysisModule::doAsicOccupancyStudy()
     TH1* hAsicOccupancyDIF = m_pAsicOccupancyDIF->get<TH1>();
     TH1* hAsicOccupancyChamber = m_pAsicOccupancyChamber->get<TH1>();
 
+    if (m_eventParameters.eventIntegratedTime == 0)
+      {
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " eventIntegratedTime is null, not filling occupancy graphs");
+        return STATUS_CODE_SUCCESS;
+      }
+    
     float DAQ_BC_Period = m_pEventHelper->getDAQ_BC_Period();
-    m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancyNumber->get<TH1>()->SetBinContent(asicId, asicIter->second);
+    m_layerElementMap.at(layerId).m_difElementMap.at(difId).m_pAsicOccupancyNumber->get<TH1>()->SetBinContent(asicId, asicIter->second);
 
-    m_layerElementMap[layerId].m_difElementMap[difId].m_pAsicOccupancy->get<TH1>()->SetBinContent(asicId, asicIter->second / (m_eventParameters.eventIntegratedTime * DAQ_BC_Period));
+    m_layerElementMap.at(layerId).m_difElementMap.at(difId).m_pAsicOccupancy->get<TH1>()->SetBinContent(asicId, asicIter->second / (m_eventParameters.eventIntegratedTime * DAQ_BC_Period));
 
     m_pAsicOccupancyAll->get<TH1>()->SetBinContent(difId * m_nAsicPerDif + asicId, asicIter->second / (m_eventParameters.eventIntegratedTime * DAQ_BC_Period));
 
