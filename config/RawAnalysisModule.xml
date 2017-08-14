@@ -22,7 +22,7 @@
         <!-- The following electronicsMapping handle is here only for geometry dependent Histogram Booking -->
         <!-- Ensure the GeometryFileName is the same as in the converter settings -->
         <electronicsMapping plugin="SDHCALElectronicsMapping">
-           <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+           <parameter name="CellReferencePosition"> 518.8 597.2 1267.1 </parameter>
            <parameter name="CellSize0"> 10.408 </parameter>
            <parameter name="CellSize1"> 10.408 </parameter>
            <parameter name="ReadFromDB"> true </parameter>
@@ -36,7 +36,7 @@
 
         <eventHelper plugin="SDHCALEventHelper">
             <electronicsMapping plugin="SDHCALElectronicsMapping">
-               <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+               <parameter name="CellReferencePosition"> 518.8 597.2 1267.1 </parameter>
                <parameter name="CellSize0"> 10.408 </parameter>
                <parameter name="CellSize1"> 10.408 </parameter>
                <parameter name="ReadFromDB"> false </parameter>
@@ -82,8 +82,13 @@
             resetPolicy="EndOfRun"/>
 
         <!-- Raw Hit Study -->
-        <monitorElement ID="HitFrequencyMap"
-            name="HitFrequencyMap" path="." type="TH2F" title="HitMap DIF vs Asic"
+        <monitorElement ID="DifAsicHitMap"
+            name="DifAsicHitMap" path="." type="TH2F" title="HitMap DIF vs Asic"
+            nBinsX="255" minX="0" maxX="255" nBinsY="48" minY="0" maxY="48"
+            drawOption="colz" resetPolicy="EndOfRun"/>
+
+        <monitorElement ID="DifAsicHitFrequencyMap"
+            name="DifAsicHitFrequencyMap" path="." type="TH2F" title="Frequency HitMap DIF vs Asic"
             nBinsX="255" minX="0" maxX="255" nBinsY="48" minY="0" maxY="48"
             drawOption="colz" resetPolicy="EndOfRun"/>
 

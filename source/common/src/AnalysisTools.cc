@@ -206,7 +206,7 @@ dqm4hep::StatusCode EventHelper::findTrigger(EVENT::LCCollection * pLCCollection
 	if (m_evtParameters.nTriggerProcessed != 0)
 	{
 		m_evtParameters.totalIntegratedTime += timeDif;
-		if (m_evtParameters.nTriggerInSpill != 0)
+		if (m_evtParameters.nTriggerInSpill != 0) // do not add time in-between spill to spillIntegratedTime 
 			m_evtParameters.spillIntegratedTime += timeDif;
 	}
 

@@ -124,6 +124,7 @@ private:
   dqm4hep::DQMMonitorElementPtr               m_pAsicOccupancyChamber;
   dqm4hep::DQMMonitorElementPtr               m_pAsicOccupancyDIF;
   dqm4hep::DQMMonitorElementPtr               m_pHitFrequencyMap;
+  dqm4hep::DQMMonitorElementPtr               m_pHitMap;
 
   struct DifElements
   {

@@ -8,51 +8,53 @@
         
 		<monitorElement ID="GlobalTemperature"
 			name="GlobalTemperature" path="/Global" type="user" ROOTClass="dqm4hep::TDynamicGraph"
-			title="Global temperature (Celsius)" drawOption="ap"/>
+			title="Global temperature (Celsius);t [s];T [°C]" drawOption="ap"/>
 			
 		<monitorElement ID="GlobalPressure"
 			name="GlobalPressure" path="/Global" type="user" ROOTClass="dqm4hep::TDynamicGraph"
-			title="Global pressure (hPa)" drawOption="ap"/>
+			title="Global pressure (hPa);t [s];P [hPa]" drawOption="ap"/>
 			
+		<monitorElement ID="VSet"
+			name="VSet" path="/Global" type="user" ROOTClass="TGraph"
+			title="High voltage (V set);layer;V [V]" drawOption="ap"/>
 			
-		
-		<monitorElement ID="HighVoltageVSet"
-			name="HighVoltageVSet" path="/Global" type="user" ROOTClass="TGraph"
-			title="High voltage (V set)" drawOption="ap"/>
+		<monitorElement ID="VRead"
+			name="VRead" path="/Global" type="user" ROOTClass="TGraph"
+			title="High voltage (V read);layer;V [V]" drawOption="ap"/>
 			
-		<monitorElement ID="HighVoltageVRead"
-			name="HighVoltageVRead" path="/Global" type="user" ROOTClass="TGraph"
-			title="High voltage (V read)" drawOption="ap"/>
+		<monitorElement ID="VSetVReadDiff"
+			name="VSetVReadDiff" path="/Global" type="user" ROOTClass="TGraph"
+			title="High voltage (V set - V read);layer;V [V]" drawOption="ap"/>
 			
-		<monitorElement ID="HighVoltageVSetReadDiff"
-			name="HighVoltageVSetReadDiff" path="/Global" type="user" ROOTClass="TGraph"
-			title="High voltage (V set - V read)" drawOption="ap"/>
+		<monitorElement ID="ISet"
+			name="ISet" path="/Global" type="user" ROOTClass="TGraph"
+			title="Current (I set);layer;I [µA]" drawOption="ap"/>
 			
+		<monitorElement ID="IRead"
+			name="IRead" path="/Global" type="user" ROOTClass="TGraph"
+			title="Current (I read);layer;I [µA]" drawOption="ap"/>
 			
-		<monitorElement ID="HighVoltageISet"
-			name="HighVoltageISet" path="/Global" type="user" ROOTClass="TGraph"
-			title="High voltage (I set)" drawOption="ap"/>
-			
-		<monitorElement ID="HighVoltageIRead"
-			name="HighVoltageIRead" path="/Global" type="user" ROOTClass="TGraph"
-			title="High voltage (I read)" drawOption="ap"/>
-			
-		<monitorElement ID="HighVoltageISetReadDiff"
-			name="HighVoltageISetReadDiff" path="/Global" type="user" ROOTClass="TGraph"
-			title="High voltage (I set - I read)" drawOption="ap"/>
-			
-			
+		<monitorElement ID="ISetIReadDiff"
+			name="ISetIReadDiff" path="/Global" type="user" ROOTClass="TGraph"
+			title="Current (I set - I read);layer;I [µA]" drawOption="ap"/>
 			
 		<monitorElement ID="LowVoltage"
 			name="LowVoltage" path="/Global" type="string" title="Low voltage info"
-			nBins="50" min="0" max="49" value="LV = 0 V (Vset) / 0 V (Vread) / 0 A (Iread)"/>
+			nBins="50" min="0" max="49" value="Not available"/>
 			
-			
-		<monitorElement ID="HighVoltagePerLayer"
-			name="HighVoltageLayer_" path="/ByLayer/HV" type="user" ROOTClass="dqm4hep::TDynamicGraph"
+		<monitorElement ID="VReadPerLayer"
+			name="VReadLayer_" path="/ByLayer/HV" type="user" ROOTClass="dqm4hep::TDynamicGraph"
 			title="High voltage (V set)" drawOption="ap"/>
 			
-
+        <monitorElement ID="IReadPerLayer"
+                name="IReadLayer_" path="/ByLayer/Current" type="user" ROOTClass="dqm4hep::TDynamicGraph"
+                title="Current (I read)" drawOption="ap"/>
+                
+        <qualitytest type="CurrentQualityTest" name="CurrentCheckQuality">
+            <parameter name="MaxAllowedCurrent"> -5 </parameter>
+            <parameter name="MaxDangerousCurrent"> -10 </parameter>
+        </qualitytest>
+			
 		<!-- LVInfo status expects 3 floats -->
 		<!-- Vset, Vread, IRead -->
 		<parameter name="LVInfo"> /DZUP/lyoilcrpi17/STATUS </parameter>

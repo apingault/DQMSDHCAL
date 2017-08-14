@@ -90,6 +90,7 @@ private:
 	float                       m_cellSize0;
 	float                       m_cellSize1;
 	float                       m_layerThickness;
+	bool                        m_rotateAxes;
 
 	bool                        m_isInitialized;
 	std::string                 m_moduleLogStr;

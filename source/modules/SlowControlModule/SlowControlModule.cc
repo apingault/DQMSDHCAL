@@ -45,6 +45,97 @@ namespace dqm_sdhcal
 
 DQM_PLUGIN_DECL( SlowControlModule , "SlowControlModule" )
 
+//-------------------------------------------------------------------------------------------------
+
+CurrentQualityTest::CurrentQualityTest(const std::string &name) :
+	DQMQualityTest(name)
+{
+	/* nop */
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode CurrentQualityTest::readSettings(const dqm4hep::TiXmlHandle xmlHandle)
+{
+	m_maxAllowedCurrent = -6;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"MaxAllowedCurrent", m_maxAllowedCurrent));
+
+	m_maxDangerousCurrent = -10;
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"MaxDangerousCurrent", m_maxDangerousCurrent));
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode CurrentQualityTest::init()
+{
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::StatusCode CurrentQualityTest::run(dqm4hep::DQMMonitorElement *pMonitorElement)
+{
+	const float currentCategory(static_cast<float>(m_maxAllowedCurrent) / 2.f);
+
+	TGraph *pCurrentGraph = pMonitorElement->get<TGraph>();
+
+	if(pCurrentGraph->GetN() == 0)
+	{
+		m_isSuccessful = false;
+		m_message = "No points for current quality check !";
+		m_quality = dqm4hep::NO_QUALITY;
+
+		return dqm4hep::STATUS_CODE_SUCCESS;
+	}
+
+	float current = pCurrentGraph->GetY()[pCurrentGraph->GetN()-1];
+
+	if(current > currentCategory)
+	{
+		m_message = "Very good current (${limit} < I µA)";
+		dqm4hep::DQM4HEP::replace(m_message, "limit", currentCategory);
+		m_quality = dqm4hep::VERY_GOOD_QUALITY;
+	}
+	else if(current > 2.f*currentCategory)
+	{
+		m_message = "Rather good current (${lLimit} < I < ${uLimit} µA)";
+		dqm4hep::DQM4HEP::replace(m_message, "lLimit", 2.f*currentCategory);
+		dqm4hep::DQM4HEP::replace(m_message, "uLimit", currentCategory);
+		m_quality = dqm4hep::GOOD_QUALITY;
+	}
+	else if(current > m_maxDangerousCurrent)
+	{
+		m_message = "Bad current !! Check it now !!! (${lLimit} < I < ${uLimit} µA)";
+		dqm4hep::DQM4HEP::replace(m_message, "lLimit", m_maxDangerousCurrent);
+		dqm4hep::DQM4HEP::replace(m_message, "uLimit", m_maxAllowedCurrent);
+		m_quality = dqm4hep::BAD_QUALITY;
+	}
+	else
+	{
+		m_message = "SIR ! SIR ! ON EN A GROS !! (I < ${uLimit} µA)";
+		dqm4hep::DQM4HEP::replace(m_message, "uLimit", m_maxDangerousCurrent);
+		m_quality = dqm4hep::VERY_BAD_QUALITY;
+	}
+
+	m_isSuccessful = true;
+
+	return dqm4hep::STATUS_CODE_SUCCESS;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+bool CurrentQualityTest::canRun(dqm4hep::DQMMonitorElement *pMonitorElement) const
+{
+	return (pMonitorElement->get<TGraph>() != 0);
+}
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+
 SlowControlModule::SlowControlModule() :
 		dqm4hep::DQMStandaloneModule()
 {
@@ -62,6 +153,9 @@ SlowControlModule::~SlowControlModule()
 
 dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle xmlHandle )
 {
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::registerQualityTestFactory(this,
+			"CurrentQualityTest", new CurrentQualityTest::Factory()));
+
 	m_startTime = time(0);
 
 	// settings
@@ -93,27 +187,27 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 
 	m_pHighVoltageVSetElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"HighVoltageVSet", m_pHighVoltageVSetElement));
+			"VSet", m_pHighVoltageVSetElement));
 
 	m_pHighVoltageVReadElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"HighVoltageVRead", m_pHighVoltageVReadElement));
+			"VRead", m_pHighVoltageVReadElement));
 
 	m_pHighVoltageVSetReadDiffElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"HighVoltageVSetReadDiff", m_pHighVoltageVSetReadDiffElement));
+			"VSetVReadDiff", m_pHighVoltageVSetReadDiffElement));
 
 	m_pHighVoltageISetElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"HighVoltageISet", m_pHighVoltageISetElement));
+			"ISet", m_pHighVoltageISetElement));
 
 	m_pHighVoltageIReadElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"HighVoltageIRead", m_pHighVoltageIReadElement));
+			"IRead", m_pHighVoltageIReadElement));
 
 	m_pHighVoltageISetReadDiffElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-			"HighVoltageISetReadDiff", m_pHighVoltageISetReadDiffElement));
+			"ISetIReadDiff", m_pHighVoltageISetReadDiffElement));
 
 	m_pLowVoltageElement = NULL;
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
@@ -176,12 +270,27 @@ dqm4hep::StatusCode SlowControlModule::readSettings( const dqm4hep::TiXmlHandle 
 
 			dqm4hep::DQMMonitorElementPtr monitorElement;
 			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-					"HighVoltagePerLayer", chamberID, monitorElement));
+					"VReadPerLayer", chamberID, monitorElement));
 
 			this->configureGraph( monitorElement->get<TGraph>() );
 			monitorElement->get<dqm4hep::TDynamicGraph>()->SetRangeLength(m_globalDynamicGraphRange);
 
 			m_chamberHVElementMap[ chamberID ] = monitorElement;
+
+            monitorElement = 0;
+            RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+                            "IReadPerLayer", chamberID, monitorElement));
+
+            this->configureGraph( monitorElement->get<TGraph>() );
+            monitorElement->get<dqm4hep::TDynamicGraph>()->SetRangeLength(m_globalDynamicGraphRange);
+
+            m_chamberCurrentElementMap[ chamberID ] = monitorElement;
+
+            RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::createQualityTest(this, xmlHandle,
+        			"CurrentCheckQuality"));
+
+        	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::addQualityTest(this,
+        			monitorElement, "CurrentCheckQuality"));
 		}
 	}
 
@@ -311,6 +420,14 @@ dqm4hep::StatusCode SlowControlModule::process()
 				hvChIter->second->setTitle( "High voltage (VSet). Chamber id " + dqm4hep::DQM4HEP::typeToString(iter->first) + ". [" + currentTimeStr + "]" );
 			}
 
+            DQMMonitorElementIDMap::iterator iChIter = m_chamberCurrentElementMap.find( iter->first );
+
+            if( iChIter != m_chamberCurrentElementMap.end() )
+            {
+                    iChIter->second->get<dqm4hep::TDynamicGraph>()->AddPoint( currentTime - m_startTime , iter->second.m_iRead );
+                    iChIter->second->setTitle( "Current (IRead). Chamber id " + dqm4hep::DQM4HEP::typeToString(iter->first) + ". [" + currentTimeStr + "]" );
+            }
+
 			pointID++;
 		}
 	}
@@ -322,6 +439,9 @@ dqm4hep::StatusCode SlowControlModule::process()
 
 dqm4hep::StatusCode SlowControlModule::endOfCycle()
 {
+	// run all quality tests on all monitor elements
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMModuleApi::runQualityTests(this));
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 

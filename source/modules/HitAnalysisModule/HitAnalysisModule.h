@@ -123,11 +123,6 @@ private:
 
   EventHelper															*m_pEventHelper;
   EventHelper::EventParameters             m_eventParameters={};
-  // double 																	 m_eventIntegratedTime;
-  // double 																	 m_timeLastTrigger;
-  // double 																	 m_timeLastSpill;
-  // double 																	 m_spillIntegratedTime;
-  // double 																	 m_totalIntegratedTime;
 	int 																		 m_nTrigger;
 	int 																		 m_nSpill;
 
@@ -166,7 +161,8 @@ private:
 	dqm4hep::DQMMonitorElementPtr			m_pNHit1PerLayer;
 	dqm4hep::DQMMonitorElementPtr			m_pNHit2PerLayer;
 	dqm4hep::DQMMonitorElementPtr			m_pNHitTotPerLayer;
-	dqm4hep::DQMMonitorElementPtr			m_pRateVsClusterProfile;
+  dqm4hep::DQMMonitorElementPtr     m_pRateVsClusterProfile;
+	dqm4hep::DQMMonitorElementPtr			m_pRateVsClusterProfileNoClassification;
 
 
 	struct LayerElements

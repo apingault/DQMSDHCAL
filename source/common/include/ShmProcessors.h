@@ -35,11 +35,15 @@
 #include "dqm4hep/DQMElectronicsMapping.h"
 #include "dqm4hep/evb/DQMShmProcessor.h"
 
+// -- dqmsdhcal headers
+#include "ECalHelper.h"
+
 // -- levbdim headers
 #include "buffer.hh"
 
 namespace IMPL { class LCFlagImpl; class CalorimeterHitImpl; }
 namespace UTIL { template <typename T> class CellIDEncoder; }
+namespace IO { class LCWriter; }
 
 namespace dqm_sdhcal
 {
@@ -172,7 +176,7 @@ private:
 	dqm4hep::StringVector                  m_difAsicChannelEncoding;
 	UIntSet                                m_difMaskList;
 	dqm4hep::DQMElectronicsMapping        *m_pElectronicsMapping;
-	std::string                     		   m_moduleLogStr;
+	std::string                     	   m_moduleLogStr;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -222,7 +226,7 @@ private:
 	unsigned int                           m_amplitudeBitRotation;
 	int                                    m_cherenkovTimeShift;
 	std::string                            m_outputCollectionName;
-	std::string                     		   m_moduleLogStr;
+	std::string                     	   m_moduleLogStr;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -248,6 +252,7 @@ struct SiWECalRawHit
 	uint8_t        m_iCell;
 	uint8_t        m_jCell;
 	uint8_t        m_layer;
+	uint8_t        m_columnId; // TODO See with Frederic to add this field in raw data
 	float          m_x;
 	float          m_y;
 	float          m_z;
@@ -294,14 +299,71 @@ public:
 	 */
 	static void setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag);
 
+	/** Fill the lc flag for a ecal raw calorimeter hit collection
+	 */
+	static void setRawCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag);
+
 private:
+	typedef std::map<unsigned int, std::set<unsigned int> > LayerToAsicListMap;
+
+	std::string                  		   m_moduleLogStr;
+
 	unsigned int                           m_detectorId;
 	std::string                            m_outputCollectionName;
+	std::string                            m_outputRawCollectionName;
 	std::string                            m_cellIDEncoderString;
 	dqm4hep::StringVector                  m_ijkEncoding;
 	dqm4hep::StringVector                  m_difAsicChannelEncoding;
 	dqm4hep::DQMCartesianVector            m_positionShift;
-	std::string                  			     m_moduleLogStr;
+	unsigned int                           m_adcCountCut;
+	unsigned int                           m_energyMode;
+	bool                                   m_negativeAdcCountSuppression;
+
+	ECalHelper                             m_ecalHelper;
+};
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+
+class FileWriterShmProcessor : public dqm4hep::DQMShmProcessor
+{
+public:
+	/** Constructor
+	 */
+	FileWriterShmProcessor();
+
+	/** Destructor
+	 */
+	~FileWriterShmProcessor();
+
+	/** Call back function on start of run
+	 */
+	dqm4hep::StatusCode startOfRun(dqm4hep::DQMRun *const pRun);
+
+	/** Call back function on end of run
+	 */
+	dqm4hep::StatusCode endOfRun(const dqm4hep::DQMRun *const pRun);
+
+	/** Called when an event is reconstructed.
+	 *  The key is a unique identifier for the event.
+	 *  The buffer list is the reconstructed list of buffers for the target key
+	 *  of the different sources
+	 */
+	dqm4hep::StatusCode processEvent(dqm4hep::DQMEvent *pEvent, uint32_t key, const std::vector<levbdim::buffer*> &bufferList);
+
+	/** Read settings from xml handle
+	 */
+	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
+
+public:
+	IO::LCWriter               *m_pLCWriter;
+
+	std::string                 m_fileDirectory;
+	std::string                 m_lcioFileName;
+	int                         m_openMode;
+	int                         m_compressionLevel;
+	int                         m_currentRunNumber;
+	int                         m_currentSubRunNumber;
 };
 
 } 

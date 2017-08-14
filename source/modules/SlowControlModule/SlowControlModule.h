@@ -30,6 +30,7 @@
 
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMStandaloneModule.h"
+#include "dqm4hep/DQMQualityTest.h"
 
 class TGraph;
 
@@ -60,6 +61,38 @@ struct HVInfo
 };
 
 typedef std::map<unsigned int, HVInfo>  HVInfoMap;
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+
+class CurrentQualityTest : public dqm4hep::DQMQualityTest
+{
+public:
+	class Factory : public dqm4hep::DQMQualityTestFactory
+	{
+	public:
+		dqm4hep::DQMQualityTest *createQualityTest(const std::string &name) const;
+	};
+
+public:
+	CurrentQualityTest(const std::string &name);
+	dqm4hep::StatusCode readSettings(const dqm4hep::TiXmlHandle xmlHandle);
+	dqm4hep::StatusCode init();
+	dqm4hep::StatusCode run(dqm4hep::DQMMonitorElement *pMonitorElement);
+	bool canRun(dqm4hep::DQMMonitorElement *pMonitorElement) const;
+
+private:
+	int                              m_maxAllowedCurrent;
+	int                              m_maxDangerousCurrent;
+};
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
+
+dqm4hep::DQMQualityTest *CurrentQualityTest::Factory::createQualityTest(const std::string &name) const
+{
+	return new CurrentQualityTest(name);
+}
 
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
@@ -130,6 +163,8 @@ private:
 	dqm4hep::DQMMonitorElementPtr         m_pLowVoltageElement;
 
 	DQMMonitorElementIDMap                m_chamberHVElementMap;
+	DQMMonitorElementIDMap                m_chamberCurrentElementMap;
+
 	time_t                                m_startTime;
 }; 
 

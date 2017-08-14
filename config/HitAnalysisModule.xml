@@ -36,13 +36,13 @@
         
         <eventHelper plugin="SDHCALEventHelper">
             <electronicsMapping plugin="SDHCALElectronicsMapping">
-               <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+               <parameter name="CellReferencePosition"> 518.8 597.2 1267.1 </parameter>
                <parameter name="CellSize0"> 10.408 </parameter>
                <parameter name="CellSize1"> 10.408 </parameter>
                <parameter name="ReadFromDB"> true </parameter>
-               <parameter name="Host">  </parameter>
-               <parameter name="User">  </parameter>
-               <parameter name="Password">  </parameter>
+               <parameter name="Host"> localhost </parameter>
+               <parameter name="User"> root </parameter>
+               <parameter name="Password"> plop </parameter>
                <parameter name="Database"> GEOMETRY </parameter>
                <parameter name="BeamTest"> SPS_04_2015 </parameter>
                <parameter name="GeometryFileName"> geometry_SPS_04_2015.xml </parameter>
@@ -131,17 +131,17 @@
 
       <!-- Raw Hit Study / Per Layer-->
   <monitorElement ID="ChamberHitsMap1"
-      name="ChamberHitsMap1_layer${layerId}" path="." type="TH2S" title="HitMap threshold 1 in in Layer ${layerId}"
+      name="ChamberHitsMap1_layer${layerId}" path="Layer${layerId}" type="TH2S" title="HitMap threshold 1 in in Layer ${layerId}"
       nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
       drawOption="colz" resetPolicy="EndOfRun"/>
 
   <monitorElement ID="ChamberHitsMap2"
-      name="ChamberHitsMap2_layer${layerId}" path="." type="TH2S" title="HitMap threshold 2 in Layer ${layerId}"
+      name="ChamberHitsMap2_layer${layerId}" path="Layer${layerId}" type="TH2S" title="HitMap threshold 2 in Layer ${layerId}"
       nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
       drawOption="colz" resetPolicy="EndOfRun"/>
 
   <monitorElement ID="ChamberHitsMap3"
-      name="ChamberHitsMap3_layer${layerId}" path="." type="TH2S" title="HitMap threshold 3 in Layer ${layerId}"
+      name="ChamberHitsMap3_layer${layerId}" path="Layer${layerId}" type="TH2S" title="HitMap threshold 3 in Layer ${layerId}"
       nBinsX="97" minX="0" maxX="96" nBinsY="97" minY="0" maxY="96"
       drawOption="colz" resetPolicy="EndOfRun"/>
 

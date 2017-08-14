@@ -239,8 +239,19 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::positionToCell(const dqm4hep::DQMC
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->findClosestLayer(position - m_cellReferencePosition, cell.m_layer));
 
 	// compute i and j expected values
-	const float iCellFloat = (position.getX() - m_cellReferencePosition.getX()) / m_cellSize0;
-	const float jCellFloat = (position.getY() - m_cellReferencePosition.getY()) / m_cellSize1;
+	float iCellFloat(0.f);
+	float jCellFloat(0.f);
+
+	if(m_rotateAxes)
+	{
+		iCellFloat = (-1.f * position.getY() - m_cellReferencePosition.getY()) / m_cellSize1;
+		jCellFloat = (-1.f * position.getX() - m_cellReferencePosition.getX()) / m_cellSize0;
+	}
+	else
+	{
+		iCellFloat = (position.getX() - m_cellReferencePosition.getX()) / m_cellSize0;
+		jCellFloat = (position.getY() - m_cellReferencePosition.getY()) / m_cellSize1;
+	}
 
 	if( iCellFloat < 0.f || jCellFloat < 0.f )
 	{
@@ -275,8 +286,20 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::cellToPosition(const dqm4hep::DQME
 		return dqm4hep::STATUS_CODE_NOT_FOUND;
 	}
 
-	const float x = cell.m_iCell * m_cellSize0 + m_cellReferencePosition.getX();
-	const float y = cell.m_jCell * m_cellSize1 + m_cellReferencePosition.getY();
+	float x(0.f);
+	float y(0.f);
+
+	if(m_rotateAxes)
+	{
+		x = -1.f * cell.m_jCell * m_cellSize1 + m_cellReferencePosition.getX();
+		y = -1.f * cell.m_iCell * m_cellSize0 + m_cellReferencePosition.getY();
+	}
+	else
+	{
+		x = cell.m_iCell * m_cellSize0 + m_cellReferencePosition.getX();
+		y = cell.m_jCell * m_cellSize1 + m_cellReferencePosition.getY();
+	}
+
 	const float z = iter->second.m_z0 + m_cellReferencePosition.getZ();
 
 	position.setValues(x, y, z);
@@ -362,6 +385,10 @@ dqm4hep::StatusCode SDHCALElectronicsMapping::readSettings(const dqm4hep::TiXmlH
 	dqm4hep::UIntVector difMask;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValues(xmlHandle,
 			"DifMask", difMask));
+
+	m_rotateAxes = true;
+	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
+			"RotateAxes", m_rotateAxes));
 
 	GeometryXmlIO reader;
 	RETURN_RESULT_IF( dqm4hep::STATUS_CODE_SUCCESS, !=, reader.load( geometryFileName , m_geometry, layerMask , difMask ) );
