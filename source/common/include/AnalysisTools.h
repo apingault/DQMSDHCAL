@@ -72,11 +72,27 @@ public:
 		dqm4hep::dqm_uint                        timeSpill;
 		dqm4hep::dqm_uint                        timeLastTrigger;
 		dqm4hep::dqm_uint                        timeLastSpill;
-		dqm4hep::dqm_uint                  		   nTriggerInSpill;
-		dqm4hep::dqm_uint                  		   nTriggerLastSpill;
-		dqm4hep::dqm_uint                  		   nTriggerProcessed;
-		dqm4hep::dqm_bool                  		   newSpill;
-		dqm4hep::dqm_bool                  		   newTrigger;
+		dqm4hep::dqm_uint                  	 nTriggerInSpill;
+		dqm4hep::dqm_uint                  	 nTriggerLastSpill;
+		dqm4hep::dqm_uint                  	 nTriggerProcessed;
+		dqm4hep::dqm_bool                  	 newSpill;
+		dqm4hep::dqm_bool                  	 newTrigger;
+
+	  void dumpParameters(){
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "eventIntegratedTime : " << eventIntegratedTime);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "spillIntegratedTime : " << spillIntegratedTime);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "lastSpillIntegratedTime : " << lastSpillIntegratedTime);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "totalIntegratedTime : " << totalIntegratedTime);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "timeTrigger : " << timeTrigger);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "timeSpill : " << timeSpill);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "timeLastTrigger : " << timeLastTrigger);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "timeLastSpill : " << timeLastSpill);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "nTriggerInSpill : " << nTriggerInSpill);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "nTriggerLastSpill : " << nTriggerLastSpill);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "nTriggerProcessed : " << nTriggerProcessed);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "newSpill : " << newSpill);
+	    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , "newTrigger : " << newTrigger);
+	  }
 	};
 
 public:
@@ -126,7 +142,7 @@ public:
 	 * find trigger information in the triggerEvent
 	 */
 	dqm4hep::StatusCode findTrigger(EVENT::LCCollection * pLCCollection, EventParameters &m_evtParameters);
-
+	
 private:
 	EventParameters					m_evtParameters;
 	float										m_DAQ_BC_Period;

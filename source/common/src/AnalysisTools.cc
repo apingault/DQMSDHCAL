@@ -160,10 +160,9 @@ dqm4hep::StatusCode EventHelper::decodeEventParameter(EVENT::LCCollection *pLCCo
 	// Shift the value from the 24 first bits
 	unsigned long long theBCID_ = m_bcid1 * m_shiftBCID + m_bcid2;
 
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - timeTrigger : " << m_evtParameters.timeTrigger );
 	m_evtParameters.timeTrigger = theBCID_ ;
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - timeTrigger : " << m_evtParameters.timeTrigger );
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - timeLastTrigger : " << m_evtParameters.timeLastTrigger );
+	// LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - timeTrigger : " << m_evtParameters.timeTrigger );
+	// LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - timeLastTrigger : " << m_evtParameters.timeLastTrigger );
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -412,7 +411,7 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Run tracking algorithm");
 
 			caloobject::CaloTrack *pTrack = NULL;
-			m_trackingAlgorithm.Run(clusters, pTrack);
+			m_trackingAlgorithm.Run(trackingClusters, pTrack);
 
 			if ( NULL != pTrack )
 			{
