@@ -59,6 +59,7 @@
 namespace dqm_sdhcal
 {
 
+  
 DQM_PLUGIN_DECL( EventInfoShmProcessor , "EventInfoShmProcessor" )
 DQM_PLUGIN_DECL( SDHCALShmProcessor    , "SDHCALShmProcessor"    )
 DQM_PLUGIN_DECL( CherenkovShmProcessor , "CherenkovShmProcessor" )
@@ -107,6 +108,7 @@ dqm4hep::StatusCode EventInfoShmProcessor::endOfRun(const dqm4hep::DQMRun *const
 
 dqm4hep::StatusCode EventInfoShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, uint32_t key, const std::vector<levbdim::buffer*> &bufferList)
 {
+
 	IMPL::LCEventImpl *pLCEvent = dynamic_cast<IMPL::LCEventImpl *>(pEvent->getEvent<EVENT::LCEvent>() );
 
 	if( ! pLCEvent )
@@ -205,6 +207,8 @@ SDHCALShmProcessor::~SDHCALShmProcessor()
 
 dqm4hep::StatusCode SDHCALShmProcessor::startOfRun(dqm4hep::DQMRun *const pRun)
 {
+    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - [SDHCALshmProcessor] startOfRun " );
+
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -220,6 +224,7 @@ dqm4hep::StatusCode SDHCALShmProcessor::endOfRun(const dqm4hep::DQMRun *const pR
 dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, uint32_t key, const std::vector<levbdim::buffer*> &bufferList)
 {
 	IMPL::LCEventImpl *pLCEvent = dynamic_cast<IMPL::LCEventImpl *>(pEvent->getEvent<EVENT::LCEvent>() );
+    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - processing Event with key '"<<key<<"'" );
 
 	if( ! pLCEvent )
 	{
@@ -271,6 +276,8 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 		// Change timeStamp to the trigger timeStamp
 		pLCEvent->setTimeStamp(pDifPtr->getBCID());
 
+	std::cout << "Processing dif id " << difId << std::endl;
+
 		if( m_difMaskList.find(difId) != m_difMaskList.end() )
 		{
 			delete pDifPtr;
@@ -313,7 +320,6 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 		triggerParameterName << "DIF" << pDifPtr->getID() << "_Triggers";
 
 		pOutputCollection->parameters().setValues(triggerParameterName.str(), trigger);
-		++nDifs;
 
 		delete pDifPtr;
 	}
@@ -328,6 +334,8 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 	pOutputCollection->parameters().setValue("DetectorId", static_cast<int>(m_detectorId));
 	pOutputCollection->parameters().setValues("DifMask", difMaskList);
 
+    std::cout << "End of processEvent in SDHCAL shm processor" << std::endl;
+    
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -485,7 +493,7 @@ dqm4hep::StatusCode SDHCALShmProcessor::readSettings(const dqm4hep::TiXmlHandle 
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"NoiseLimit", m_noiseLimit));
 
-	m_xdaqShift = 24;
+    m_xdaqShift = 20;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"XDaqShift", m_xdaqShift));
 
@@ -493,7 +501,7 @@ dqm4hep::StatusCode SDHCALShmProcessor::readSettings(const dqm4hep::TiXmlHandle 
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"DetectorId", m_detectorId));
 
-	m_outputCollectionName = "DHCALRawHits";
+    m_outputCollectionName = "SDHCAL_HIT";
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"OutputCollectionName", m_outputCollectionName));
 
@@ -646,16 +654,19 @@ IMPL::CalorimeterHitImpl *CherenkovShmProcessor::createCalorimeterHit(DIFPtr *pD
 
 	const float timeStamp = static_cast<float>(pDifPtr->getFrameTimeToTrigger(frame));
 
+
 	cellID0 += (unsigned long int) difId;
 	cellID0 += (unsigned long int) asicId;
 	cellID0 += (unsigned long int) channelId;
 	cellID0 += (unsigned long int) barrelEndcapModule;
 	cellID1  = (unsigned long int) pDifPtr->getFrameBCID(frame);
 
+	
 	std::bitset<3> threshold;
 	threshold[0] = pDifPtr->getFrameLevel(frame, channel, 0);
 	threshold[1] = pDifPtr->getFrameLevel(frame, channel, 1);
 	threshold[2] = false; // not synchronized
+
 
 	float shift;
 	const float amplitude( static_cast<float>( threshold.to_ulong() & m_amplitudeBitRotation ) );
@@ -667,8 +678,8 @@ IMPL::CalorimeterHitImpl *CherenkovShmProcessor::createCalorimeterHit(DIFPtr *pD
 	else
 		shift = +1;        // 1rst Threshold
 
-    const float energy(amplitude + shift);
 
+    const float energy(amplitude + shift);
 	float positionArray [3] = {0};
 
 	// create the calorimeter hit
@@ -979,6 +990,7 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
+
 //-------------------------------------------------------------------------------------------------
 
 void SiWECalShmProcessor::setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
@@ -1032,7 +1044,6 @@ dqm4hep::StatusCode SiWECalShmProcessor::readSettings(const dqm4hep::TiXmlHandle
 			"DifAsicChannelEncoding", m_difAsicChannelEncoding, [&] (const dqm4hep::StringVector &vec) {
 		return vec.size() == 3;
 	}));
-
 	m_energyMode = 2;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
 			"EnergyMode", m_energyMode, [] (unsigned int m) {return m<3;}));
