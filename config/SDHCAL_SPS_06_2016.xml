@@ -7,7 +7,6 @@
       <datasources>
 	<!-- detectors :
 	     SDHCAL = 100 
-	     SiWECal = 1100
 	     Cherenkov = 100 (SDHCAL DIF)
 	-->
 	
@@ -15,7 +14,6 @@
 	<source detector="100" id="3"/>
 	
 	<!-- SDHCAL sources (144 - 1 DIFs) -->
-
 	<source detector="100" id="181"/>
 	<source detector="100" id="94"/>
 	<source detector="100" id="30"/>
@@ -171,13 +169,20 @@
 	<source detector="100" id="242"/>
 	<source detector="100" id="241"/>
 
-	<!-- SiWECal sources (6 DIFs) -->
-	<source detector="1100" id="1"/>
-	<source detector="1100" id="2"/>
-	<source detector="1100" id="3"/>
-	<source detector="1100" id="4"/>
-	<source detector="1100" id="5"/>
-	<source detector="1100" id="6"/>
+	<!-- Additional layers -->
+	<!-- <source detector="100" id="205"/> -->
+	<!-- <source detector="100" id="206"/> -->
+	<!-- <source detector="100" id="207"/> -->
+	<!-- <source detector="100" id="208"/> -->
+	<!-- <source detector="100" id="209"/> -->
+	<!-- <source detector="100" id="210"/> -->
+	<!-- <source detector="100" id="211"/> -->
+	<!-- <source detector="100" id="212"/> -->
+	<!-- <source detector="100" id="213"/> -->
+	<!-- <source detector="100" id="214"/> -->
+	<!-- <source detector="100" id="215"/> -->
+	<!-- <source detector="100" id="216"/> -->
+
 	
       </datasources>
     </shmdriver>
@@ -191,7 +196,7 @@
 	<parameter name="collectorName"> sdhcal_event_collector </parameter>
       </eventclient>
       <eventclient plugin="DimEventClient">
-	<parameter name="collectorName"> event_collector_2 </parameter>
+	<parameter name="collectorName"> sdhcal_event_collector </parameter>
       </eventclient>
     </eventclientlist>
     
@@ -201,7 +206,7 @@
     <!-- Event builder processor. Fill an event from the shm driver data source buffers -->	
     <evbprocessors>
       <evbprocessor name="EventInfoProducer"/>
-      <!-- <evbprocessor name="SiWECalProducer"/> -->
+      <!-- <evbprocessor name="CherenkovProducer"/> -->
       <evbprocessor name="SDHCALProducer"/>
     </evbprocessors>
     
@@ -212,46 +217,47 @@
   <evbprocessors>
     
     <!-- Event lcio collection producer -->
-    <!-- Output EVENT::RawCalorimeterHit collection -->
+    <!-- Fill event info -->
     <evbprocessor plugin="EventInfoShmProcessor" name="EventInfoProducer">
       <parameter name="CreationTimeParameterName"> CREATION_TIME </parameter>
     </evbprocessor>
     
     <!-- SDHCAL lcio collection producer -->
-    <!-- Output RawCalorimeterHit collection -->
+    <!-- Output CalorimeterHit collection -->
     <evbprocessor plugin="SDHCALShmProcessor" name="SDHCALProducer">
       <electronicsMapping plugin="SDHCALElectronicsMapping">
-	<parameter name="CellReferencePosition"> 0 0 0 </parameter>
-	<parameter name="CellSize0"> 10.408 </parameter>
-	<parameter name="CellSize1"> 10.408 </parameter>
-	<parameter name="ReadFromDB"> false </parameter>
-	<parameter name="Host">  </parameter>
-	<parameter name="User">  </parameter>
-	<parameter name="Password">  </parameter>
-	<parameter name="Database"> GEOMETRY </parameter>
-	<parameter name="BeamTest"> SPS_04_2015 </parameter>
-	<parameter name="GeometryFileName"> geometry_SPS_04_2015.xml </parameter>
+            <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+            <parameter name="CellSize0"> 10.408 </parameter>
+            <parameter name="CellSize1"> 10.408 </parameter>
+            <parameter name="ReadFromDB"> false </parameter>
+            <parameter name="Host">  </parameter>
+            <parameter name="User">  </parameter>
+            <parameter name="Password">  </parameter>
+            <parameter name="Database"> GEOMETRY </parameter>
+            <parameter name="BeamTest"> SPS_04_2015 </parameter>
+            <parameter name="GeometryFileName"> geometry_SPS_04_2015.xml </parameter>
       </electronicsMapping>
       <parameter name="AmplitudeBitRotation"> 3 </parameter>
-      <parameter name="EncodeDifAsicChannel"> true </parameter>
+      <parameter name="EncodeDifAsicChannel"> false </parameter>
       <parameter name="IJKEncoding"> I J K-1 </parameter>
       <parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter>
       <parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
       <parameter name="OutputCollectionName"> SDHCAL_HIT </parameter>
       <parameter name="SkipFullAsics"> true </parameter>
-      <parameter name="DropFirstRU"> true </parameter>
+      <parameter name="DropFirstRU"> false </parameter>
       <parameter name="NoiseLimit"> 1000000 </parameter>
       <parameter name="XDaqShift"> 20 </parameter>
       <parameter name="DetectorId"> 100 </parameter>
       <parameter name="DifMaskList"> 3 </parameter>
     </evbprocessor>
-    
-    <!-- SiWECal lcio collection producer -->
-    <!-- Output EVENT::CalorimeterHit collection -->
-    <evbprocessor plugin="SiWECalShmProcessor" name="SiWECalProducer">
-      <parameter name="OutputCollectionName"> SiWECalHits </parameter>
-      <parameter name="DetectorId"> 1100 </parameter>
-      <parameter name="PositionShift"> 0 0 0 </parameter>
+
+    <!--Cherenkov lcio collection producer -->
+    <!-- Output CalorimeterHit collection -->
+    <evbprocessor plugin="CherenkovShmProcessor" name="CherenkovProducer">
+      <parameter name="OutputCollectionName"> CHERENKOV_HIT </parameter>
+      <parameter name="CherenkovDifId"> 3 </parameter>
+      <parameter name="XDaqShift"> 20 </parameter>
+      <parameter name="DetectorId"> 100 </parameter>
     </evbprocessor>
     
   </evbprocessors>

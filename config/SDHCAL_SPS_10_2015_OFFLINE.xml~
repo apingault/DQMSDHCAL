@@ -1,0 +1,244 @@
+<dqm4hep>
+
+	<global>
+		
+		<!-- Shared memory driver. Read raw data source buffers in shared memory -->
+		<shmdriver directory="/tmp/shm/">
+			<datasources>
+				<!-- detectors :
+					SDHCAL = 100 
+					SiWECal = 1100
+					Cherenkov = 100 (SDHCAL DIF)
+				-->			
+
+<source detector="100" id="100"  />
+<source detector="100" id="101"  />
+<source detector="100" id="102"  />
+<source detector="100" id="103"  />
+<source detector="100" id="104"  />
+<source detector="100" id="106"  />
+<source detector="100" id="107"  />
+<source detector="100" id="108"  />
+<source detector="100" id="109"  />
+<source detector="100" id="110"  />
+<source detector="100" id="111"  />
+<source detector="100" id="112"  />
+<source detector="100" id="113"  />
+<source detector="100" id="114"  />
+<source detector="100" id="115"  />
+<source detector="100" id="116"  />
+<source detector="100" id="117"  />
+<source detector="100" id="118"  />
+<source detector="100" id="119"  />
+<source detector="100" id="120"  />
+<source detector="100" id="121"  />
+<source detector="100" id="122"  />
+<source detector="100" id="123"  />
+<source detector="100" id="124"  />
+<source detector="100" id="126"  />
+<source detector="100" id="127"  />
+<source detector="100" id="128"  />
+<source detector="100" id="129"  />
+<source detector="100" id="130"  />
+<source detector="100" id="131"  />
+<source detector="100" id="132"  />
+<source detector="100" id="133"  />
+<source detector="100" id="134"  />
+<source detector="100" id="135"  />
+<source detector="100" id="136"  />
+<source detector="100" id="137"  />
+<source detector="100" id="138"  />
+<source detector="100" id="139"  />
+<source detector="100" id="140"  />
+<source detector="100" id="141"  />
+<source detector="100" id="142"  />
+<source detector="100" id="143"  />
+<source detector="100" id="144"  />
+<source detector="100" id="145"  />
+<source detector="100" id="146"  />
+<source detector="100" id="147"  />
+<source detector="100" id="148"  />
+<source detector="100" id="149"  />
+<source detector="100" id="150"  />
+<source detector="100" id="151"  />
+<source detector="100" id="152"  />
+<source detector="100" id="153"  />
+<source detector="100" id="154"  />
+<source detector="100" id="155"  />
+<source detector="100" id="156"  />
+<source detector="100" id="159"  />
+<source detector="100" id="160"  />
+<source detector="100" id="161"  />
+<source detector="100" id="162"  />
+<source detector="100" id="163"  />
+<source detector="100" id="164"  />
+<source detector="100" id="165"  />
+<source detector="100" id="166"  />
+<source detector="100" id="167"  />
+<source detector="100" id="169"  />
+<source detector="100" id="170"  />
+<source detector="100" id="171"  />
+<source detector="100" id="172"  />
+<source detector="100" id="173"  />
+<source detector="100" id="174"  />
+<source detector="100" id="175"  />
+<source detector="100" id="176"  />
+<source detector="100" id="177"  />
+<source detector="100" id="178"  />
+<source detector="100" id="179"  />
+<source detector="100" id="180"  />
+<source detector="100" id="181"  />
+<source detector="100" id="18"  />
+<source detector="100" id="183"  />
+<source detector="100" id="184"  />
+<source detector="100" id="185"  />
+<source detector="100" id="186"  />
+<source detector="100" id="187"  />
+<source detector="100" id="188"  />
+<source detector="100" id="189"  />
+<source detector="100" id="190"  />
+<source detector="100" id="241"  />
+<source detector="100" id="242"  />
+<source detector="100" id="243"  />
+<source detector="100" id="25"  />
+<source detector="100" id="27"  />
+<source detector="100" id="29"  />
+<source detector="100" id="30"  />
+<source detector="100" id="3"  />
+<source detector="100" id="35"  />
+<source detector="100" id="36"  />
+<source detector="100" id="40"  />
+<source detector="100" id="41"  />
+<source detector="100" id="42"  />
+<source detector="100" id="43"  />
+<source detector="100" id="44"  />
+<source detector="100" id="45"  />
+<source detector="100" id="46"  />
+<source detector="100" id="47"  />
+<source detector="100" id="48"  />
+<source detector="100" id="49"  />
+<source detector="100" id="50"  />
+<source detector="100" id="51"  />
+<source detector="100" id="5"  />
+<source detector="100" id="53"  />
+<source detector="100" id="54"  />
+<source detector="100" id="56"  />
+<source detector="100" id="57"  />
+<source detector="100" id="58"  />
+<source detector="100" id="59"  />
+<source detector="100" id="60"  />
+<source detector="100" id="61"  />
+<source detector="100" id="62"  />
+<source detector="100" id="63"  />
+<source detector="100" id="64"  />
+<source detector="100" id="65"  />
+<source detector="100" id="67"  />
+<source detector="100" id="70"  />
+<source detector="100" id="71"  />
+<source detector="100" id="72"  />
+<source detector="100" id="73"  />
+<source detector="100" id="74"  />
+<source detector="100" id="75"  />
+<source detector="100" id="76"  />
+<source detector="100" id="77"  />
+<source detector="100" id="78"  />
+<source detector="100" id="79"  />
+<source detector="100" id="8"  />
+<source detector="100" id="87"  />
+<source detector="100" id="90"  />
+<source detector="100" id="91"  />
+<source detector="100" id="92"  />
+<source detector="100" id="93"  />
+<source detector="100" id="94"  />
+<source detector="100" id="95"  />
+<source detector="100" id="96"  />
+<source detector="100" id="97"  />
+<source detector="100" id="98"  />
+<source detector="100" id="99"  />
+
+				<!-- SiWECal sources (6 DIFs) -->
+	<!-- 			<source detector="1100" id="1"/>
+				<source detector="1100" id="2"/>
+				<source detector="1100" id="3"/>
+				<source detector="1100" id="4"/>
+				<source detector="1100" id="5"/>
+				<source detector="1100" id="6"/>
+	 -->			
+			</datasources>
+		</shmdriver>
+		
+		<!-- Run control client to receive start/end of run signals -->
+		<runcontrol plugin="DimRunControlClient" name="DQMRunControl"/>
+	
+		<!-- Event clients to send data to event collector -->
+		<eventclientlist>
+			<eventclient plugin="DimEventClient">
+	        	<parameter name="collectorName"> event_collector </parameter>
+	        	<parameter name="streamerName"> LCIOStreamer </parameter>
+	    </eventclient>
+		</eventclientlist>
+		
+		<!-- The event streamer to serialize data for event client -->
+		<eventstreamer plugin="LCIOStreamer"/>
+		
+		<!-- Event builder processor. Fill an event from the shm driver data source buffers -->	
+		<evbprocessors>
+			<evbprocessor name="EventInfoProducer"/>
+			<!-- <evbprocessor name="SiWECalProducer"/> -->
+			<evbprocessor name="SDHCALProducer"/>
+		</evbprocessors>
+		
+	</global>
+
+	
+	<!-- Event builder processors configuration -->
+	<evbprocessors>
+	
+		<!-- Event lcio collection producer -->
+		<!-- Output EVENT::RawCalorimeterHit collection -->
+		<evbprocessor plugin="EventInfoShmProcessor" name="EventInfoProducer">
+			<parameter name="CreationTimeParameterName"> CREATION_TIME </parameter>
+		</evbprocessor>
+		
+		<!-- SiWECal lcio collection producer -->
+		<!-- Output EVENT::CalorimeterHit collection -->
+		<!-- <evbprocessor plugin="SiWECalShmProcessor" name="SiWECalProducer">
+			<parameter name="OutputCollectionName"> SiWECalHits </parameter>
+			<parameter name="DetectorId"> 1100 </parameter>
+			<parameter name="PositionShift"> 0 0 0 </parameter>
+		</evbprocessor>
+		 -->
+		<!-- SDHCAL lcio collection producer -->
+		<!-- Output RawCalorimeterHit collection -->
+		<evbprocessor plugin="SDHCALShmProcessor" name="SDHCALProducer">
+			<electronicsMapping plugin="SDHCALElectronicsMapping">
+		        <parameter name="CellReferencePosition"> 0 0 0 </parameter>
+		        <parameter name="CellSize0"> 10.408 </parameter>
+		        <parameter name="CellSize1"> 10.408 </parameter>
+		        <parameter name="ReadFromDB"> true </parameter>
+		        <parameter name="Host"> localhost </parameter>
+		        <parameter name="User"> root </parameter>
+		        <parameter name="Password"> plop </parameter>
+		        <parameter name="Database"> GEOMETRY </parameter>
+		        <parameter name="BeamTest"> SPS_04_2015 </parameter>
+		        <parameter name="GeometryFileName"> geometry_SPS_04_2015.xml </parameter>
+		  </electronicsMapping>
+      <parameter name="AmplitudeBitRotation"> 3 </parameter>
+      <parameter name="EncodeDifAsicChannel"> false </parameter>
+      <parameter name="IJKEncoding"> I J K-1 </parameter>
+      <parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter>
+      <parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+      <!-- <parameter name="CellIDEncoderString"> I:7,J:7,K-1:6 </parameter> -->
+      <!-- <parameter name="CellIDEncoderString"> M:3,S-1:3,I:9,J:9,K-1:6 </parameter> -->
+			<parameter name="OutputCollectionName"> SDHCAL_HIT </parameter>
+			<parameter name="SkipFullAsics"> true </parameter>
+			<parameter name="DropFirstRU"> false </parameter>
+			<parameter name="NoiseLimit"> 1000000 </parameter>
+			<parameter name="XDaqShift"> 24 </parameter>
+			<parameter name="DetectorId"> 100 </parameter>
+			<parameter name="DifMaskList"> 3 </parameter>
+		</evbprocessor>
+		
+	</evbprocessors>
+
+</dqm4hep>
