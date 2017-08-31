@@ -177,6 +177,10 @@ dqm4hep::StatusCode BeamAnalysisModule::processEvent(dqm4hep::DQMEvent * const p
   catch (EVENT::DataNotAvailableException &exception)
   {
     LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught EVENT::DataNotAvailableException : " << exception.what() );
+    LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Available Collections : ");
+    for (uint32_t iCol =0; iCol< pLCEvent->getCollectionNames()->size(); ++iCol)
+      LOG4CXX_ERROR( dqm4hep::dqmMainLogger, m_moduleLogStr <<  "\t\t - '" << pLCEvent->getCollectionNames()->at( iCol ) << "'" );
+
     LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Skipping event" );
     return dqm4hep::STATUS_CODE_SUCCESS;
   }

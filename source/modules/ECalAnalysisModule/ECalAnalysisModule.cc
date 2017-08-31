@@ -143,13 +143,17 @@ dqm4hep::StatusCode ECalAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 	try
 	{
+	  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Getting input collection");
 		EVENT::LCCollection *pLCCollection = pLCEvent->getCollection(m_inputCollectionName);
 		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(m_cellIDDecoderString);
 
+		LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Init analysis vars");
 		unsigned int nHits(0);
 		float totalEnergy(0.f);
-		std::vector<unsigned int> nHitsPerLayer(0, m_nActiveLayers);
-		std::vector<float> totalEnergyPerLayer(0.f, m_nActiveLayers);
+		std::vector<unsigned int> nHitsPerLayer(m_nActiveLayers, 0);
+		std::vector<float> totalEnergyPerLayer(m_nActiveLayers, 0.f);
+
+		std::cout << "NHIT = " << pLCCollection->getNumberOfElements() << std::endl;
 
 		for(unsigned int i=0 ; i<pLCCollection->getNumberOfElements() ; ++i)
 		{
@@ -210,6 +214,11 @@ dqm4hep::StatusCode ECalAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << "Caught EVENT::DataNotAvailableException : " << exception.what());
 		LOG4CXX_ERROR( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "Skipping event" );
 		return STATUS_CODE_SUCCESS;
+	}
+	catch (std::exception &exception)
+	{
+	  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger ,  m_moduleLogStr << "Caught exception : " << exception.what());
+		return STATUS_CODE_FAILURE;
 	}
 	catch (...)
 	{
