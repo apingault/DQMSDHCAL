@@ -53,9 +53,16 @@ DQM_PLUGIN_DECL( ParticleIDModule , "ParticleIDModule" )
 //-------------------------------------------------------------------------------------------------
 
 ParticleIDModule::ParticleIDModule() :
-		DQMTriventModule()
-{
-
+		DQMTriventModule(),
+		m_pEventClassifier(NULL),
+		m_nNoiseWithinRun(0),
+		m_nCosmicMuonsWithinRun(0),
+		m_nBeamMuonWithinRun(0),
+		m_nChargedHadronsWithinRun(0),
+		m_nNeutralHadronsWithinRun(0),
+		m_nElectronsWithinRun(0),
+		m_nPhotonsWithinRun(0),
+		m_nOthersWithinRun(0)
 }
 
 //-------------------------------------------------------------------------------------------------

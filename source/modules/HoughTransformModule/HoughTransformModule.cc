@@ -62,7 +62,8 @@ DQM_PLUGIN_DECL( HoughTransformModule , "HoughTransformModule" )
 //-------------------------------------------------------------------------------------------------
 
 		HoughTransformModule::HoughTransformModule() :
-		DQMTriventModule()
+		DQMTriventModule(),
+		m_nECalLayers(0)
 {
 
 }

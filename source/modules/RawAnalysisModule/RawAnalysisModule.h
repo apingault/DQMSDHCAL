@@ -89,8 +89,8 @@ private:
   // electronicsMapping parameters
   dqm4hep::DQMElectronicsMapping            *m_pElectronicsMapping;
   dqm4hep::DQMCartesianVector                m_cellReferencePosition;
-  float m_cellSize0;
-  float m_cellSize1;
+  float                                      m_cellSize0;
+  float                                      m_cellSize1;
 
   // Geometry parameters
   Geometry                                   m_geometry;

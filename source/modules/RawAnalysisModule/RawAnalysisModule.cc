@@ -61,9 +61,18 @@ DQM_PLUGIN_DECL( RawAnalysisModule, "RawAnalysisModule" )
 
 RawAnalysisModule::RawAnalysisModule() :
   DQMAnalysisModule(),
+  m_pElectronicsMapping(NULL),
   m_cellReferencePosition(0.f, 0.f, 0.f),
   m_cellSize0(10.408f),
-  m_cellSize1(10.408f)
+  m_cellSize1(10.408f),
+  m_pEventHelper(NULL),
+  m_nActiveLayers(0),
+  m_nAsicPerDif(0),
+  m_nChanPerAsic(0),
+  m_nStartLayerShift(0),
+  m_hitTimeMin(999),
+  m_hitTimeMax(0),
+  m_skipEvent(0)
 {
 
 }
@@ -394,7 +403,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
       if (hitTime < m_hitTimeMin) m_hitTimeMin = hitTime;
       if (hitTime > m_hitTimeMax) m_hitTimeMax = hitTime;
 
-      if (hitThresh <= 0 || hitThresh > 3)
+      if (hitThresh == 0 || hitThresh > 3)
       {
         LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << electronics.m_difId << " had:" << electronics.m_asicId << ":" << electronics.m_channelId << ":" << hitTime << ":" << hitThresh);
         continue;
@@ -439,10 +448,10 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
           pCaloHit->getPosition()[2] );
       const CLHEP::Hep3Vector globalHitShift(0, 0, 0);
 
-      int cellID[3];
-      cellID[0] = cell.m_iCell;
-      cellID[1] = cell.m_jCell;
-      cellID[2] = cell.m_layer;
+      // int cellID[3];
+      // cellID[0] = cell.m_iCell;
+      // cellID[1] = cell.m_jCell;
+      // cellID[2] = cell.m_layer;
 
       RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, fillAsicOccupancyMap(electronics, cell));
     }
@@ -520,7 +529,7 @@ dqm4hep::StatusCode RawAnalysisModule::fillAsicOccupancyMap( dqm4hep::DQMElectro
 //-------------------------------------------------------------------------------------------------
 dqm4hep::StatusCode RawAnalysisModule::doAsicOccupancyStudy()
 {
-  for (std::map<int, int>::iterator asicIter = m_asicMap.begin(); asicIter != m_asicMap.end(); asicIter++)
+  for (std::map<int, int>::iterator asicIter = m_asicMap.begin(); asicIter != m_asicMap.end(); ++asicIter)
   {
     unsigned int layerId = (asicIter->first >> 16) & 0xFF;
     unsigned int difId = (asicIter->first >> 8) & 0xFF;

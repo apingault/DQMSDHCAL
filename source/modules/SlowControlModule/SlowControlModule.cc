@@ -48,7 +48,9 @@ DQM_PLUGIN_DECL( SlowControlModule , "SlowControlModule" )
 //-------------------------------------------------------------------------------------------------
 
 CurrentQualityTest::CurrentQualityTest(const std::string &name) :
-	DQMQualityTest(name)
+	DQMQualityTest(name),
+	m_maxAllowedCurrent(0),
+	m_maxDangerousCurrent(0)
 {
 	/* nop */
 }
@@ -137,7 +139,9 @@ bool CurrentQualityTest::canRun(dqm4hep::DQMMonitorElement *pMonitorElement) con
 //-------------------------------------------------------------------------------------------------
 
 SlowControlModule::SlowControlModule() :
-		dqm4hep::DQMStandaloneModule()
+		dqm4hep::DQMStandaloneModule(),
+		m_startTime(0),
+		m_globalDynamicGraphRange(0)
 {
 	/* nop */
 }

@@ -56,7 +56,8 @@ DQM_PLUGIN_DECL( ECalAnalysisModule, "ECalAnalysisModule" )
 
 ECalAnalysisModule::ECalAnalysisModule() :
 	DQMTriventModule(),
-	m_moduleLogStr("[ECalAnalysisModule]")
+	m_moduleLogStr("[ECalAnalysisModule]"),
+	m_nActiveLayers(0)
 {
 }
 
