@@ -788,6 +788,9 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 
 	LayerToAsicListMap layerToAsicListMap;
 
+	int sizeofHeader = 20;
+	int sizeofHit = 56;
+
 	// loop over dif raw buffers
 	// decode hits one by one
 	// convert to calorimeter hits
@@ -800,6 +803,8 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 		if( pBuffer->detectorId() != m_detectorId )
 			continue;
 
+		LOG4CXX_INFO( dqm4hep::dqmMainLogger, "ECAL : New dif =  "<< pBuffer->dataSourceId() << " !" );
+
 		SiWECalRawHit *rawHit = 0;
 
 		unsigned char *pRawBuffer = (unsigned char*) pBuffer->ptr();
@@ -808,22 +813,26 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 		if(0 == bufferSize)
 			continue;
 
-		int32_t invalidBuffer = ( bufferSize - sizeof(struct SiWECalHeader) ) % sizeof(struct SiWECalRawHit);
+		std::cout << "buffer size = " << bufferSize << std::endl;
+		
+		int32_t invalidBuffer = ( bufferSize - sizeofHeader ) % sizeofHit;
+
+		std::cout << "Remaining bytes = " << invalidBuffer << std::endl;
 
 		if(invalidBuffer)
 		{
 			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Invalid SiWECal DIF ptr : Invalid buffer size = " << bufferSize );
-			continue;
+			//continue;
 		}
 
-		const unsigned int nECalHits(( bufferSize - sizeof(struct SiWECalHeader) ) / sizeof(struct SiWECalRawHit));
+		const unsigned int nECalHits(( bufferSize - sizeofHeader ) / sizeofHit);
 
 		unsigned int difId (0);
 		unsigned int difSpill(0);
 
 		for(unsigned int i=0 ; i<nECalHits ; ++i)
 		{
-			rawHit = (SiWECalRawHit *) (pRawBuffer + sizeof(struct SiWECalHeader) + i*sizeof(struct SiWECalRawHit));
+			rawHit = (SiWECalRawHit *) (pRawBuffer + sizeofHeader + i*sizeofHit);
 
 			if(0 == i)
 			{
@@ -831,6 +840,23 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 				difSpill = rawHit->m_spillId;
 			}
 
+			// std::cout << "hit BCID " << rawHit->m_bcid << std::endl;
+			// std::cout << "hit recTime " << rawHit->m_recTime << std::endl;
+			// std::cout << "hit energy " << rawHit->m_energy << std::endl;
+			// std::cout << "hit x " << rawHit->m_x << std::endl;
+			// std::cout << "hit y " << rawHit->m_y << std::endl;
+			// std::cout << "hit z " << rawHit->m_z << std::endl;
+			// std::cout << "hit spill " << rawHit->m_spillId << std::endl;
+			// std::cout << "hit adcCount " << rawHit->m_adcCount << std::endl;
+			// std::cout << "hit dif " << (int)rawHit->m_difId << std::endl;
+			// std::cout << "hit asic " << (int)rawHit->m_asicId << std::endl;
+			// std::cout << "hit channel" << (int)rawHit->m_channelId << std::endl;
+			// std::cout << "hit col " << (int)rawHit->m_columnId << std::endl;
+			// std::cout << "hit i " << (int)rawHit->m_iCell << std::endl;
+			// std::cout << "hit j " << (int)rawHit->m_jCell << std::endl;
+			// std::cout << "hit layer " << (int)rawHit->m_layer << std::endl;
+
+			
 			// Perform conversion from hardware layer to layer in beam direction
 			// This layer is stored as the 'real' layer.
 			// The hardware layer is still accessible using the dif/asic ids
@@ -839,7 +865,7 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 
 			if(dqm4hep::STATUS_CODE_SUCCESS != statusCode)
 			{
-				LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Couldn't find hardware layer '" << rawHit->m_layer << "'in mapping" );
+			  LOG4CXX_ERROR( dqm4hep::dqmMainLogger, "Couldn't find hardware layer '" << (int)rawHit->m_layer << " 'in mapping" );
 				continue;
 			}
 
@@ -924,6 +950,10 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 					pECalCaloHit->setEnergy(0.f);
 				}
 			}
+			else if(m_energyMode == 3)
+			  {
+			    pECalCaloHit->setEnergy(static_cast<float>(adcCount));
+			  }
 
 			cellIDRawEncoder.setCellID( pECalRawCaloHit );
 			pECalRawCaloHit->setAmplitude(adcCount);
@@ -1045,7 +1075,7 @@ dqm4hep::StatusCode SiWECalShmProcessor::readSettings(const dqm4hep::TiXmlHandle
 
 	m_energyMode = 2;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
-			"EnergyMode", m_energyMode, [] (unsigned int m) {return m<3;}));
+			"EnergyMode", m_energyMode, [] (unsigned int m) {return m<4;}));
 
 	m_adcCountCut = 0;
 	RETURN_RESULT_IF_AND_IF(dqm4hep::STATUS_CODE_SUCCESS, dqm4hep::STATUS_CODE_NOT_FOUND, !=, dqm4hep::DQMXmlHelper::readParameterValue(xmlHandle,
