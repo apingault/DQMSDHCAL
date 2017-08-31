@@ -280,7 +280,7 @@ uint32_t DIFUnpacker::getFramePtr(std::vector<unsigned char*> &vFrame,std::vecto
 			return (fshift+2);
 
 		//std::cout<<header<<" "<<fshift<<std::endl;
-		if (header<1 || header>48)
+		if ((header<1 || header>48) && header!=129)
 		{
 			std::stringstream s("");
 			s<<header<<" Header problem "<<fshift<<std::endl;
