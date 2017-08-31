@@ -29,6 +29,9 @@
 #include "DQMTriventModule.h"
 #include "Trivent.h"
 
+// -- std headers
+#include <algorithm>
+
 // -- dqm4hep headers
 #include "dqm4hep/DQMLogging.h"
 #include "dqm4hep/DQMXmlHelper.h"
@@ -175,6 +178,9 @@ dqm4hep::StatusCode DQMTriventModule::convertEvent(EVENT::LCEvent *pLCEvent, tri
 {
 	for (auto &collection : m_caloHitCollectionNames)
 	{
+	  if  (std::find(pLCEvent->getCollectionNames()->begin(), pLCEvent->getCollectionNames()->end(), collection) == pLCEvent->getCollectionNames()->end())
+	    continue;
+	  
 		try
 		{
 			trivent::LCTrivent::addCollection<EVENT::CalorimeterHit>(pLCEvent,
@@ -185,10 +191,18 @@ dqm4hep::StatusCode DQMTriventModule::convertEvent(EVENT::LCEvent *pLCEvent, tri
 			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught EVENT::DataNotAvailableException : " << exception.what() );
 			continue;
 		}
+		catch(...)
+		  { // convert event does some seg fault at times
+		    	LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " [ConvertEvent] - [CaloCollection] - Caught weird exception : ");
+			continue;
+		  }
 	}
 
 	for (auto &collection : m_rawCaloHitCollectionNames)
 	{
+	  if  (std::find(pLCEvent->getCollectionNames()->begin(), pLCEvent->getCollectionNames()->end(), collection) == pLCEvent->getCollectionNames()->end())
+	    continue;
+
 		try
 		{
 			 trivent::LCTrivent::addCollection<EVENT::RawCalorimeterHit>(pLCEvent,
@@ -199,6 +213,12 @@ dqm4hep::StatusCode DQMTriventModule::convertEvent(EVENT::LCEvent *pLCEvent, tri
 			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Caught EVENT::DataNotAvailableException : " << exception.what() );
 			continue;
 		}
+		catch(...)
+		{
+		    	LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " [ConvertEvent] - [RawCaloCollection] - Caught weird exception : " );
+			continue;
+		}
+
 	}
 
 	event.setUserEvent( (void *) pLCEvent );
