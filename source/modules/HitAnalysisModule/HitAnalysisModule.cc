@@ -55,7 +55,36 @@ DQM_PLUGIN_DECL( HitAnalysisModule, "HitAnalysisModule" )
 
 HitAnalysisModule::HitAnalysisModule() :
 	DQMTriventModule(),
-	m_moduleLogStr("[HitAnalysisModule]")
+	m_moduleLogStr("[HitAnalysisModule]"),
+	m_nActiveLayers(0),
+	m_firstLayerCut(0),
+	m_lastLayerCut(0),
+	m_nMipMinimum(0),
+	m_nMipInLayer(0),
+	m_nTrigger(0),
+	m_nSpill(0),
+	m_pEventHelper(NULL),
+	m_pEventClassifier(NULL),
+	m_nParticleWithinRun(0),
+	m_nParticleWithinSpill(0),
+	m_nBeamMuonWithinRun(0),
+	m_nBeamMuonWithinSpill(0),
+	m_nChargedHadronsWithinRun(0),
+	m_nChargedHadronsWithinSpill(0),
+	m_nNeutralHadronsWithinRun(0),
+	m_nNeutralHadronsWithinSpill(0),
+	m_nPhotonsWithinRun(0),
+	m_nPhotonsWithinSpill(0),
+	m_nElectronsWithinRun(0),
+	m_nElectronsWithinSpill(0),
+	m_nOthersWithinRun(0),
+	m_nOthersWithinSpill(0),
+	m_nCosmicMuonsWithinRun(0),
+	m_nCosmicMuonsWithinSpill(0),
+	m_nUndefinedWithinRun(0),
+	m_nUndefinedWithinSpill(0),
+	m_nNoiseWithinRun(0),
+	m_nNoiseWithinSpill(0)
 {
 }
 
@@ -262,7 +291,6 @@ dqm4hep::StatusCode HitAnalysisModule::userInitModule()
 dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 {
 	LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Processing physics event no " << pLCEvent->getEventNumber() );
-	int nHitProcessedEvent = 0;
 
 	// content management
 	caloobject::CaloHitMap caloHitMap;
@@ -430,6 +458,7 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		// if (m_eventParameters.spillIntegratedTime > 0)
 		// 	m_pRateVsClusterProfileNoClassification->get<TProfile>()->Fill(m_nParticleWithinSpill / m_eventParameters.lastSpillIntegratedTime * m_pEventHelper->getDAQ_BC_Period(), clusters.size());
 
+		int nHitProcessedEvent = 0;
 		int nHit0 = 0;
 		int nHit1 = 0;
 		int nHit2 = 0;
@@ -441,7 +470,7 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 		for (caloobject::CaloClusterList::const_iterator clusterIter = clusters.begin(), clusterEndIter = clusters.end(); clusterEndIter != clusterIter ; ++clusterIter)
 		{
-			unsigned int nHitProcessed = 0; 										// Number of hit processed in the current cluster
+			// unsigned int nHitProcessed = 0; 										// Number of hit processed in the current cluster
 
 			int layerId = (*clusterIter)->getLayerID();
 			if (layerId >= m_nActiveLayers)
@@ -484,7 +513,7 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 				nMipLayer += hitWeight;
 				nHitProcessedEvent++; 	// Total number of hits processed in current event
-				nHitProcessed++;			  // Total number of hits processed in current cluster
+				// nHitProcessed++;			  // Total number of hits processed in current cluster
 
 				// if (hitEndIter == hitIter + 1)
 				// {
