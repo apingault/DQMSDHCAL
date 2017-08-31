@@ -222,6 +222,9 @@ dqm4hep::StatusCode ParticleIDModule::getNHits(EVENT::LCEvent *pLCEvent, unsigne
 		for(auto iter = m_caloHitCollectionNames.begin(), endIter = m_caloHitCollectionNames.end() ;
 				endIter != iter ; ++iter)
 		{
+		  if  (std::find(pLCEvent->getCollectionNames()->begin(), pLCEvent->getCollectionNames()->end(), *iter) == pLCEvent->getCollectionNames()->end())
+		    continue;
+
 			EVENT::LCCollection *pLCCollection = pLCEvent->getCollection(*iter);
 
 			if( pLCCollection->getTypeName() != EVENT::LCIO::CALORIMETERHIT )
