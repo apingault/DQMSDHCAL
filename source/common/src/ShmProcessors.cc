@@ -205,6 +205,7 @@ SDHCALShmProcessor::~SDHCALShmProcessor()
 
 dqm4hep::StatusCode SDHCALShmProcessor::startOfRun(dqm4hep::DQMRun *const pRun)
 {
+  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " [SDHCALshmProcessor] - startOfRun.." );
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -226,7 +227,8 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong event type ! Expecting EVENT::LCEvent type !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
-	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - newLCEvent...with key '"<<key<<"' and creationTime: '"<<pLCEvent->getTimeStamp()<<"'" );
+	if (key%100==0)
+	  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - newLCEvent...with key '"<<key<<"' and creationTime: '"<<pLCEvent->getTimeStamp()<<"'" );
 
 	IMPL::LCFlagImpl chFlag(0);
 	SDHCALDifHelper::setCaloHitLCFlag(chFlag);
@@ -252,8 +254,7 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 
 		// check for correct detector id
 		if( pBuffer->detectorId() != m_detectorId )
-		{
-			LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong detectorID : pBuffer->detectorId(): " <<pBuffer->detectorId()<< " != m_detectorId " << m_detectorId );
+		  {
 			continue;
 		}
 
@@ -264,8 +265,9 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 		}
 
 		// create dif pointer to extract info
-		DIFPtr *pDifPtr = SDHCALDifHelper::createDIFPtr(pBuffer, m_xdaqShift);
-
+		try{
+		  DIFPtr *pDifPtr = SDHCALDifHelper::createDIFPtr(pBuffer, m_xdaqShift);
+		  
 		// check for dif mask
 		unsigned int difId = pDifPtr->getID();
 		// Change timeStamp to the trigger timeStamp
@@ -316,6 +318,9 @@ dqm4hep::StatusCode SDHCALShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, 
 		++nDifs;
 
 		delete pDifPtr;
+		}
+		catch(...)
+		  {std::cout<<"Exception in difptr"<<std::endl;}
 	}
 
 	std::vector<int> difMaskList(m_difMaskList.begin(), m_difMaskList.end());
@@ -502,7 +507,8 @@ dqm4hep::StatusCode SDHCALShmProcessor::readSettings(const dqm4hep::TiXmlHandle 
 			"DifMaskList", difMaskList));
 
 	m_difMaskList.insert( difMaskList.begin(), difMaskList.end() );
-
+	LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - SDCALshMProcessor - End of readSettings" );
+	
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
@@ -548,6 +554,8 @@ dqm4hep::StatusCode CherenkovShmProcessor::processEvent(dqm4hep::DQMEvent *pEven
 		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong event type ! Expecting EVENT::LCEvent type !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
+
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger, "Cherenkov : Starting new event "<< key << " !" );
 
 	IMPL::LCFlagImpl chFlag(0);
 	SDHCALDifHelper::setCaloHitLCFlag(chFlag);
@@ -755,6 +763,8 @@ dqm4hep::StatusCode SiWECalShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent,
 		LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Wrong event type ! Expecting EVENT::LCEvent type !" );
 		return dqm4hep::STATUS_CODE_FAILURE;
 	}
+
+	LOG4CXX_INFO( dqm4hep::dqmMainLogger, "ECAL : Starting new event "<< key << " !" );
 
 	// Hit collection
 	IMPL::LCFlagImpl chFlag(0);
