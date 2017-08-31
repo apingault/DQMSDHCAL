@@ -226,9 +226,21 @@ dqm4hep::StatusCode ECalHelper::readSettings(const dqm4hep::TiXmlHandle &xmlHand
 
 		if(!pFile)
 		{
-			LOG4CXX_ERROR(dqm4hep::dqmMainLogger, "Couldn't open pedestal data file or slab '" << slab << "' !");
-			return dqm4hep::STATUS_CODE_NOT_FOUND;
+			LOG4CXX_WARN(dqm4hep::dqmMainLogger, "Couldn't open pedestal data file or slab '" << slab << "' !");
+			continue;
 		}
+
+		TDirectory *pDirectory = pFile->GetDirectory("maps");
+
+		if(!pDirectory)
+		  {
+		    LOG4CXX_ERROR(dqm4hep::dqmMainLogger, "Couldn't find 'maps' directory for slab '" << slab << "' !");
+
+		    pFile->Close();
+		    delete pFile;
+
+		    continue;
+		  }
 
 		ColumnToPedestalMap columnToPedestalMap;
 
@@ -236,18 +248,6 @@ dqm4hep::StatusCode ECalHelper::readSettings(const dqm4hep::TiXmlHandle &xmlHand
 		{
 			std::stringstream pedestalMapName;
 			pedestalMapName << "h_img" << c << "_filtred";
-
-			TDirectory *pDirectory = pFile->GetDirectory("maps");
-
-			if(!pDirectory)
-			{
-				LOG4CXX_ERROR(dqm4hep::dqmMainLogger, "Couldn't find 'maps' directory for slab '" << slab << "' and column '" << c << "' !");
-
-				pFile->Close();
-				delete pFile;
-
-				return dqm4hep::STATUS_CODE_NOT_FOUND;
-			}
 
 			TH2 *pPedestalHistogram = (TH2 *)pDirectory->Get(pedestalMapName.str().c_str());
 
