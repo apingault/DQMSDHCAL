@@ -63,6 +63,7 @@ ParticleIDModule::ParticleIDModule() :
 		m_nElectronsWithinRun(0),
 		m_nPhotonsWithinRun(0),
 		m_nOthersWithinRun(0)
+{
 }
 
 //-------------------------------------------------------------------------------------------------
