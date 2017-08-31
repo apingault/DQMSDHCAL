@@ -23,7 +23,7 @@
                        <parameter name="CellReferencePosition"> 518.8 597.2 1267.1 </parameter>
                         <parameter name="CellSize0"> 10.408 </parameter>
                         <parameter name="CellSize1"> 10.408 </parameter>
-                        <parameter name="ReadFromDB"> true </parameter>
+                        <parameter name="ReadFromDB"> false </parameter>
                         <parameter name="Host">  </parameter>
                         <parameter name="User">  </parameter>
                         <parameter name="Password">  </parameter>

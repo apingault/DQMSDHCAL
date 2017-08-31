@@ -3,7 +3,7 @@
   <global>
     
     <!-- Shared memory driver. Read raw data source buffers in shared memory -->
-    <shmdriver directory="/dev/shm/levbdim">
+    <shmdriver directory="/dev/shm/monitor">
       <datasources>
 	<!-- detectors :
 	     SDHCAL = 100 
@@ -165,9 +165,9 @@
 	<!-- <source detector="100" id="182"/> -->
 	<!-- <source detector="100" id="80"/> -->
 	
-	<!-- <source detector="100" id="243"/> -->
-	<!-- <source detector="100" id="242"/> -->
-	<!-- <source detector="100" id="241"/> -->
+	<source detector="100" id="243"/>
+	<source detector="100" id="242"/>
+	<source detector="100" id="241"/>
 
 	<!-- Additional layers -->
 	<!-- <source detector="100" id="205"/> -->
@@ -207,7 +207,7 @@
     <evbprocessors>
       <evbprocessor name="EventInfoProducer"/>
       <!-- <evbprocessor name="CherenkovProducer"/> -->
-      <evbprocessor name="SDHCALProducer"/>
+      <!-- <evbprocessor name="SDHCALProducer"/> -->
     </evbprocessors>
     
   </global>
@@ -224,32 +224,32 @@
     
     <!-- SDHCAL lcio collection producer -->
     <!-- Output CalorimeterHit collection -->
-    <evbprocessor plugin="SDHCALShmProcessor" name="SDHCALProducer">
-      <electronicsMapping plugin="SDHCALElectronicsMapping">
-            <parameter name="CellReferencePosition"> 518.8 597.2 1267.1 </parameter>
-            <parameter name="CellSize0"> 10.408 </parameter>
-            <parameter name="CellSize1"> 10.408 </parameter>
-            <parameter name="ReadFromDB"> false </parameter>
-            <parameter name="Host">  </parameter>
-            <parameter name="User">  </parameter>
-            <parameter name="Password">  </parameter>
-            <parameter name="Database"> GEOMETRY </parameter>
-            <parameter name="BeamTest"> SPS_04_2015 </parameter>
-            <parameter name="GeometryFileName"> geometry_SPS_04_2015.xml </parameter>
-      </electronicsMapping>
-      <parameter name="AmplitudeBitRotation"> 3 </parameter>
-      <parameter name="EncodeDifAsicChannel"> false </parameter>
-      <parameter name="IJKEncoding"> I J K-1 </parameter>
-      <parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter>
-      <parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
-      <parameter name="OutputCollectionName"> SDHCAL_HIT </parameter>
-      <parameter name="SkipFullAsics"> true </parameter>
-      <parameter name="DropFirstRU"> false </parameter>
-      <parameter name="NoiseLimit"> 1000000 </parameter>
-      <parameter name="XDaqShift"> 20 </parameter>
-      <parameter name="DetectorId"> 100 </parameter>
-      <parameter name="DifMaskList"> 3 </parameter>
-    </evbprocessor>
+    <!-- <evbprocessor plugin="SDHCALShmProcessor" name="SDHCALProducer"> -->
+    <!--   <electronicsMapping plugin="SDHCALElectronicsMapping"> -->
+    <!--         <parameter name="CellReferencePosition"> 518.8 597.2 1267.1 </parameter> -->
+    <!--         <parameter name="CellSize0"> 10.408 </parameter> -->
+    <!--         <parameter name="CellSize1"> 10.408 </parameter> -->
+    <!--         <parameter name="ReadFromDB"> false </parameter> -->
+    <!--         <parameter name="Host">  </parameter> -->
+    <!--         <parameter name="User">  </parameter> -->
+    <!--         <parameter name="Password">  </parameter> -->
+    <!--         <parameter name="Database"> GEOMETRY </parameter> -->
+    <!--         <parameter name="BeamTest"> SPS_04_2015 </parameter> -->
+    <!--         <parameter name="GeometryFileName"> geometry_SPS_04_2015.xml </parameter> -->
+    <!--   </electronicsMapping> -->
+    <!--   <parameter name="AmplitudeBitRotation"> 3 </parameter> -->
+    <!--   <parameter name="EncodeDifAsicChannel"> false </parameter> -->
+    <!--   <parameter name="IJKEncoding"> I J K-1 </parameter> -->
+    <!--   <parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter> -->
+    <!--   <parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter> -->
+    <!--   <parameter name="OutputCollectionName"> SDHCAL_HIT </parameter> -->
+    <!--   <parameter name="SkipFullAsics"> true </parameter> -->
+    <!--   <parameter name="DropFirstRU"> false </parameter> -->
+    <!--   <parameter name="NoiseLimit"> 1000000 </parameter> -->
+    <!--   <parameter name="XDaqShift"> 20 </parameter> -->
+    <!--   <parameter name="DetectorId"> 100 </parameter> -->
+    <!--   <parameter name="DifMaskList"> 3 </parameter> -->
+    <!-- </evbprocessor> -->
 
     <!--Cherenkov lcio collection producer -->
     <!-- Output CalorimeterHit collection -->
