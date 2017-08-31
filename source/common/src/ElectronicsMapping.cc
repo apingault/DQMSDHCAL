@@ -129,6 +129,8 @@ SDHCALElectronicsMapping::SDHCALElectronicsMapping() :
 		m_cellReferencePosition(0.f, 0.f, 0.f),
 		m_cellSize0(10.408f),
 		m_cellSize1(10.408f),
+    m_layerThickness(0),
+    m_rotateAxes(0),
 		m_moduleLogStr("[SDHCALElectronicsMapping]")
 {
 	/* nop */

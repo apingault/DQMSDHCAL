@@ -125,7 +125,7 @@ dqm4hep::StatusCode Streamout::processEvent(EVENT::LCEvent *pLCEvent)
 		if(e == 0 && m_dropFirstRU)
 			continue;
 
-		LMGeneric *pLCGenericObject = (LMGeneric *)(pLCCollection->getElementAt(e));
+		LMGeneric *pLCGenericObject = dynamic_cast<LMGeneric*>(pLCCollection->getElementAt(e));
 
 		if(NULL == pLCGenericObject)
 			continue;

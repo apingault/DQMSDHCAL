@@ -60,6 +60,11 @@ DQM_PLUGIN_DECL( AsicAnalysisModule, "AsicAnalysisModule" )
 
 AsicAnalysisModule::AsicAnalysisModule() :
 	DQMTriventModule(),
+	m_nAsicX(0),
+	m_nAsicY(0),
+	m_nStartLayerShift(0),
+	m_pElectronicsMapping(NULL),
+	m_nActiveLayers(0),
 	m_moduleLogStr("[AsicAnalysisModule]")
 {
 }
@@ -505,7 +510,6 @@ dqm4hep::StatusCode AsicAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 			if(dqm4hep::STATUS_CODE_SUCCESS != m_pElectronicsMapping->cellToElectronics(cell, electronics))
 				continue;
 
-			unsigned int key(0);
 			this->updateAsic(electronics.m_difId, electronics.m_asicId, pLayer);
 		}
 
@@ -572,9 +576,9 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 
 		const bool isEfficient = efficiency1 > 0.f;
 
-		const float efficiencyError1 = std::sqrt(efficiency1 * (1 - efficiency1) / nTracks);
-		const float efficiencyError2 = std::sqrt(efficiency2 * (1 - efficiency2) / nTracks);
-		const float efficiencyError3 = std::sqrt(efficiency3 * (1 - efficiency3) / nTracks);
+		// const float efficiencyError1 = std::sqrt(efficiency1 * (1 - efficiency1) / nTracks);
+		// const float efficiencyError2 = std::sqrt(efficiency2 * (1 - efficiency2) / nTracks);
+		// const float efficiencyError3 = std::sqrt(efficiency3 * (1 - efficiency3) / nTracks);
 
 		std::map<unsigned int, LayerInfo>::iterator infoIter = layerInfoMap.find(layerID);
 

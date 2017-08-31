@@ -53,7 +53,8 @@ DQM_PLUGIN_DECL( EventDisplayModule , "EventDisplayModule" )
 //-------------------------------------------------------------------------------------------------
 
 EventDisplayModule::EventDisplayModule() :
-		DQMTriventModule()
+		DQMTriventModule(),
+		m_pEventClassifier(NULL)
 {
 
 }

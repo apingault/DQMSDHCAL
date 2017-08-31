@@ -348,11 +348,10 @@ void DIFSlowControl::FillAsicHR2(std::bitset<109*8> &bs)
 void DIFSlowControl::Dump()
 {
 
-  for (std::map< int,std::map < std::string,int > >::iterator it=_mapSC.begin();it!=_mapSC.end();it++)
+  for (std::map< int,std::map < std::string,int > >::iterator it=_mapSC.begin();it!=_mapSC.end();++it)
     {
       std::cout<<"ASIC " <<it->first<<std::endl;
-      std::map < std::string,int >::iterator jt =it->second.begin();
-      for (std::map < std::string,int >::iterator jt =(it->second).begin(); jt!=(it->second).end();jt++)
+      for (std::map < std::string,int >::iterator jt =(it->second).begin(); jt!=(it->second).end();++jt)
 	std::cout<<jt->first<<" : "<<jt->second<<std::endl;
     }
 }

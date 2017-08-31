@@ -189,6 +189,14 @@ void SDHCALDifHelper::setCaloHitLCFlag(IMPL::LCFlagImpl &lcFlag)
 //-------------------------------------------------------------------------------------------------
 
 SDHCALShmProcessor::SDHCALShmProcessor():
+		m_skipFullAsics(0),
+		m_dropFirstRU(0),
+		m_encodeDifAsicChannel(0),
+		m_xdaqShift(0),
+		m_detectorId(0),
+		m_noiseLimit(0),
+		m_amplitudeBitRotation(0),
+		m_pElectronicsMapping(NULL),
 		m_moduleLogStr("[SDHCALShmProcessor]")
 {
 	/* nop */
@@ -517,6 +525,11 @@ dqm4hep::StatusCode SDHCALShmProcessor::readSettings(const dqm4hep::TiXmlHandle 
 //-------------------------------------------------------------------------------------------------
 
 CherenkovShmProcessor::CherenkovShmProcessor() :
+		m_detectorId(0),
+		m_xdaqShift(0),
+		m_cherenkovDifId(0),
+		m_amplitudeBitRotation(0),
+		m_cherenkovTimeShift(0),
 		m_moduleLogStr("[CherenkovShmProcessor]")
 {
 	/* nop */
@@ -725,8 +738,12 @@ dqm4hep::StatusCode CherenkovShmProcessor::readSettings(const dqm4hep::TiXmlHand
 //-------------------------------------------------------------------------------------------------
 
 SiWECalShmProcessor::SiWECalShmProcessor() :
+		m_moduleLogStr("[SiWECalShmProcessor]"),
 		m_positionShift(0.f, 0.f, 0.f),
-		m_moduleLogStr("[SiWECalShmProcessor]")
+		m_detectorId(0),
+		m_adcCountCut(0),
+		m_energyMode(0),
+		m_negativeAdcCountSuppression(0)
 {
 	/* nop */
 }
@@ -1104,7 +1121,8 @@ dqm4hep::StatusCode SiWECalShmProcessor::readSettings(const dqm4hep::TiXmlHandle
 FileWriterShmProcessor::FileWriterShmProcessor() :
 		m_openMode(1),
 		m_currentRunNumber(-1),
-		m_currentSubRunNumber(0)
+		m_currentSubRunNumber(0),
+		m_compressionLevel(0)
 {
 	m_pLCWriter = IOIMPL::LCFactory::getInstance()->createLCWriter();
 }

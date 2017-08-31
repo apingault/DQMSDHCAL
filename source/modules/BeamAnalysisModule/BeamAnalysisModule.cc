@@ -52,7 +52,13 @@ namespace dqm_sdhcal
 DQM_PLUGIN_DECL( BeamAnalysisModule, "BeamAnalysisModule" )
 
 BeamAnalysisModule::BeamAnalysisModule() :
-  DQMAnalysisModule()
+  DQMAnalysisModule(),
+  m_pEventHelper(NULL),
+  m_nEventProcessed(0),
+  m_DAQ_BC_Period(0),
+  m_nParticleLastSpill(0),
+  m_skipEvent(0),
+  m_newSpillTimeCut(0)
 {
 }
 
@@ -145,14 +151,13 @@ dqm4hep::StatusCode BeamAnalysisModule::processEvent(dqm4hep::DQMEvent * const p
   try
   {
     EVENT::LCCollection *pCalorimeterHitCollection = pLCEvent->getCollection(m_inputCollectionName);
-    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " NumberOfHits in trigger : " << pCalorimeterHitCollection->getNumberOfElements() );
-
     if (NULL == pCalorimeterHitCollection)
     {
       LOG4CXX_ERROR( dqm4hep::dqmMainLogger , m_moduleLogStr << " NULL Pointer: pCalorimeterHitCollection pointer " );
       return dqm4hep::STATUS_CODE_SUCCESS;
     }
-
+    LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " NumberOfHits in trigger : " << pCalorimeterHitCollection->getNumberOfElements() );
+    
     //Find Triggers and NewSpill
     RETURN_RESULT_IF( dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventHelper->findTrigger(pCalorimeterHitCollection, m_eventParameters));
 
