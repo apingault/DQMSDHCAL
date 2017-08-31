@@ -114,12 +114,12 @@ dqm4hep::StatusCode EventHelper::readSettings(const dqm4hep::TiXmlHandle xmlHand
 
 dqm4hep::StatusCode EventHelper::decodeEventParameter(EVENT::LCCollection *pLCCollection, EventParameters &m_evtParameters)
 {
-	EVENT::CalorimeterHit *pCaloHit;
 	unsigned int difId = 0;
 	if ( pLCCollection->getNumberOfElements() != 0)
 	{
+		EVENT::CalorimeterHit *pCaloHit;
 		try {pCaloHit = dynamic_cast<EVENT::CalorimeterHit*> (pLCCollection->getElementAt(0));}
-		catch (std::exception e)
+		catch (std::exception &e)
 		{
 			return dqm4hep::STATUS_CODE_FAILURE;
 		}
