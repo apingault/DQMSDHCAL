@@ -425,9 +425,10 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		// Fill Number Of Clusters vs Rate
 		// if (m_eventParameters.spillIntegratedTime > 0 && m_pEventClassifier->isPhysicsEvent() && m_pEventClassifier->getEventType() != EventClassifier::COSMIC_MUON_EVENT)
 		if (m_eventParameters.spillIntegratedTime > 0 && m_pEventClassifier->isPhysicsEvent())
-			m_pRateVsClusterProfile->get<TProfile>()->Fill(m_nParticleWithinSpill / m_eventParameters.lastSpillIntegratedTime * m_pEventHelper->getDAQ_BC_Period(), clusters.size());
-		if (m_eventParameters.spillIntegratedTime > 0)
-			m_pRateVsClusterProfileNoClassification->get<TProfile>()->Fill(m_nParticleWithinSpill / m_eventParameters.lastSpillIntegratedTime * m_pEventHelper->getDAQ_BC_Period(), clusters.size());
+		    m_pRateVsClusterProfile->get<TProfile>()->Fill(m_nParticleWithinSpill / m_eventParameters.spillIntegratedTime * m_pEventHelper->getDAQ_BC_Period(), clusters.size());
+
+		// if (m_eventParameters.spillIntegratedTime > 0)
+		// 	m_pRateVsClusterProfileNoClassification->get<TProfile>()->Fill(m_nParticleWithinSpill / m_eventParameters.lastSpillIntegratedTime * m_pEventHelper->getDAQ_BC_Period(), clusters.size());
 
 		int nHit0 = 0;
 		int nHit1 = 0;
