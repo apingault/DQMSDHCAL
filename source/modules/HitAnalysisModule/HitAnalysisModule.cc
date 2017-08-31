@@ -123,8 +123,8 @@ dqm4hep::StatusCode HitAnalysisModule::userReadSettings(const dqm4hep::TiXmlHand
 	                 "RateVsClusterProfile", m_pRateVsClusterProfile));
 
 	m_pRateVsClusterProfileNoClassification = NULL;
-	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
-	                 "RateVsClusterProfile", m_pRateVsClusterProfileNoClassification));
+	// RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
+	//                  "RateVsClusterProfileNoClassification", m_pRateVsClusterProfileNoClassification));
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, dqm4hep::DQMXmlHelper::bookMonitorElement(this, xmlHandle,
 	                 "NumberOfHits0", m_pNHit0));
