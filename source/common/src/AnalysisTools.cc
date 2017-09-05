@@ -154,6 +154,7 @@ dqm4hep::StatusCode EventHelper::decodeEventParameter(EVENT::LCCollection *pLCCo
 			return dqm4hep::STATUS_CODE_FAILURE;
 
 	m_evtParameters.eventIntegratedTime = vTrigger[2];
+	m_evtParameters.totalEventIntegratedTime += m_evtParameters.eventIntegratedTime;
 	dqm4hep::dqm_uint m_bcid1 = vTrigger[4];
 	dqm4hep::dqm_uint m_bcid2 = vTrigger[3];
 

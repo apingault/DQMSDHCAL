@@ -65,6 +65,7 @@ public:
 	struct EventParameters
 	{
 		dqm4hep::dqm_uint                        eventIntegratedTime;
+		dqm4hep::dqm_uint                        totalEventIntegratedTime;
 		dqm4hep::dqm_uint                        spillIntegratedTime;
 		dqm4hep::dqm_uint                        lastSpillIntegratedTime;
 		dqm4hep::dqm_uint                        totalIntegratedTime;

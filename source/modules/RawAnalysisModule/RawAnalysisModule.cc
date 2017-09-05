@@ -439,7 +439,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
       m_layerElementMap[cell.m_layer].m_difElementMap[electronics.m_difId].m_pAsicEventTimeZoom->get<TH1>()->Fill(hitTime);
 
       m_pHitMap->get<TH2>()->SetBinContent(electronics.m_difId + 1, electronics.m_asicId, m_pHitMap->get<TH2>()->GetBinContent(electronics.m_difId + 1, electronics.m_asicId) + 1);
-      m_pHitFrequencyMap->get<TH2>()->SetBinContent(electronics.m_difId + 1, electronics.m_asicId, m_pHitMap->get<TH2>()->GetBinContent(electronics.m_difId + 1, electronics.m_asicId) / (m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period()) );
+      m_pHitFrequencyMap->get<TH2>()->SetBinContent(electronics.m_difId + 1, electronics.m_asicId, m_pHitMap->get<TH2>()->GetBinContent(electronics.m_difId + 1, electronics.m_asicId) / (m_eventParameters.totalEventIntegratedTime * m_pEventHelper->getDAQ_BC_Period()) );
 
 
       const CLHEP::Hep3Vector positionVector(
@@ -472,9 +472,9 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
 
       for (int iBin = 0; iBin < h_asicHit1->GetNbinsX(); ++iBin)
       {
-        h_asicFreq1->SetBinContent(iBin, h_asicHit1->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period()));
-        h_asicFreq2->SetBinContent(iBin, h_asicHit2->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period()));
-        h_asicFreq3->SetBinContent(iBin, h_asicHit3->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period()));
+        h_asicFreq1->SetBinContent(iBin, h_asicHit1->GetBinContent(iBin) / (m_eventParameters.totalEventIntegratedTime * m_pEventHelper->getDAQ_BC_Period()));
+        h_asicFreq2->SetBinContent(iBin, h_asicHit2->GetBinContent(iBin) / (m_eventParameters.totalEventIntegratedTime * m_pEventHelper->getDAQ_BC_Period()));
+        h_asicFreq3->SetBinContent(iBin, h_asicHit3->GetBinContent(iBin) / (m_eventParameters.totalEventIntegratedTime * m_pEventHelper->getDAQ_BC_Period()));
       }
     }
 
@@ -574,6 +574,7 @@ dqm4hep::StatusCode RawAnalysisModule::endOfCycle()
 dqm4hep::StatusCode RawAnalysisModule::startOfRun(dqm4hep::DQMRun * const pRun)
 {
   m_eventParameters.totalIntegratedTime = 0;
+  m_eventParameters.totalEventIntegratedTime = 0;
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
