@@ -439,7 +439,7 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
       m_layerElementMap[cell.m_layer].m_difElementMap[electronics.m_difId].m_pAsicEventTimeZoom->get<TH1>()->Fill(hitTime);
 
       m_pHitMap->get<TH2>()->SetBinContent(electronics.m_difId + 1, electronics.m_asicId, m_pHitMap->get<TH2>()->GetBinContent(electronics.m_difId + 1, electronics.m_asicId) + 1);
-      m_pHitFrequencyMap->get<TH2>()->SetBinContent(electronics.m_difId + 1, electronics.m_asicId, m_pHitMap->get<TH2>()->GetBinContent(electronics.m_difId + 1, electronics.m_asicId) /m_eventParameters.totalIntegratedTime );
+      m_pHitFrequencyMap->get<TH2>()->SetBinContent(electronics.m_difId + 1, electronics.m_asicId, m_pHitMap->get<TH2>()->GetBinContent(electronics.m_difId + 1, electronics.m_asicId) / (m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period()) );
 
 
       const CLHEP::Hep3Vector positionVector(
@@ -472,9 +472,9 @@ dqm4hep::StatusCode RawAnalysisModule::processEvent(dqm4hep::DQMEvent * const pE
 
       for (int iBin = 0; iBin < h_asicHit1->GetNbinsX(); ++iBin)
       {
-        h_asicFreq1->SetBinContent(iBin, h_asicHit1->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime));
-        h_asicFreq2->SetBinContent(iBin, h_asicHit2->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime));
-        h_asicFreq3->SetBinContent(iBin, h_asicHit3->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime));
+        h_asicFreq1->SetBinContent(iBin, h_asicHit1->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period()));
+        h_asicFreq2->SetBinContent(iBin, h_asicHit2->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period()));
+        h_asicFreq3->SetBinContent(iBin, h_asicHit3->GetBinContent(iBin) / (m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period()));
       }
     }
 
@@ -582,7 +582,7 @@ dqm4hep::StatusCode RawAnalysisModule::startOfRun(dqm4hep::DQMRun * const pRun)
 dqm4hep::StatusCode RawAnalysisModule::endOfRun(dqm4hep::DQMRun * const pRun)
 {
   float DAQ_BC_Period = m_pEventHelper->getDAQ_BC_Period();
-  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Run lasted " << m_eventParameters.totalIntegratedTime * DAQ_BC_Period << "s : " << floor(m_eventParameters.totalIntegratedTime * DAQ_BC_Period / 3600) << "h " << floor(fmod(m_eventParameters.totalIntegratedTime * DAQ_BC_Period / 60, 60)) << "min " << fmod(m_eventParameters.totalIntegratedTime * DAQ_BC_Period, 60) <<  "s");
+  LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Run lasted " << m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period() << "s : " << floor(m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period() / 3600) << "h " << floor(fmod(m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period() / 60, 60)) << "min " << fmod(m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period(), 60) <<  "s");
   return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
