@@ -84,7 +84,17 @@ HitAnalysisModule::HitAnalysisModule() :
 	m_nUndefinedWithinRun(0),
 	m_nUndefinedWithinSpill(0),
 	m_nNoiseWithinRun(0),
-	m_nNoiseWithinSpill(0)
+        m_nNoiseWithinSpill(0),
+ 	m_nUndefinedWithinTrigger(0),
+	m_nNoiseWithinTrigger(0),
+	m_nCosmicMuonsWithinTrigger(0),
+	m_nParticleWithinTrigger(0),
+	m_nBeamMuonWithinTrigger(0),
+	m_nChargedHadronsWithinTrigger(0),
+	m_nNeutralHadronsWithinTrigger(0),
+	m_nPhotonsWithinTrigger(0),
+	m_nElectronsWithinTrigger(0)
+ 
 {
 }
 
@@ -280,6 +290,15 @@ dqm4hep::StatusCode HitAnalysisModule::userInitModule()
 	m_nPhotonsWithinSpill = 0;
 	m_nElectronsWithinSpill = 0;
 
+	m_nUndefinedWithinTrigger = 0;
+	m_nNoiseWithinTrigger = 0;
+	m_nCosmicMuonsWithinTrigger = 0;
+	m_nParticleWithinTrigger = 0;
+	m_nBeamMuonWithinTrigger = 0;
+	m_nChargedHadronsWithinTrigger = 0;
+	m_nNeutralHadronsWithinTrigger = 0;
+	m_nPhotonsWithinTrigger = 0;
+	m_nElectronsWithinTrigger = 0;
 
 	// initialize algorithms
 	m_clusteringAlgorithm.SetClusterParameterSetting(m_clusteringSettings);
@@ -312,11 +331,13 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		{
 			m_nUndefinedWithinRun++;
 			m_nUndefinedWithinSpill++;
+			m_nUndefinedWithinTrigger++;
 		}
 		else if (m_pEventClassifier->isNoisyEvent())
 		{
 			m_nNoiseWithinRun++;
 			m_nNoiseWithinSpill++;
+			m_nNoiseWithinTrigger++;
 		}
 		else if ( m_pEventClassifier->isPhysicsEvent() )
 		{
@@ -324,38 +345,45 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 			{
 				m_nParticleWithinRun++;
 				m_nParticleWithinSpill++;
+				m_nParticleWithinTrigger++;
 
 				if ( m_pEventClassifier->getEventType() == EventClassifier::BEAM_MUON_EVENT )
 				{
 					m_nBeamMuonWithinRun++;
 					m_nBeamMuonWithinSpill++;
+					m_nBeamMuonWithinTrigger++;
 				}
 
 				else if ( m_pEventClassifier->getEventType() == EventClassifier::CHARGED_HAD_SHOWER_EVENT )
 				{
 					m_nChargedHadronsWithinRun++;
 					m_nChargedHadronsWithinSpill++;
+					m_nChargedHadronsWithinTrigger++;
 				}
 				else if ( m_pEventClassifier->getEventType() == EventClassifier::NEUTRAL_HAD_SHOWER_EVENT )
 				{
 					m_nNeutralHadronsWithinRun++;
 					m_nNeutralHadronsWithinSpill++;
+					m_nNeutralHadronsWithinTrigger++;
 				}
 				else if ( m_pEventClassifier->getEventType() == EventClassifier::NEUTRAL_EM_SHOWER_EVENT )
 				{
 					m_nPhotonsWithinRun++;
 					m_nPhotonsWithinSpill++;
+					m_nPhotonsWithinTrigger++;
 				}
 				else if ( m_pEventClassifier->getEventType() == EventClassifier::CHARGED_EM_SHOWER_EVENT )
 				{
 					m_nElectronsWithinRun++;
 					m_nElectronsWithinSpill++;
+					m_nElectronsWithinTrigger++;
 				}
 			}
 			else
 			{
 				m_nCosmicMuonsWithinSpill++;
 				m_nCosmicMuonsWithinRun++;
+				m_nCosmicMuonsWithinTrigger++;
 			}
 		}
 
@@ -373,30 +401,41 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 		if (m_eventParameters.newTrigger)
 		{
 			// LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Trigger at time : " << m_eventParameters.timeTrigger << "s - time since previous trigger : " << timeDif << "s\t spillIntegratedTime : " << m_spillIntegratedTime << "s");
+		  // if (m_eventParameters.spillIntegratedTime != 0)
+		  //   RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillRates());
+		  
+		  m_nUndefinedWithinTrigger = 0;
+		  m_nNoiseWithinTrigger = 0;
+		  m_nCosmicMuonsWithinTrigger = 0;
+		  m_nParticleWithinTrigger = 0;
+		  m_nBeamMuonWithinTrigger = 0;
+		  m_nChargedHadronsWithinTrigger = 0;
+		  m_nNeutralHadronsWithinTrigger = 0;
+		  m_nPhotonsWithinTrigger = 0;
+		  m_nElectronsWithinTrigger = 0;
+		  m_nTrigger++;
 
-			if (m_eventParameters.newSpill)
-			{
-				// LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Spill -  time since last startOfSpill : " <<  m_eventParameters.timeTrigger - m_eventParameters.timeLastSpill << " s.  Last spill Stat: Length : " << m_spillIntegratedTime << "s\t triggers : " << m_nTrigger << "\t particles : " << m_nParticleWithinSpill );
+		  if (m_eventParameters.newSpill)
+		    {
+		      // LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - New Spill -  time since last startOfSpill : " <<  m_eventParameters.timeTrigger - m_eventParameters.timeLastSpill << " s.  Last spill Stat: Length : " << m_spillIntegratedTime << "s\t triggers : " << m_nTrigger << "\t particles : " << m_nParticleWithinSpill );
+		      
+		      m_nSpill++;
+		      if (m_eventParameters.lastSpillIntegratedTime != 0)
+			RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillRates());
 
-				m_nSpill++;
-				m_nTrigger = 0;
-
-				LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - Filling Rates..." );
-				if (m_eventParameters.lastSpillIntegratedTime != 0)
-					RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillRates());
-				LOG4CXX_INFO( dqm4hep::dqmMainLogger , m_moduleLogStr <<  " - Filling Rates...OK" );
-
-				// Reinitialize rates
-				m_nUndefinedWithinSpill = 0;
-				m_nNoiseWithinSpill = 0;
-				m_nCosmicMuonsWithinSpill = 0;
-				m_nParticleWithinSpill = 0;
-				m_nBeamMuonWithinSpill = 0;
-				m_nChargedHadronsWithinSpill = 0;
-				m_nNeutralHadronsWithinSpill = 0;
-				m_nPhotonsWithinSpill = 0;
-				m_nElectronsWithinSpill = 0;
-			}
+		      m_nTrigger = 0;
+		      
+		      // Reinitialize rates
+		      m_nUndefinedWithinSpill = 0;
+		      m_nNoiseWithinSpill = 0;
+		      m_nCosmicMuonsWithinSpill = 0;
+		      m_nParticleWithinSpill = 0;
+		      m_nBeamMuonWithinSpill = 0;
+		      m_nChargedHadronsWithinSpill = 0;
+		      m_nNeutralHadronsWithinSpill = 0;
+		      m_nPhotonsWithinSpill = 0;
+		      m_nElectronsWithinSpill = 0;
+		    }
 		}
 
 		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(m_cellIDDecoderString);
@@ -707,6 +746,36 @@ dqm4hep::StatusCode HitAnalysisModule::startOfRun(DQMRun * pRun)
 
 dqm4hep::StatusCode HitAnalysisModule::endOfRun(DQMRun * pRun)
 {
+  	m_nParticleWithinRun = 0;
+	m_nParticleWithinSpill = 0;
+	m_nBeamMuonWithinRun = 0;
+	m_nBeamMuonWithinSpill = 0;
+	m_nChargedHadronsWithinRun = 0;
+	m_nChargedHadronsWithinSpill = 0;
+	m_nNeutralHadronsWithinRun = 0;
+	m_nNeutralHadronsWithinSpill = 0;
+	m_nPhotonsWithinRun = 0;
+	m_nPhotonsWithinSpill = 0;
+	m_nElectronsWithinRun = 0;
+	m_nElectronsWithinSpill = 0;
+	m_nOthersWithinRun = 0;
+	m_nOthersWithinSpill = 0;
+	m_nCosmicMuonsWithinRun = 0;
+	m_nCosmicMuonsWithinSpill = 0;
+	m_nUndefinedWithinRun = 0;
+	m_nUndefinedWithinSpill = 0;
+	m_nNoiseWithinRun = 0;
+        m_nNoiseWithinSpill = 0;
+
+	m_nUndefinedWithinTrigger = 0;
+	m_nNoiseWithinTrigger = 0;
+	m_nCosmicMuonsWithinTrigger = 0;
+	m_nParticleWithinTrigger = 0;
+	m_nBeamMuonWithinTrigger = 0;
+	m_nChargedHadronsWithinTrigger = 0;
+	m_nNeutralHadronsWithinTrigger = 0;
+	m_nPhotonsWithinTrigger = 0;
+	m_nElectronsWithinTrigger = 0;
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
