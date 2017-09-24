@@ -1,0 +1,83 @@
+<dqm4hep>
+
+    <monitorelementcollector name="sdhcal_me_collector"/>    
+    <archiver open="true" directory="/tmp" />
+    <cycle sleep="2000" period="3" reset="false" />
+
+    <module type="FSlowControlModule" name="FSlowControl">
+        
+    <parameter name="SlowControlName"> FSLOW </parameter>
+    <parameter name="HostName"> lyosdhcal12 </parameter>
+    <parameter name="HostPort"> 36000 </parameter>
+
+		<monitorElement ID="GlobalTemperature"
+			name="GlobalTemperature" path="/Global" type="user" ROOTClass="dqm4hep::TDynamicGraph"
+			title="Global temperature (Celsius);t [s];T [°C]" drawOption="ap"/>
+			
+		<monitorElement ID="GlobalPressure"
+			name="GlobalPressure" path="/Global" type="user" ROOTClass="dqm4hep::TDynamicGraph"
+			title="Global pressure (hPa);t [s];P [hPa]" drawOption="ap"/>
+			
+		<monitorElement ID="VSet"
+			name="VSet" path="/Global" type="user" ROOTClass="TGraph"
+			title="High voltage (V set);layer;V [V]" drawOption="ap"/>
+			
+		<monitorElement ID="VRead"
+			name="VRead" path="/Global" type="user" ROOTClass="TGraph"
+			title="High voltage (V read);layer;V [V]" drawOption="ap"/>
+			
+		<monitorElement ID="VSetVReadDiff"
+			name="VSetVReadDiff" path="/Global" type="user" ROOTClass="TGraph"
+			title="High voltage (V set - V read);layer;V [V]" drawOption="ap"/>
+			
+		<monitorElement ID="ISet"
+			name="ISet" path="/Global" type="user" ROOTClass="TGraph"
+			title="Current (I set);layer;I [µA]" drawOption="ap"/>
+			
+		<monitorElement ID="IRead"
+			name="IRead" path="/Global" type="user" ROOTClass="TGraph"
+			title="Current (I read);layer;I [µA]" drawOption="ap"/>
+			
+		<monitorElement ID="ISetIReadDiff"
+			name="ISetIReadDiff" path="/Global" type="user" ROOTClass="TGraph"
+			title="Current (I set - I read);layer;I [µA]" drawOption="ap"/>
+			
+		<monitorElement ID="LowVoltage"
+			name="LowVoltage" path="/Global" type="string" title="Low voltage info"
+			nBins="50" min="0" max="49" value="Not available"/>
+			
+		<monitorElement ID="VReadPerLayer"
+			name="VReadLayer_" path="/ByLayer/HV" type="user" ROOTClass="dqm4hep::TDynamicGraph"
+			title="High voltage (V set)" drawOption="ap"/>
+			
+        <monitorElement ID="IReadPerLayer"
+                name="IReadLayer_" path="/ByLayer/Current" type="user" ROOTClass="dqm4hep::TDynamicGraph"
+                title="Current (I read)" drawOption="ap"/>
+                
+        <qualitytest type="CurrentQualityTest" name="CurrentCheckQuality">
+            <parameter name="MaxAllowedCurrent"> -5 </parameter>
+            <parameter name="MaxDangerousCurrent"> -10 </parameter>
+        </qualitytest>
+			
+		<!-- LVInfo status expects 3 floats -->
+		<!-- Vset, Vread, IRead -->
+		<parameter name="LVInfo"> /DZUP/lyoilcrpi17/STATUS </parameter>
+		
+		<!-- TemperatureInfo expects 1 float -->
+		<parameter name="TemperatureInfo"> /BMP183/lyoilcrpi24/TEMPERATUREREADVALUES </parameter>
+
+		<!-- PressureInfo expects 1 float -->
+		<parameter name="PressureInfo"> /BMP183/lyoilcrpi24/PRESSIONREADVALUES </parameter>
+		
+		<!-- HVInfo expects a list of HV module/channel -->
+		<!-- We use wildcard to get a list of services -->
+		<!-- Each HVInfo expects 1 integer and 4 floats -->
+		<!-- 1I : chID ; 4F : Vset, Iset, Vout, Iout-->
+		<parameter name="HVInfo"> /WIENER/MODULE*-CHANNEL*/* </parameter>
+		
+		<!-- The dynamic graph range  -->
+		<parameter name="GlobalDynamicGraphRange"> 3600 </parameter>
+
+    </module>
+
+</dqm4hep>
