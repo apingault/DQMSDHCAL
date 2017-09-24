@@ -99,7 +99,7 @@ dqm4hep::StatusCode EventDisplayModule::userReadSettings(const dqm4hep::TiXmlHan
 
 	/*------ Monitor element booking ------*/
 	std::vector<std::string> directories =
-		{ "Noise", "CosmicMuons", "BeamMuons",
+	  { "All", "Noise", "CosmicMuons", "BeamMuons",
 		  "ChargedHadrons", "NeutralHadrons", "EmShowers" ,
 		  "Others"};
 
@@ -205,6 +205,8 @@ dqm4hep::StatusCode EventDisplayModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, m_pEventClassifier->processEvent(pLCEvent));
 
+	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillElements(pLCEvent, m_displayElementsMap["All"]));
+	
 	if( m_pEventClassifier->isNoisyEvent() )
 	{
 		RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->fillElements(pLCEvent, m_displayElementsMap["Noise"]));
@@ -255,10 +257,7 @@ dqm4hep::StatusCode EventDisplayModule::processEvent(EVENT::LCEvent *pLCEvent)
 
 dqm4hep::StatusCode EventDisplayModule::fillElements(EVENT::LCEvent *pLCEvent, DisplayElements &elements)
 {
-	elements.m_pEventDisplay3D->reset();
-	elements.m_pLastProfileZX->reset();
-	elements.m_pLastProfileZY->reset();
-	elements.m_pLastProfileXY->reset();
+
 
 	const unsigned int nCollections = m_inputCaloHitCollections.size();
 
@@ -275,6 +274,10 @@ dqm4hep::StatusCode EventDisplayModule::fillElements(EVENT::LCEvent *pLCEvent, D
 				UTIL::CellIDDecoder<EVENT::CalorimeterHit> decoder(pCalorimeterHitCollection);
 
 				LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , "Processing collection " << collectionName << ", n elts = " << pCalorimeterHitCollection->getNumberOfElements() );
+				elements.m_pEventDisplay3D->reset();
+				elements.m_pLastProfileZX->reset();
+				elements.m_pLastProfileZY->reset();
+				elements.m_pLastProfileXY->reset();
 
 				// loop over hits in this event
 				for(unsigned int h=0 ; h<pCalorimeterHitCollection->getNumberOfElements() ; h++)
