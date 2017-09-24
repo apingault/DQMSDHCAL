@@ -141,12 +141,24 @@ private:
   int 																	   m_nElectronsWithinSpill;
   int 																	   m_nOthersWithinRun;
   int 																	   m_nOthersWithinSpill;
-	int 																	   m_nCosmicMuonsWithinRun;
-	int 																	   m_nCosmicMuonsWithinSpill;
+  int 																	   m_nCosmicMuonsWithinRun;
+  int 																	   m_nCosmicMuonsWithinSpill;
   int 																	   m_nUndefinedWithinRun;
   int 																	   m_nUndefinedWithinSpill;
   int 																	   m_nNoiseWithinRun;
   int 																	   m_nNoiseWithinSpill;
+
+  int 																	   m_nParticleWithinTrigger;
+  int 																	   m_nBeamMuonWithinTrigger;
+  int 																	   m_nChargedHadronsWithinTrigger;
+  int 																	   m_nNeutralHadronsWithinTrigger;
+  int 																	   m_nPhotonsWithinTrigger;
+  int 																	   m_nElectronsWithinTrigger;
+  int 																	   m_nOthersWithinTrigger;
+  int 																	   m_nCosmicMuonsWithinTrigger;
+  int 																	   m_nUndefinedWithinTrigger;
+  int 																	   m_nNoiseWithinTrigger;
+  
 
 	// monitor elements
 	//

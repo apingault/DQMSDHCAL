@@ -650,21 +650,25 @@ dqm4hep::StatusCode HitAnalysisModule::fillRates()
 	std::stringstream instantRate;
 	dqm4hep::dqm_uint spillIntegratedTime = m_eventParameters.lastSpillIntegratedTime * m_pEventHelper->getDAQ_BC_Period();
 	if (spillIntegratedTime == 0)
-	  return dqm4hep::STATUS_CODE_FAILURE;
-
+	  {
+	    LOG4CXX_WARN( dqm4hep::dqmMainLogger ,  m_moduleLogStr << " - spillIntegratedTime is zero, skip filling Rates");
+	    return dqm4hep::STATUS_CODE_SUCCESS;
+	  }
+	
 	instantRate << "*****  Instant Rate  *****\n";
 	instantRate << "*****  Physics  *****\n";
 	instantRate << "Current spill Length : " << spillIntegratedTime << "s\n";
-	instantRate << " - Particles    	 : " 		<< m_nParticleWithinSpill 			<< "/spill\t" << m_nParticleWithinSpill / spillIntegratedTime 			<< "/s" << "\n";
-	instantRate << " - Beam muons      : " 		<< m_nBeamMuonWithinSpill 			<< "/spill\t" << m_nBeamMuonWithinSpill / spillIntegratedTime 			<< "/s" << "\n";
-	instantRate << " - Charged hadrons : " 		<< m_nChargedHadronsWithinSpill << "/spill\t" << m_nChargedHadronsWithinSpill / spillIntegratedTime << "/s" << "\n";
-	instantRate << " - Neutral hadrons : " 		<< m_nNeutralHadronsWithinSpill << "/spill\t" << m_nNeutralHadronsWithinSpill / spillIntegratedTime << "/s" << "\n";
-	instantRate << " - Photons         : " 		<< m_nPhotonsWithinSpill 				<< "/spill\t" << m_nPhotonsWithinSpill / spillIntegratedTime 				<< "/s" << "\n";
-	instantRate << " - Electrons       : " 		<< m_nElectronsWithinSpill			<< "/spill\t" << m_nElectronsWithinSpill / spillIntegratedTime 			<< "/s" << "\n";
+	instantRate << " - Particles       : " << m_nParticleWithinSpill << "/Spill\t" << m_nParticleWithinTrigger << "/Trigger\t" << m_nParticleWithinSpill / spillIntegratedTime << "/s\n";
+	instantRate << " - Beam muons      : " << m_nBeamMuonWithinSpill << "/Spill\t" << m_nBeamMuonWithinTrigger << "/Trigger\t" << m_nBeamMuonWithinSpill / spillIntegratedTime << "/s\n";
+	instantRate << " - Charged hadrons : " << m_nChargedHadronsWithinSpill << "/Spill\t" << m_nChargedHadronsWithinTrigger << "/Trigger\t" << m_nChargedHadronsWithinSpill / spillIntegratedTime << "/s\n";
+	instantRate << " - Neutral hadrons : " << m_nNeutralHadronsWithinSpill << "/Spill\t" << m_nNeutralHadronsWithinTrigger << "/Trigger\t" << m_nNeutralHadronsWithinSpill / spillIntegratedTime << "/s\n";
+	instantRate << " - Photons         : " << m_nPhotonsWithinSpill << "/Spill\t" << m_nPhotonsWithinTrigger << "/Trigger\t" << m_nPhotonsWithinSpill / spillIntegratedTime << "/s\n";
+	instantRate << " - Electrons       : " << m_nElectronsWithinSpill << "/Spill\t" << m_nElectronsWithinTrigger << "/Trigger\t" << m_nElectronsWithinSpill / spillIntegratedTime << "/s\n";
+	
 	instantRate << "*****  Non Physics  *****\n";
-	instantRate << " - Undefined       : " 		<< m_nUndefinedWithinSpill 			<< "/spill\t" << m_nUndefinedWithinSpill / spillIntegratedTime 			<< "/s" << "\n";
-	instantRate << " - Noise           : " 		<< m_nNoiseWithinSpill					<< "/spill\t" << m_nNoiseWithinSpill / spillIntegratedTime 		 			<< "/s" << "\n";
-	instantRate << " - Cosmic muons    : " 		<< m_nCosmicMuonsWithinSpill 		<< "/spill\t" << m_nCosmicMuonsWithinSpill / spillIntegratedTime 		<< "/s" << "\n";
+	instantRate << " - Undefined       : " << m_nUndefinedWithinSpill << "/Spill\t" << m_nUndefinedWithinTrigger << "/Trigger\t" << m_nUndefinedWithinSpill / spillIntegratedTime << "/s\n";
+	instantRate << " - Noise           : " << m_nNoiseWithinSpill << "/Spill\t" << m_nNoiseWithinTrigger << "/Trigger\t" << m_nNoiseWithinSpill / spillIntegratedTime << "/s\n";
+	instantRate << " - Cosmic muons    : " << m_nCosmicMuonsWithinSpill << "/Spill\t" << m_nCosmicMuonsWithinTrigger << "/Trigger\t" << m_nCosmicMuonsWithinSpill / spillIntegratedTime << "/s\n";
 	instantRate << "*********************************";
 
 	m_pInstantRate->get< dqm4hep::TScalarString >()->Set( instantRate.str() );
@@ -678,41 +682,50 @@ dqm4hep::StatusCode HitAnalysisModule::fillRates()
 	meanRunRate << "*****  Mean Run Rate  *****\n";
 	meanRunRate << "*****  Physics  *****\n";
 	meanRunRate << "Current run length : " << totalIntegratedTime << "s\n";
-	meanRunRate << " - Particles    	 : " << m_nParticleWithinRun << "/Run\t"
+	meanRunRate << " - Particles       : " << m_nParticleWithinRun << "/Run\t"
 	            << m_nParticleWithinRun / m_nSpill << "/Spill\t"
+		    << m_nParticleWithinRun / m_nTrigger << "/Trigger\t"
 	            << m_nParticleWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Beam muons      : " << m_nBeamMuonWithinRun 	<< "/Run\t"
 	            << m_nBeamMuonWithinRun / m_nSpill << "/Spill\t"
+		    << m_nBeamMuonWithinRun / m_nTrigger << "/Trigger\t"
 	            << m_nBeamMuonWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Charged hadrons : " << m_nChargedHadronsWithinRun << "/Run\t"
 	            << m_nChargedHadronsWithinRun / m_nSpill << "/Spill\t"
+		    << m_nChargedHadronsWithinRun / m_nTrigger << "/Trigger\t"
 	            << m_nChargedHadronsWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Neutral hadrons : " << m_nNeutralHadronsWithinRun << "/Run\t"
 	            << m_nNeutralHadronsWithinRun / m_nSpill << "/Spill\t"
+		    << m_nNeutralHadronsWithinRun / m_nTrigger << "/Trigger\t"
 	            << m_nNeutralHadronsWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Photons         : " << m_nPhotonsWithinRun << "/Run\t"
 	            << m_nPhotonsWithinRun / m_nSpill << "/Spill\t"
+		    << m_nPhotonsWithinRun / m_nTrigger << "/Trigger\t"
 	            << m_nPhotonsWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Electrons       : " << m_nElectronsWithinRun	<< "/Run\t"
 	            << m_nElectronsWithinRun / m_nSpill << "/Spill\t"
+		    << m_nElectronsWithinRun / m_nTrigger << "/Trigger\t"
 	            << m_nElectronsWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << "*****  Non Physics  *****\n";
 	meanRunRate << " - Undefined       : " << m_nUndefinedWithinRun << "/Run\t"
 	            << m_nUndefinedWithinRun / m_nSpill << "/Spill\t"
+		    << m_nUndefinedWithinRun / m_nTrigger << "/Trigger\t"
 	            << m_nUndefinedWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Noise           : " << m_nNoiseWithinRun	<< "/Run\t"
 	            << m_nNoiseWithinRun / m_nSpill << "/Spill\t"
+		    << m_nNoiseWithinRun / m_nTrigger << "/Trigger\t"
 	            << m_nNoiseWithinRun / totalIntegratedTime << "/s\n";
 
 	meanRunRate << " - Cosmic muons    : " << m_nCosmicMuonsWithinRun << "/Run\t"
 	            << m_nCosmicMuonsWithinRun / m_nSpill << "/Spill\t"
+		    << m_nCosmicMuonsWithinRun / m_nTrigger << "/Trigger\t"
 	            << m_nCosmicMuonsWithinRun / totalIntegratedTime << "/s\n";
 	meanRunRate << "*********************************";
 
