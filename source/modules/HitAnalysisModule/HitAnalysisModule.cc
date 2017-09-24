@@ -530,14 +530,14 @@ dqm4hep::StatusCode HitAnalysisModule::processEvent(EVENT::LCEvent *pLCEvent)
 					if ( m_pEventClassifier->isPhysicsEvent() && m_pEventClassifier->getEventType() != EventClassifier::COSMIC_MUON_EVENT)
 						m_layerElementMap[layerId].m_pChamberHitsMap2->get<TH2>()->Fill((*hitIter)->getCellID()[0], (*hitIter)->getCellID()[1]);
 				}
-				if (hitThreshold == 2 || hitThreshold == 3)
+				else if (hitThreshold == 2 )
 				{
 					hitWeight = 3;
 					nHit1Layer++;
 					if ( m_pEventClassifier->isPhysicsEvent() && m_pEventClassifier->getEventType() != EventClassifier::COSMIC_MUON_EVENT)
 						m_layerElementMap[layerId].m_pChamberHitsMap1->get<TH2>()->Fill((*hitIter)->getCellID()[0], (*hitIter)->getCellID()[1]);
 				}
-				if (hitThreshold == 1 || hitThreshold == 2 || hitThreshold == 3)
+				else if (hitThreshold == 1 )
 				{
 					hitWeight = 1;
 					nHit0Layer++;
