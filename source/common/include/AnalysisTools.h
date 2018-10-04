@@ -121,12 +121,12 @@ public:
 	/**
 	 * decode lcio parameters from the triggerEvent
 	 */
-	dqm4hep::StatusCode decodeEventParameter(EVENT::LCCollection *pLCCollection, EventParameters &m_evtParameters);
+	dqm4hep::StatusCode decodeEventParameter(EVENT::LCCollection *pLCCollection, EventParameters &evtParameters);
 
 	/**
 	 * find trigger information in the triggerEvent
 	 */
-	dqm4hep::StatusCode findTrigger(EVENT::LCCollection * pLCCollection, EventParameters &m_evtParameters);
+	dqm4hep::StatusCode findTrigger(EVENT::LCCollection * pLCCollection, EventParameters &evtParameters);
 
 private:
 	EventParameters					m_evtParameters;
@@ -305,25 +305,25 @@ private:
 	// input parameters
 	std::string                                  m_inputCollectionName;
 	std::string                                  m_cellIDDecoderString;
-	unsigned int                                 m_nActiveLayers;
+	int 		                                 m_nActiveLayers;
 
 	// noise cut settings
-	unsigned int                                 m_noiseMinTouchedLayers;
-	unsigned int                                 m_noiseMinNHit;
+	int             		                     m_noiseMinTouchedLayers;
+	int             		                     m_noiseMinNHit;
 
 	// muon tracking cut settings
 	float                                        m_muonMaxCosmicCosTheta;
 
 	// shower cut settings
-	unsigned int                                 m_neutralNFirstLayers;
-	unsigned int                                 m_neutralMaxNHitPerLayer;
-	unsigned int                                 m_startingLayerCogRegion;
-	unsigned int                                 m_startingLayerNNextLayers;
-	unsigned int                                 m_startingLayerCounter;
+	int 		                                 m_neutralNFirstLayers;
+	int 		                                 m_neutralMaxNHitPerLayer;
+	int 		                                 m_startingLayerCogRegion;
+	int 		                                 m_startingLayerNNextLayers;
+	int 		                                 m_startingLayerCounter;
 	float                                        m_showerMinTransverseRatio;
 	float                                        m_showerMinNHitOverNTouchedLayers;
-	unsigned int                                 m_electronMaxNTouchedLayers;
-	unsigned int                                 m_electronMaxStartingLayer;
+	int 	                                     m_electronMaxNTouchedLayers;
+	int 	                                     m_electronMaxStartingLayer;
 	
 	std::string 																 m_moduleLogStr;
 };

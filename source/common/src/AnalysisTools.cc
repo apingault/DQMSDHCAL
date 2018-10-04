@@ -112,7 +112,7 @@ dqm4hep::StatusCode EventHelper::readSettings(const dqm4hep::TiXmlHandle xmlHand
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
-dqm4hep::StatusCode EventHelper::decodeEventParameter(EVENT::LCCollection *pLCCollection, EventParameters &m_evtParameters)
+dqm4hep::StatusCode EventHelper::decodeEventParameter(EVENT::LCCollection *pLCCollection, EventParameters &/*evtParameters*/)
 {
 	unsigned int difId = 0;
 	if ( pLCCollection->getNumberOfElements() != 0)
@@ -168,7 +168,7 @@ dqm4hep::StatusCode EventHelper::decodeEventParameter(EVENT::LCCollection *pLCCo
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
-dqm4hep::StatusCode EventHelper::findTrigger(EVENT::LCCollection * pLCCollection, EventParameters &m_evtParameters)
+dqm4hep::StatusCode EventHelper::findTrigger(EVENT::LCCollection * pLCCollection, EventParameters &/*evtParameters*/)
 {
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->decodeEventParameter(pLCCollection, m_evtParameters));
 	m_evtParameters.newSpill = false;
@@ -320,14 +320,14 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 		EVENT::LCCollection *pLCCollection = pLCEvent->getCollection( m_inputCollectionName );
 		UTIL::CellIDDecoder<EVENT::CalorimeterHit> cellIDDecoder(m_cellIDDecoderString);
 
-		unsigned int nHits = pLCCollection->getNumberOfElements();
+		int nHits = pLCCollection->getNumberOfElements();
 
 		if ( 0 == nHits )
 			return dqm4hep::STATUS_CODE_SUCCESS;
 
 		std::set<int> touchedLayers;
 
-		for (unsigned int e = 0 ; e < pLCCollection->getNumberOfElements() ; e++)
+		for (int e = 0 ; e < pLCCollection->getNumberOfElements() ; e++)
 		{
 			EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit *>(pLCCollection->getElementAt(e));
 
@@ -365,7 +365,7 @@ dqm4hep::StatusCode SDHCALEventClassifier::processEvent(EVENT::LCEvent *pLCEvent
 			LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " - Creating wrapper hits");
 
 			// loop over hits in this event
-			for (unsigned int h = 0 ; h < pLCCollection->getNumberOfElements() ; h++)
+			for (int h = 0 ; h < pLCCollection->getNumberOfElements() ; h++)
 			{
 				EVENT::CalorimeterHit *pCaloHit = dynamic_cast<EVENT::CalorimeterHit*>(pLCCollection->getElementAt(h));
 
