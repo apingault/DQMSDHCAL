@@ -214,7 +214,7 @@ dqm4hep::StatusCode BeamAnalysisModule::endOfCycle()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode BeamAnalysisModule::startOfRun(dqm4hep::DQMRun * const pRun)
+dqm4hep::StatusCode BeamAnalysisModule::startOfRun(dqm4hep::DQMRun * const /*pRun*/)
 {
   m_eventParameters.nTriggerProcessed = 0;
   m_eventParameters.eventIntegratedTime = 0;
@@ -228,7 +228,7 @@ dqm4hep::StatusCode BeamAnalysisModule::startOfRun(dqm4hep::DQMRun * const pRun)
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode BeamAnalysisModule::endOfRun(dqm4hep::DQMRun * const pRun)
+dqm4hep::StatusCode BeamAnalysisModule::endOfRun(dqm4hep::DQMRun * const /*pRun*/)
 {
   LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Run lasted " << m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period << "s : " << floor(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period / 3600) << "h " << floor(fmod(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period / 60, 60)) << "min " << fmod(m_eventParameters.totalIntegratedTime * m_DAQ_BC_Period, 60) <<  "s");
   return dqm4hep::STATUS_CODE_SUCCESS;

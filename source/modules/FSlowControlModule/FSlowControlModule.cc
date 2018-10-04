@@ -616,7 +616,7 @@ dqm4hep::StatusCode FSlowControlModule::getHighVoltageInfos(HVInfo& hvInfo, int 
 
 }
 
-dqm4hep::StatusCode FSlowControlModule::getHighVoltageInfos(HVInfoMap& hvInfoMap)
+dqm4hep::StatusCode FSlowControlModule::getHighVoltageInfos(HVInfoMap& /*hvInfoMap*/)
 {
 //   hvInfoMap.clear();
 // 

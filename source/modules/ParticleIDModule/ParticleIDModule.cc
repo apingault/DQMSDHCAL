@@ -292,7 +292,7 @@ dqm4hep::StatusCode ParticleIDModule::endOfCycle()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode ParticleIDModule::startOfRun(dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode ParticleIDModule::startOfRun(dqm4hep::DQMRun *const /*pRun*/)
 {
 	m_nNoiseWithinRun = 0;
 	m_nCosmicMuonsWithinRun = 0;
@@ -308,7 +308,7 @@ dqm4hep::StatusCode ParticleIDModule::startOfRun(dqm4hep::DQMRun *const pRun)
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode ParticleIDModule::endOfRun(dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode ParticleIDModule::endOfRun(dqm4hep::DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }

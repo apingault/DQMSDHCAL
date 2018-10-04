@@ -325,14 +325,14 @@ dqm4hep::StatusCode HoughTransformModule::endOfCycle()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode HoughTransformModule::startOfRun(dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode HoughTransformModule::startOfRun(dqm4hep::DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode HoughTransformModule::endOfRun(dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode HoughTransformModule::endOfRun(dqm4hep::DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }

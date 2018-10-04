@@ -571,7 +571,7 @@ dqm4hep::StatusCode RawAnalysisModule::endOfCycle()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode RawAnalysisModule::startOfRun(dqm4hep::DQMRun * const pRun)
+dqm4hep::StatusCode RawAnalysisModule::startOfRun(dqm4hep::DQMRun * const /*pRun*/)
 {
   m_eventParameters.totalIntegratedTime = 0;
   m_eventParameters.totalEventIntegratedTime = 0;
@@ -580,7 +580,7 @@ dqm4hep::StatusCode RawAnalysisModule::startOfRun(dqm4hep::DQMRun * const pRun)
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode RawAnalysisModule::endOfRun(dqm4hep::DQMRun * const pRun)
+dqm4hep::StatusCode RawAnalysisModule::endOfRun(dqm4hep::DQMRun * const /*pRun*/)
 {
   float DAQ_BC_Period = m_pEventHelper->getDAQ_BC_Period();
   LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " Run lasted " << m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period() << "s : " << floor(m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period() / 3600) << "h " << floor(fmod(m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period() / 60, 60)) << "min " << fmod(m_eventParameters.totalIntegratedTime * m_pEventHelper->getDAQ_BC_Period(), 60) <<  "s");

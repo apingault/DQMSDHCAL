@@ -105,7 +105,7 @@ dqm4hep::StatusCode EventInfoShmProcessor::endOfRun(const dqm4hep::DQMRun *const
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode EventInfoShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, uint32_t key, const std::vector<levbdim::buffer*> &bufferList)
+dqm4hep::StatusCode EventInfoShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, uint32_t /*key*/, const std::vector<levbdim::buffer*> &/*bufferList*/)
 {
 	IMPL::LCEventImpl *pLCEvent = dynamic_cast<IMPL::LCEventImpl *>(pEvent->getEvent<EVENT::LCEvent>() );
 
@@ -211,7 +211,7 @@ SDHCALShmProcessor::~SDHCALShmProcessor()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode SDHCALShmProcessor::startOfRun(dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode SDHCALShmProcessor::startOfRun(dqm4hep::DQMRun *const /*pRun*/)
 {
   LOG4CXX_DEBUG( dqm4hep::dqmMainLogger , m_moduleLogStr << " [SDHCALshmProcessor] - startOfRun.." );
 	return dqm4hep::STATUS_CODE_SUCCESS;
@@ -219,7 +219,7 @@ dqm4hep::StatusCode SDHCALShmProcessor::startOfRun(dqm4hep::DQMRun *const pRun)
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode SDHCALShmProcessor::endOfRun(const dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode SDHCALShmProcessor::endOfRun(const dqm4hep::DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -757,14 +757,14 @@ SiWECalShmProcessor::~SiWECalShmProcessor()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode SiWECalShmProcessor::startOfRun(dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode SiWECalShmProcessor::startOfRun(dqm4hep::DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode SiWECalShmProcessor::endOfRun(const dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode SiWECalShmProcessor::endOfRun(const dqm4hep::DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -1189,7 +1189,7 @@ dqm4hep::StatusCode FileWriterShmProcessor::startOfRun(dqm4hep::DQMRun *const pR
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode FileWriterShmProcessor::endOfRun(const dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode FileWriterShmProcessor::endOfRun(const dqm4hep::DQMRun *const /*pRun*/)
 {
 	try
 	{
@@ -1206,7 +1206,7 @@ dqm4hep::StatusCode FileWriterShmProcessor::endOfRun(const dqm4hep::DQMRun *cons
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode FileWriterShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, uint32_t key, const std::vector<levbdim::buffer*> &bufferList)
+dqm4hep::StatusCode FileWriterShmProcessor::processEvent(dqm4hep::DQMEvent *pEvent, uint32_t /*key*/, const std::vector<levbdim::buffer*> &/*bufferList*/)
 {
 	IMPL::LCEventImpl *pLCEvent = dynamic_cast<IMPL::LCEventImpl *>(pEvent->getEvent<EVENT::LCEvent>() );
 

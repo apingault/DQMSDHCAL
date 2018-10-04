@@ -698,7 +698,7 @@ dqm4hep::StatusCode AsicAnalysisModule::endOfCycle()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode AsicAnalysisModule::startOfRun(DQMRun *pRun)
+dqm4hep::StatusCode AsicAnalysisModule::startOfRun(DQMRun *const /*pRun*/)
 {
 	this->clearContents();
 	return dqm4hep::STATUS_CODE_SUCCESS;
@@ -706,7 +706,7 @@ dqm4hep::StatusCode AsicAnalysisModule::startOfRun(DQMRun *pRun)
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode AsicAnalysisModule::endOfRun(DQMRun *pRun)
+dqm4hep::StatusCode AsicAnalysisModule::endOfRun(DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
@@ -885,7 +885,7 @@ void AsicAnalysisModule::resetElements()
 }
 
 
-bool AsicAnalysisModule::shouldRejectEvent(EVENT::LCEvent *pLCEvent)
+bool AsicAnalysisModule::shouldRejectEvent(EVENT::LCEvent *const/*pLCEvent*/)
 {
 	return false;
 }

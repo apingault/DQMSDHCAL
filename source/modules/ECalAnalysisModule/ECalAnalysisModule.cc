@@ -246,14 +246,14 @@ dqm4hep::StatusCode ECalAnalysisModule::endOfCycle()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode ECalAnalysisModule::startOfRun(DQMRun * pRun)
+dqm4hep::StatusCode ECalAnalysisModule::startOfRun(DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode ECalAnalysisModule::endOfRun(DQMRun * pRun)
+dqm4hep::StatusCode ECalAnalysisModule::endOfRun(DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }

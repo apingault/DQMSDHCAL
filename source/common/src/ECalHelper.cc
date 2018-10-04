@@ -152,9 +152,9 @@ dqm4hep::StatusCode ECalHelper::getCorrectedADCCount(unsigned int layer, unsigne
 //-------------------------------------------------------------------------------------------------
 
 dqm4hep::StatusCode ECalHelper::getCalibratedEnergy(unsigned int layer, unsigned int asic, unsigned int channel,
-		unsigned int column, int adcCount, float &calibratedEnergy) const
+		unsigned int column, int correctedAdcCount, float &calibratedEnergy) const
 {
-	int correctedAdcCount(0);
+	int pedestalValue(0);
 	RETURN_RESULT_IF(dqm4hep::STATUS_CODE_SUCCESS, !=, this->getPedestal(layer, asic, channel, column, correctedAdcCount));
 
 	const float adcToMip(correctedAdcCount / m_mipCalibrationFactor);

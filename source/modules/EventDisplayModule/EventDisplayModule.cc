@@ -335,14 +335,14 @@ dqm4hep::StatusCode EventDisplayModule::endOfCycle()
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode EventDisplayModule::startOfRun(dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode EventDisplayModule::startOfRun(dqm4hep::DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-dqm4hep::StatusCode EventDisplayModule::endOfRun(dqm4hep::DQMRun *const pRun)
+dqm4hep::StatusCode EventDisplayModule::endOfRun(dqm4hep::DQMRun *const /*pRun*/)
 {
 	return dqm4hep::STATUS_CODE_SUCCESS;
 }
