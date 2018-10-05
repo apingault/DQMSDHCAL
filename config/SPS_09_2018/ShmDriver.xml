@@ -1,0 +1,288 @@
+<dqm4hep>
+  <global>
+    
+    <!-- Shared memory driver. Read raw data source buffers in shared memory -->
+    <shmdriver directory="/dev/shm/monitor">
+      <datasources>
+	<!-- detectors :
+	     SDHCAL = 100 
+	     Cherenkov = 100 (SDHCAL DIF)
+	-->
+	
+	<!-- Cherenkov source as a SDHCAL DIF -->
+	<source detector="100" id="3"/>
+	
+	<!-- SLOT_0 -->
+	<source detector="100" id="30"/>
+	<source detector="100" id="94"/>
+	<source detector="100" id="181"/>
+	<!-- SLOT_1" -->
+	<source detector="100" id="100"/>
+	<source detector="100" id="97"/>
+	<source detector="100" id="92"/>
+	<!-- <source detector="100" id="134"/> -->
+	<!-- <source detector="100" id="136"/> -->
+	<!-- <source detector="100" id="133"/> -->
+	<!-- SLOT_2 -->
+	<source detector="100" id="40"/>
+	<source detector="100" id="93"/>
+	<source detector="100" id="98"/>
+ 	<!-- SLOT_3 -->
+	<source detector="100" id="119"/>
+	<source detector="100" id="118"/>
+	<source detector="100" id="129"/>
+	<!-- SLOT_4 -->
+	<source detector="100" id="151"/>
+	<source detector="100" id="152"/>
+	<source detector="100" id="164"/>
+	<!-- SLOT_5 -->
+	<source detector="100" id="75"/>
+	<source detector="100" id="61"/>
+	<source detector="100" id="74"/>
+	<!-- SLOT_6 -->
+	<source detector="100" id="110"/>
+	<source detector="100" id="111"/>
+	<source detector="100" id="156"/>
+	<!-- SLOT_7 -->
+	<source detector="100" id="103"/>
+	<source detector="100" id="177"/>
+	<source detector="100" id="102"/>
+	<!-- SLOT_8 -->
+	<source detector="100" id="176"/>
+	<source detector="100" id="175"/>
+	<source detector="100" id="174"/>
+	<!-- SLOT_9 -->
+	<source detector="100" id="121"/>
+	<source detector="100" id="120"/>
+	<source detector="100" id="128"/>
+	<!-- SLOT_10 -->
+	<source detector="100" id="58"/>
+	<source detector="100" id="64"/>
+	<source detector="100" id="65"/>
+	<!-- SLOT_11 -->
+	<source detector="100" id="73"/>
+	<source detector="100" id="72"/>
+	<source detector="100" id="148"/>
+	<!-- SLOT_12 -->
+	<source detector="100" id="60"/>
+	<source detector="100" id="79"/>
+	<source detector="100" id="78"/>
+	<!-- SLOT_13 -->
+	<source detector="100" id="113"/>
+	<source detector="100" id="43"/>
+	<source detector="100" id="44"/>
+	<!-- SLOT_14 -->
+	<source detector="100" id="243"/>
+	<source detector="100" id="242"/>
+	<source detector="100" id="241"/>
+	<!-- SLOT_15 -->
+	<source detector="100" id="186"/>
+	<source detector="100" id="127"/>
+	<source detector="100" id="154"/>
+	<!-- SLOT_16 -->
+	<source detector="100" id="71"/>
+	<source detector="100" id="70"/>
+	<source detector="100" id="147"/>
+	<!-- SLOT_17 -->
+	<source detector="100" id="139"/>
+	<source detector="100" id="140"/>
+	<source detector="100" id="47"/>
+	<!-- SLOT_18 -->
+	<source detector="100" id="76"/>
+	<source detector="100" id="77"/>
+	<source detector="100" id="143"/>
+	<!-- SLOT_19 -->
+	<source detector="100" id="36"/>
+	<source detector="100" id="91"/>
+	<source detector="100" id="159"/>
+	<!-- SLOT_20 -->
+	<source detector="100" id="183"/>
+	<source detector="100" id="178"/>
+	<source detector="100" id="179"/>
+	<!-- SLOT_21 -->
+	<source detector="100" id="67"/>
+	<source detector="100" id="42"/>
+	<source detector="100" id="41"/>
+	<!-- SLOT_22 -->
+	<source detector="100" id="138"/>
+	<source detector="100" id="46"/>
+	<source detector="100" id="137"/>
+	<!-- SLOT_23 -->
+	<source detector="100" id="144"/>
+	<source detector="100" id="173"/>
+	<source detector="100" id="131"/>
+	<!-- SLOT_24 -->
+	<source detector="100" id="160"/>
+	<source detector="100" id="184"/>
+	<source detector="100" id="189"/>
+	<!-- SLOT_25 -->
+	<source detector="100" id="171"/>
+	<source detector="100" id="167"/>
+	<source detector="100" id="172"/>
+	<!-- SLOT_26 -->
+	<source detector="100" id="145"/>
+	<source detector="100" id="135"/>
+	<source detector="100" id="146"/>
+	<!-- SLOT_27 -->
+	<source detector="100" id="180"/>
+	<source detector="100" id="170"/>
+	<source detector="100" id="185"/>
+	<!-- SLOT_28 -->
+	<source detector="100" id="190"/>
+	<source detector="100" id="188"/>
+	<source detector="100" id="187"/>
+	<!-- SLOT_29 -->
+	<source detector="100" id="166"/>
+	<source detector="100" id="165"/>
+	<source detector="100" id="169"/>
+	<!-- SLOT_30 -->
+	<source detector="100" id="50"/>
+	<source detector="100" id="57"/>
+	<source detector="100" id="155"/>
+	<!-- SLOT_31 -->
+	<source detector="100" id="153"/>
+	<source detector="100" id="108"/>
+	<source detector="100" id="25"/>
+	<!-- SLOT_32 -->
+	<source detector="100" id="109"/>
+	<source detector="100" id="56"/>
+	<source detector="100" id="51"/>
+	<!-- SLOT_33 -->
+	<source detector="100" id="107"/>
+	<source detector="100" id="150"/>
+	<source detector="100" id="116"/>
+	<!-- SLOT_34 -->
+	<source detector="100" id="49"/>
+	<source detector="100" id="124"/>
+	<source detector="100" id="126"/>
+	<!-- SLOT_35 -->
+ 	<source detector="100" id="115"/>
+	<source detector="100" id="149"/>
+	<source detector="100" id="117"/>
+	<!-- SLOT_36 -->
+	<source detector="100" id="114"/>
+	<source detector="100" id="45"/>
+	<source detector="100" id="48"/>
+	<!-- SLOT_37 -->
+	<!-- <source detector="100" id="141"/> -->
+	<!-- <source detector="100" id="142"/> -->
+	<!-- <source detector="100" id="158"/> -->
+	<!-- SLOT_38 -->
+	<!-- SLOT_39 -->
+	<!-- <source detector="100" id="132"/> -->
+	<!-- <source detector="100" id="106"/> -->
+	<!-- <source detector="100" id="62"/> -->
+	<!-- <\!-- SLOT_40 -\-> -->
+	<!-- <source detector="100" id="99"/> -->
+	<!-- <source detector="100" id="35"/> -->
+	<!-- <source detector="100" id="101"/> -->
+	<!-- <\!-- SLOT_41 -\-> -->
+	<!-- <source detector="100" id="130"/> -->
+	<!-- <source detector="100" id="123"/> -->
+	<!-- <source detector="100" id="122"/> -->
+	<!-- <\!-- SLOT_42 -\-> -->
+	<!-- <source detector="100" id="162"/> -->
+	<!-- <source detector="100" id="161"/> -->
+	<!-- <source detector="100" id="163"/> -->
+	<!-- <\!-- SLOT_43 -\-> -->
+	<!-- <source detector="100" id="112"/> -->
+	<!-- <source detector="100" id="29"/> -->
+	<!-- <source detector="100" id="104"/> -->
+	<!-- <\!-- SLOT_44 -\-> -->
+	<!-- <source detector="100" id="54"/> -->
+	<!-- <source detector="100" id="53"/> -->
+	<!-- <source detector="100" id="59"/> -->
+	<!-- <\!-- SLOT_45 -\-> -->
+	<!-- <source detector="100" id="27"/> -->
+	<!-- <source detector="100" id="90"/> -->
+	<!-- <source detector="100" id="96"/> -->
+	<!-- <\!-- SLOT_46 -\-> -->
+	<!-- <source detector="100" id="5"/> -->
+	<!-- <source detector="100" id="8"/> -->
+	<!-- <source detector="100" id="95"/> -->
+	<!-- <\!-- SLOT_47 -\-> -->
+	<!-- <source detector="100" id="18"/> -->
+	<!-- <source detector="100" id="87"/> -->
+	<!-- <source detector="100" id="63"/> -->
+	<!-- MultiGap -->
+	<!-- <source detector="100" id="80"/> -->
+	
+      </datasources>
+    </shmdriver>
+    
+    <!-- Run control client to receive start/end of run signals -->
+    <runcontrol plugin="DimRunControlClient" name="DQMRunControl"/>
+    
+    <!-- Event clients to send data to event collector -->
+    <eventclientlist>
+      <eventclient plugin="DimEventClient">
+	<parameter name="collectorName"> sdhcal_event_collector </parameter>
+      </eventclient>
+      <eventclient plugin="DimEventClient">
+	<parameter name="collectorName"> sdhcal_event_collector </parameter>
+      </eventclient>
+    </eventclientlist>
+    
+    <!-- The event streamer to serialize data for event client -->
+    <eventstreamer plugin="LCIOStreamer"/>
+    
+    <!-- Event builder processor. Fill an event from the shm driver data source buffers -->	
+    <evbprocessors>
+      <evbprocessor name="EventInfoProducer"/>
+      <!-- <evbprocessor name="CherenkovProducer"/> -->
+      <evbprocessor name="SDHCALProducer"/>
+    </evbprocessors>
+    
+  </global>
+
+  
+  <!-- Event builder processors configuration -->
+  <evbprocessors>
+    
+    <!-- Event lcio collection producer -->
+    <!-- Fill event info -->
+    <evbprocessor plugin="EventInfoShmProcessor" name="EventInfoProducer">
+      <parameter name="CreationTimeParameterName"> CREATION_TIME </parameter>
+    </evbprocessor>
+    
+    <!-- SDHCAL lcio collection producer -->
+    <!-- Output CalorimeterHit collection -->
+    <evbprocessor plugin="SDHCALShmProcessor" name="SDHCALProducer">
+      <electronicsMapping plugin="SDHCALElectronicsMapping">
+            <parameter name="CellReferencePosition"> 518.8 597.2 1267.1 </parameter>
+            <parameter name="CellSize0"> 10.408 </parameter>
+            <parameter name="CellSize1"> 10.408 </parameter>
+            <parameter name="ReadFromDB"> true </parameter>
+            <parameter name="Host">  </parameter>
+            <parameter name="User">  </parameter>
+            <parameter name="Password">  </parameter>
+            <parameter name="Database"> GEOMETRY </parameter>
+            <parameter name="BeamTest"> SPS_04_2015 </parameter>
+            <parameter name="GeometryFileName"> geometry_SPS_04_2015.xml </parameter>
+      </electronicsMapping>
+      <parameter name="AmplitudeBitRotation"> 3 </parameter>
+      <parameter name="EncodeDifAsicChannel"> false </parameter>
+      <parameter name="IJKEncoding"> I J K-1 </parameter>
+      <parameter name="DifAsicChannelEncoding"> Dif_id Asic_id Chan_id </parameter>
+      <parameter name="CellIDEncoderString"> I:7,J:7,K-1:6,Dif_id:8,Asic_id:8,Chan_id:6 </parameter>
+      <parameter name="OutputCollectionName"> SDHCAL_HIT </parameter>
+      <parameter name="SkipFullAsics"> true </parameter>
+      <parameter name="DropFirstRU"> false </parameter>
+      <parameter name="NoiseLimit"> 1000000 </parameter>
+      <parameter name="XDaqShift"> 20 </parameter>
+      <parameter name="DetectorId"> 100 </parameter>
+      <parameter name="DifMaskList"> 3 </parameter>
+    </evbprocessor>
+
+    <!--Cherenkov lcio collection producer -->
+    <!-- Output CalorimeterHit collection -->
+    <!-- <evbprocessor plugin="CherenkovShmProcessor" name="CherenkovProducer"> -->
+    <!--   <parameter name="OutputCollectionName"> CHERENKOV_HIT </parameter> -->
+    <!--   <parameter name="CherenkovDifId"> 3 </parameter> -->
+    <!--   <parameter name="XDaqShift"> 20 </parameter> -->
+    <!--   <parameter name="DetectorId"> 100 </parameter> -->
+    <!-- </evbprocessor> -->
+    
+  </evbprocessors>
+
+</dqm4hep>
