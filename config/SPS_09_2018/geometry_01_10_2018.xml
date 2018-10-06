@@ -5,12 +5,12 @@
     <dif id="94" shiftX="0" shiftY="32"/>
     <dif id="181" shiftX="0" shiftY="64"/> 
   </layer>
-  <layer id="1" x0="0" y0="0" z0="1064" x1="1000" y1="1000" z1="1064">
+  <layer id="1" x0="0" y0="0" z0="28" x1="1000" y1="1000" z1="28">
     <dif id="100" shiftX="0" shiftY="0" />
     <dif id="97" shiftX="0" shiftY="32"/>
     <dif id="92" shiftX="0" shiftY="64"/> 
   </layer>
-  <layer id="2" x0="0" y0="0" z0="1036" x1="1000" y1="1000" z1="1036">
+  <layer id="2" x0="0" y0="0" z0="56" x1="1000" y1="1000" z1="56">
     <dif id="40" shiftX="0" shiftY="0" />
     <dif id="93" shiftX="0" shiftY="32"/>
     <dif id="98" shiftX="0" shiftY="64"/> 
@@ -53,7 +53,7 @@
   <layer id="10" x0="0" y0="0" z0="280" x1="1000" y1="1000" z1="280">
     <dif id="58" shiftX="0" shiftY="0" />
     <dif id="64" shiftX="0" shiftY="32"/>
-    <dif id="65" shiftX="0" shiftY="64"/>
+    <dif id="65" shiftX="0" shiftY="64"/> 
   </layer>
   <layer id="11" x0="0" y0="0" z0="308" x1="1000" y1="1000" z1="308">
     <dif id="73" shiftX="0" shiftY="0" />
@@ -185,31 +185,31 @@
     <dif id="45" shiftX="0" shiftY="32"/>
     <dif id="48" shiftX="0" shiftY="64"/> 
   </layer>
-  <layer id="37" x0="0" y0="0" z0="1108" x1="1000" y1="1000" z1="1108">
+  <layer id="37" x0="0" y0="0" z0="1300" x1="1000" y1="1000" z1="1300">
     <dif id="80" shiftX="0" shiftY="0" />
   </layer>
-  <layer id="38" x0="0" y0="0" z0="1208" x1="1000" y1="1000" z1="1208">
+  <layer id="38" x0="0" y0="0" z0="1350" x1="1000" y1="1000" z1="1350">
     <dif id="182" shiftX="0" shiftY="0" />
   </layer>
-  <layer id="39" x0="0" y0="0" z0="1308" x1="1000" y1="1000" z1="1308">
+  <layer id="39" x0="0" y0="0" z0="1400" x1="1000" y1="1000" z1="1400">
     <dif id="105" shiftX="0" shiftY="0" />
   </layer>
-  <layer id="40" x0="0" y0="0" z0="1408" x1="1000" y1="1000" z1="1408">
+  <layer id="40" x0="0" y0="0" z0="1450" x1="1000" y1="1000" z1="1450">
     <dif id="63" shiftX="0" shiftY="0" />
   </layer>
-  <layer id="41" x0="0" y0="0" z0="1508" x1="1000" y1="1000" z1="1508">
+  <layer id="41" x0="0" y0="0" z0="1500" x1="1000" y1="1000" z1="1500">
     <dif id="87" shiftX="0" shiftY="0" />
   </layer>
-  <layer id="42" x0="0" y0="0" z0="1508" x1="1000" y1="1000" z1="1508">
+  <layer id="42" x0="0" y0="0" z0="1550" x1="1000" y1="1000" z1="1550">
     <dif id="18" shiftX="0" shiftY="0" />
   </layer>
-  <layer id="43" x0="0" y0="0" z0="1508" x1="1000" y1="1000" z1="1508">
+  <layer id="43" x0="0" y0="0" z0="1600" x1="1000" y1="1000" z1="1600">
     <dif id="5" shiftX="0" shiftY="0" />
   </layer>
-  <layer id="44" x0="0" y0="0" z0="1508" x1="1000" y1="1000" z1="1508">
+  <layer id="44" x0="0" y0="0" z0="1650" x1="1000" y1="1000" z1="1650">
     <dif id="8" shiftX="0" shiftY="0" />
   </layer>
-  
+
   <!-- <layer id="1" x0="0" y0="0" z0="28" x1="1000" y1="1000" z1="28"> -->
   <!--   <dif id="134" shiftX="0" shiftY="0" /> -->
   <!--   <dif id="136" shiftX="0" shiftY="32"/> -->
