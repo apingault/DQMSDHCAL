@@ -57,7 +57,7 @@
 	<source detector="100" id="128"/>
 	<!-- SLOT_10 -->
 	<source detector="100" id="58"/>
-	<source detector="100" id="64"/>
+ 	<source detector="100" id="64"/>
 	<source detector="100" id="65"/>
 	<!-- SLOT_11 -->
 	<source detector="100" id="73"/>
@@ -156,13 +156,30 @@
 	<source detector="100" id="124"/>
 	<source detector="100" id="126"/>
 	<!-- SLOT_35 -->
- 	<source detector="100" id="115"/>
+	<source detector="100" id="115"/>
 	<source detector="100" id="149"/>
 	<source detector="100" id="117"/>
 	<!-- SLOT_36 -->
 	<source detector="100" id="114"/>
 	<source detector="100" id="45"/>
 	<source detector="100" id="48"/>
+	<!-- Tricot 1 -->
+	<source detector="100" id="80"/>
+	<!-- Tricot 2 -->
+	<source detector="100" id="182"/>
+	<!-- Tricot 3 -->
+	<source detector="100" id="105"/>
+	<!-- Tricot 4 -->
+	<source detector="100" id="63"/>
+	<!-- Tricot 5 -->
+	<source detector="100" id="87"/>
+	<!-- Aegis 1 -->
+	<source detector="100" id="18"/>
+	<!-- Aegis 2 -->
+	<source detector="100" id="5"/>
+	<!-- Aegis 3 -->
+	<source detector="100" id="8"/>
+
 	<!-- SLOT_37 -->
 	<!-- <source detector="100" id="141"/> -->
 	<!-- <source detector="100" id="142"/> -->
